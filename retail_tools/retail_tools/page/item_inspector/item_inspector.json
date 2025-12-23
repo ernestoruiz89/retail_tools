@@ -7,9 +7,9 @@
  "modified": "2025-12-23 15:44:27.380010",
  "modified_by": "Administrator",
  "module": "Retail Tools",
- "name": "item-inspector-",
+ "name": "item-inspector",
  "owner": "Administrator",
- "page_name": "item-inspector-",
+ "page_name": "item-inspector",
  "roles": [
   {
    "role": "Sales User"
