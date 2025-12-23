@@ -1,4 +1,19 @@
-/* global frappe */
+/* global frappe, __ */
+/* eslint-disable no-undef */
+
+/**
+ * Item Inspector Page
+ *
+ * A dashboard-style page for quickly looking up item information including:
+ * - Stock levels by warehouse
+ * - Price history with charts
+ * - Recent sales and purchases
+ *
+ * Features:
+ * - Barcode scanning support
+ * - Responsive mobile-first design
+ * - Price history visualization
+ */
 
 frappe.pages["item-inspector"].on_page_load = function (wrapper) {
   const page = frappe.ui.make_app_page({
@@ -10,29 +25,70 @@ frappe.pages["item-inspector"].on_page_load = function (wrapper) {
   wrapper.item_inspector = new retail_tools.ItemInspector(page, wrapper);
 };
 
+frappe.pages["item-inspector"].on_page_hide = function (wrapper) {
+  if (wrapper.item_inspector && wrapper.item_inspector.destroy) {
+    wrapper.item_inspector.destroy();
+  }
+};
+
 frappe.provide("retail_tools");
 
 retail_tools.ItemInspector = class ItemInspector {
+  /**
+   * Initialize the Item Inspector component
+   * @param {Object} page - Frappe page object
+   * @param {HTMLElement} wrapper - Page wrapper element
+   */
   constructor(page, wrapper) {
     this.page = page;
     this.wrapper = wrapper;
     this.state = { item_code: null, snapshot: null };
+    this._destroyed = false;
 
     this.make_filters();
     this.make_layout();
-	
-	this._onResize = frappe.utils.debounce(() => {
-	  // si ya hay snapshot, re-render solo el chart
-	  if (!this.state.snapshot) return;
+    this._bind_events();
+  }
 
-	  const prices = this.state.snapshot.price_history || [];
-	  const pls = [...new Set(prices.map(p => p.price_list).filter(Boolean))];
-	  const current = this.$priceControls?.find("[data-pl]")?.val() || pls[0];
+  /**
+   * Bind global event handlers
+   */
+  _bind_events() {
+    this._onResize = frappe.utils.debounce(() => {
+      if (this._destroyed || !this.state.snapshot) return;
 
-	  if (current) this.render_price_section(prices, current);
-	}, 250);
+      const prices = this.state.snapshot.price_history || [];
+      const pls = [...new Set(prices.map((p) => p.price_list).filter(Boolean))];
+      const current = this.$priceControls?.find("[data-pl]")?.val() || pls[0];
 
-	$(window).on("resize", this._onResize);
+      if (current) this.render_price_section(prices, current);
+    }, 250);
+
+    $(window).on("resize.item_inspector", this._onResize);
+  }
+
+  /**
+   * Clean up event handlers and resources
+   */
+  destroy() {
+    this._destroyed = true;
+
+    // Remove resize handler
+    $(window).off("resize.item_inspector");
+
+    // Clean up chart instance
+    if (this._price_chart) {
+      this._price_chart = null;
+    }
+
+    // Remove action button handlers
+    if (this.$actions) {
+      this.$actions.find("[data-open-item]").off("click");
+      this.$actions.find("[data-open-stock]").off("click");
+    }
+
+    // Clear state
+    this.state = { item_code: null, snapshot: null };
   }
 
   make_filters() {
@@ -59,41 +115,41 @@ retail_tools.ItemInspector = class ItemInspector {
     const $body = $(this.page.body);
 
     $body.append(`
-      <div class="item-inspector">
+      <div class="item-inspector" role="main" aria-label="${__("Consulta de Producto")}">
         <div class="ii-grid">
           <div class="ii-card ii-overview">
             <div class="ii-header">
-              <div class="ii-image"></div>
+              <div class="ii-image" aria-hidden="true"></div>
               <div class="ii-main">
                 <div class="ii-title"></div>
                 <div class="ii-meta"></div>
-                <div class="ii-tags"></div>
+                <div class="ii-tags" role="list" aria-label="${__("Etiquetas")}"></div>
                 <div class="ii-actions mt-2"></div>
               </div>
             </div>
-            <div class="ii-kpis mt-3"></div>
+            <div class="ii-kpis mt-3" role="list" aria-label="${__("Indicadores clave")}"></div>
           </div>
 
           <div class="ii-card">
-            <div class="ii-card-title">${__("Existencia por almacén")}</div>
-            <div class="ii-table ii-stock-table"></div>
+            <div class="ii-card-title" id="stock-table-heading">${__("Existencia por almacén")}</div>
+            <div class="ii-table ii-stock-table" role="region" aria-labelledby="stock-table-heading"></div>
           </div>
 
           <div class="ii-card">
-            <div class="ii-card-title">${__("Histórico de precios por lista")}</div>
+            <div class="ii-card-title" id="price-chart-heading">${__("Histórico de precios por lista")}</div>
             <div class="ii-price-controls mb-2"></div>
-            <div class="ii-chart" id="ii-price-chart"></div>
-            <div class="ii-table ii-price-table mt-3"></div>
+            <div class="ii-chart" id="ii-price-chart" role="img" aria-labelledby="price-chart-heading"></div>
+            <div class="ii-table ii-price-table mt-3" role="region" aria-label="${__("Tabla de precios")}"></div>
           </div>
 
           <div class="ii-card">
-            <div class="ii-card-title">${__("Últimas ventas")}</div>
-            <div class="ii-table ii-sales-table"></div>
+            <div class="ii-card-title" id="sales-table-heading">${__("Últimas ventas")}</div>
+            <div class="ii-table ii-sales-table" role="region" aria-labelledby="sales-table-heading"></div>
           </div>
 
           <div class="ii-card">
-            <div class="ii-card-title">${__("Últimas compras")}</div>
-            <div class="ii-table ii-purchase-table"></div>
+            <div class="ii-card-title" id="purchase-table-heading">${__("Últimas compras")}</div>
+            <div class="ii-table ii-purchase-table" role="region" aria-labelledby="purchase-table-heading"></div>
           </div>
         </div>
       </div>
@@ -115,12 +171,11 @@ retail_tools.ItemInspector = class ItemInspector {
   }
 
   open_scanner() {
-    // Frappe Scanner API (Html5-QRCode) :contentReference[oaicite:2]{index=2}
     new frappe.ui.Scanner({
       dialog: true,
       multiple: false,
       on_scan: (data) => {
-        const code = (data && data.decodedText) ? data.decodedText : "";
+        const code = data && data.decodedText ? data.decodedText : "";
         if (!code) return;
         this.barcode_field.set_value(code);
         this.resolve_barcode(code);
@@ -134,11 +189,28 @@ retail_tools.ItemInspector = class ItemInspector {
     this.load_snapshot(item_code);
   }
 
+  /**
+   * Handle API error responses
+   * @param {Object} error - Error object from frappe.call
+   * @param {string} context - Description of what failed
+   */
+  _handle_error(error, context) {
+    console.error(`Item Inspector - ${context}:`, error);
+    frappe.msgprint({
+      title: __("Error"),
+      indicator: "red",
+      message: __("Error al {0}. Por favor intente nuevamente.", [context]),
+    });
+  }
+
   resolve_barcode(barcode) {
     frappe.call({
-      method: "retail_tools.retail_tools.page.item_inspector.item_inspector.resolve_item_from_barcode",
+      method:
+        "retail_tools.retail_tools.page.item_inspector.item_inspector.resolve_item_from_barcode",
       args: { barcode },
       callback: (r) => {
+        if (this._destroyed) return;
+
         const res = r.message;
         if (!res || !res.ok) {
           frappe.msgprint(res?.message || __("No se encontró producto."));
@@ -152,30 +224,39 @@ retail_tools.ItemInspector = class ItemInspector {
         }
 
         if (res.matches && res.matches.length) {
-          const d = new frappe.ui.Dialog({
-            title: __("Selecciona un producto"),
-            fields: [
-              {
-                fieldtype: "Select",
-                fieldname: "item_code",
-                label: __("Producto"),
-                options: res.matches.map(x => `${x.item_code} - ${x.item_name || ""}`),
-                reqd: 1,
-              },
-            ],
-            primary_action_label: __("Abrir"),
-            primary_action: () => {
-              const val = d.get_value("item_code");
-              const code = val.split(" - ")[0].trim();
-              d.hide();
-              this.item_field.set_value(code);
-              this.load_snapshot(code);
-            },
-          });
-          d.show();
+          this._show_item_selector(res.matches);
         }
       },
+      error: (err) => this._handle_error(err, __("buscar código de barras")),
     });
+  }
+
+  /**
+   * Show dialog to select from multiple matching items
+   * @param {Array} matches - List of matching item objects
+   */
+  _show_item_selector(matches) {
+    const d = new frappe.ui.Dialog({
+      title: __("Selecciona un producto"),
+      fields: [
+        {
+          fieldtype: "Select",
+          fieldname: "item_code",
+          label: __("Producto"),
+          options: matches.map((x) => `${x.item_code} - ${x.item_name || ""}`),
+          reqd: 1,
+        },
+      ],
+      primary_action_label: __("Abrir"),
+      primary_action: () => {
+        const val = d.get_value("item_code");
+        const code = val.split(" - ")[0].trim();
+        d.hide();
+        this.item_field.set_value(code);
+        this.load_snapshot(code);
+      },
+    });
+    d.show();
   }
 
   load_snapshot(item_code) {
@@ -186,12 +267,15 @@ retail_tools.ItemInspector = class ItemInspector {
       args: { item_code },
       freeze: true,
       callback: (r) => {
+        if (this._destroyed) return;
+
         const res = r.message;
         if (!res || !res.ok) return;
 
         this.state.snapshot = res;
         this.render(res);
       },
+      error: (err) => this._handle_error(err, __("cargar información del producto")),
     });
   }
 
@@ -203,14 +287,26 @@ retail_tools.ItemInspector = class ItemInspector {
     const sales = res.recent_sales || [];
     const purchases = res.recent_purchases || [];
 
-    // Header
+    this._render_header(item, barcodes);
+    this._render_kpis(bins, sales, purchases);
+    this._render_stock_table(bins);
+    this._render_price_section(prices);
+    this._render_transaction_tables(sales, purchases);
+  }
+
+  /**
+   * Render the header section with item info
+   */
+  _render_header(item, barcodes) {
     const img = item.image
-      ? `<img src="${encodeURI(item.image)}" style="width:72px;height:72px;object-fit:cover;border-radius:12px;" />`
-      : `<div class="ii-img-fallback">${(item.item_name || item.item_code || "?").slice(0,1)}</div>`;
+      ? `<img src="${encodeURI(item.image)}" alt="${frappe.utils.escape_html(item.item_name || "Item")}" style="width:72px;height:72px;object-fit:cover;border-radius:12px;" />`
+      : `<div class="ii-img-fallback" aria-label="${__("Sin imagen")}">${(item.item_name || item.item_code || "?").slice(0, 1)}</div>`;
 
     this.$image.html(img);
-    this.$title.html(`<div class="h4 mb-1">${frappe.utils.escape_html(item.item_name || "")}</div>
-                      <div class="text-muted">${frappe.utils.escape_html(item.item_code || "")}</div>`);
+    this.$title.html(`
+      <div class="h4 mb-1">${frappe.utils.escape_html(item.item_name || "")}</div>
+      <div class="text-muted">${frappe.utils.escape_html(item.item_code || "")}</div>
+    `);
 
     this.$meta.html(`
       <div class="text-muted">
@@ -224,25 +320,49 @@ retail_tools.ItemInspector = class ItemInspector {
     `);
 
     const tags = [];
-    if (barcodes.length) tags.push(`${__("Barcodes")}: ${barcodes.map(frappe.utils.escape_html).join(", ")}`);
+    if (barcodes.length)
+      tags.push(`${__("Barcodes")}: ${barcodes.map(frappe.utils.escape_html).join(", ")}`);
     if (item.disabled) tags.push(__("DESHABILITADO"));
     if (!item.is_stock_item) tags.push(__("No es stock item"));
-    this.$tags.html(tags.map(t => `<span class="badge badge-light mr-1">${t}</span>`).join(""));
+
+    this.$tags.html(
+      tags
+        .map((t) => `<span class="badge badge-light mr-1" role="listitem">${t}</span>`)
+        .join("")
+    );
+
+    this._render_actions(item);
+  }
+
+  /**
+   * Render action buttons
+   */
+  _render_actions(item) {
+    // Remove old handlers first
+    this.$actions.find("[data-open-item]").off("click");
+    this.$actions.find("[data-open-stock]").off("click");
 
     this.$actions.html(`
-	  <div class="ii-actions-grid">
-		<button class="btn btn-sm btn-primary" data-open-item>${__("Abrir Item")}</button>
-		<button class="btn btn-sm btn-default" data-open-stock>${__("Stock Balance")}</button>
-	  </div>
-	`);
+      <div class="ii-actions-grid">
+        <button class="btn btn-sm btn-primary" data-open-item aria-label="${__("Abrir formulario de Item")}">${__("Abrir Item")}</button>
+        <button class="btn btn-sm btn-default" data-open-stock aria-label="${__("Ver reporte de Stock Balance")}">${__("Stock Balance")}</button>
+      </div>
+    `);
 
-	this.$actions.find("[data-open-item]").on("click", () => frappe.set_route("Form", "Item", item.item_code));
-	this.$actions.find("[data-open-stock]").on("click", () => {
-	  const item_code = this.state?.item_code || this.item_field.get_value();
-	  frappe.set_route("query-report", "Stock Balance", { item_code });
-	});
+    this.$actions
+      .find("[data-open-item]")
+      .on("click", () => frappe.set_route("Form", "Item", item.item_code));
 
-    // KPIs
+    this.$actions.find("[data-open-stock]").on("click", () => {
+      const item_code = this.state?.item_code || this.item_field.get_value();
+      frappe.set_route("query-report", "Stock Balance", { item_code });
+    });
+  }
+
+  /**
+   * Render KPI cards
+   */
+  _render_kpis(bins, sales, purchases) {
     const total_qty = bins.reduce((acc, b) => acc + (flt(b.actual_qty) || 0), 0);
     const total_value = bins.reduce((acc, b) => acc + (flt(b.stock_value_est) || 0), 0);
 
@@ -250,41 +370,66 @@ retail_tools.ItemInspector = class ItemInspector {
     const last_purchase = purchases[0];
 
     this.$kpis.html(`
-      <div class="ii-kpi"><div class="ii-kpi-label">${__("Existencia total")}</div><div class="ii-kpi-value">${frappe.format(total_qty, {fieldtype:"Float"})}</div></div>
-      <div class="ii-kpi"><div class="ii-kpi-label">${__("Valor estimado (stock)")}</div><div class="ii-kpi-value">${frappe.format(total_value, {fieldtype:"Currency"})}</div></div>
-      <div class="ii-kpi"><div class="ii-kpi-label">${__("Última venta")}</div><div class="ii-kpi-value">${last_sale ? `${last_sale.posting_date} • ${frappe.format(last_sale.rate, {fieldtype:"Currency"})}` : "-"}</div></div>
-      <div class="ii-kpi"><div class="ii-kpi-label">${__("Última compra")}</div><div class="ii-kpi-value">${last_purchase ? `${last_purchase.posting_date} • ${frappe.format(last_purchase.rate, {fieldtype:"Currency"})}` : "-"}</div></div>
+      <div class="ii-kpi" role="listitem">
+        <div class="ii-kpi-label">${__("Existencia total")}</div>
+        <div class="ii-kpi-value">${frappe.format(total_qty, { fieldtype: "Float" })}</div>
+      </div>
+      <div class="ii-kpi" role="listitem">
+        <div class="ii-kpi-label">${__("Valor estimado (stock)")}</div>
+        <div class="ii-kpi-value">${frappe.format(total_value, { fieldtype: "Currency" })}</div>
+      </div>
+      <div class="ii-kpi" role="listitem">
+        <div class="ii-kpi-label">${__("Última venta")}</div>
+        <div class="ii-kpi-value">${last_sale ? `${last_sale.posting_date} • ${frappe.format(last_sale.rate, { fieldtype: "Currency" })}` : "-"}</div>
+      </div>
+      <div class="ii-kpi" role="listitem">
+        <div class="ii-kpi-label">${__("Última compra")}</div>
+        <div class="ii-kpi-value">${last_purchase ? `${last_purchase.posting_date} • ${frappe.format(last_purchase.rate, { fieldtype: "Currency" })}` : "-"}</div>
+      </div>
     `);
+  }
 
-    // Stock table
-    this.$stockTable.html(this.render_table(
-      ["warehouse", "actual_qty", "reserved_qty", "projected_qty", "valuation_rate", "stock_value_est"],
-      bins,
-      {
-        warehouse: __("Almacén"),
-        actual_qty: __("Qty"),
-        reserved_qty: __("Reservado"),
-        projected_qty: __("Proyectado"),
-        valuation_rate: __("Costo (Valuation)"),
-        stock_value_est: __("Valor Est."),
-      }
-    ));
+  /**
+   * Render stock by warehouse table
+   */
+  _render_stock_table(bins) {
+    this.$stockTable.html(
+      this.render_table(
+        ["warehouse", "actual_qty", "reserved_qty", "projected_qty", "valuation_rate", "stock_value_est"],
+        bins,
+        {
+          warehouse: __("Almacén"),
+          actual_qty: __("Qty"),
+          reserved_qty: __("Reservado"),
+          projected_qty: __("Proyectado"),
+          valuation_rate: __("Costo (Valuation)"),
+          stock_value_est: __("Valor Est."),
+        }
+      )
+    );
+  }
 
-    // Price controls + chart
-    const priceLists = [...new Set(prices.map(p => p.price_list).filter(Boolean))];
+  /**
+   * Render price list controls and chart
+   */
+  _render_price_section(prices) {
+    const priceLists = [...new Set(prices.map((p) => p.price_list).filter(Boolean))];
     const selected = priceLists[0] || null;
 
-    this.$priceControls.html(priceLists.length
-      ? `<div class="form-inline">
-           <label class="mr-2">${__("Lista de precios")}</label>
-           <select class="form-control form-control-sm" data-pl></select>
-         </div>`
-      : `<div class="text-muted">${__("No hay Item Price para este producto.")}</div>`
+    this.$priceControls.html(
+      priceLists.length
+        ? `<div class="form-inline">
+             <label class="mr-2" for="price-list-select">${__("Lista de precios")}</label>
+             <select class="form-control form-control-sm" id="price-list-select" data-pl aria-label="${__("Seleccionar lista de precios")}"></select>
+           </div>`
+        : `<div class="text-muted">${__("No hay Item Price para este producto.")}</div>`
     );
 
     if (priceLists.length) {
       const $pl = this.$priceControls.find("[data-pl]");
-      priceLists.forEach(pl => $pl.append(`<option value="${frappe.utils.escape_html(pl)}">${frappe.utils.escape_html(pl)}</option>`));
+      priceLists.forEach((pl) =>
+        $pl.append(`<option value="${frappe.utils.escape_html(pl)}">${frappe.utils.escape_html(pl)}</option>`)
+      );
       $pl.val(selected);
       $pl.on("change", () => this.render_price_section(prices, $pl.val()));
       this.render_price_section(prices, selected);
@@ -292,112 +437,128 @@ retail_tools.ItemInspector = class ItemInspector {
       this.$priceChart.empty();
       this.$priceTable.empty();
     }
+  }
 
-    // Sales + Purchases tables
-    this.$salesTable.html(this.render_table(
-      ["posting_date", "customer", "qty", "rate", "amount", "sales_invoice"],
-      sales,
-      {
-        posting_date: __("Fecha"),
-        customer: __("Cliente"),
-        qty: __("Qty"),
-        rate: __("Precio"),
-        amount: __("Total"),
-        sales_invoice: __("Documento"),
-      }
-    ));
+  /**
+   * Render transaction tables (sales and purchases)
+   */
+  _render_transaction_tables(sales, purchases) {
+    this.$salesTable.html(
+      this.render_table(
+        ["posting_date", "customer", "qty", "rate", "amount", "sales_invoice"],
+        sales,
+        {
+          posting_date: __("Fecha"),
+          customer: __("Cliente"),
+          qty: __("Qty"),
+          rate: __("Precio"),
+          amount: __("Total"),
+          sales_invoice: __("Documento"),
+        }
+      )
+    );
 
-    this.$purchaseTable.html(this.render_table(
-      ["posting_date", "supplier", "qty", "rate", "amount", "purchase_invoice"],
-      purchases,
-      {
-        posting_date: __("Fecha"),
-        supplier: __("Proveedor"),
-        qty: __("Qty"),
-        rate: __("Costo"),
-        amount: __("Total"),
-        purchase_invoice: __("Documento"),
-      }
-    ));
+    this.$purchaseTable.html(
+      this.render_table(
+        ["posting_date", "supplier", "qty", "rate", "amount", "purchase_invoice"],
+        purchases,
+        {
+          posting_date: __("Fecha"),
+          supplier: __("Proveedor"),
+          qty: __("Qty"),
+          rate: __("Costo"),
+          amount: __("Total"),
+          purchase_invoice: __("Documento"),
+        }
+      )
+    );
   }
 
   render_price_section(prices, price_list) {
-	  const rows = (prices || []).filter(p => p.price_list === price_list);
+    const rows = (prices || []).filter((p) => p.price_list === price_list);
 
-	  const toFloat = (x) => {
-		if (x === null || x === undefined) return 0;
-		const s = String(x).replace(/,/g, "").trim();
-		const n = Number(s);
-		return Number.isFinite(n) ? n : 0;
-	  };
+    const toFloat = (x) => {
+      if (x === null || x === undefined) return 0;
+      const s = String(x).replace(/,/g, "").trim();
+      const n = Number(s);
+      return Number.isFinite(n) ? n : 0;
+    };
 
-	  const pickDate = (r) => (r.valid_from || r.creation || r.modified || "");
-	  let labels = rows.map(r => String(pickDate(r)).slice(0, 10)).map(x => x || __("Sin fecha"));
-	  let values = rows.map(r => toFloat(r.price_list_rate));
+    const pickDate = (r) => r.valid_from || r.creation || r.modified || "";
+    let labels = rows.map((r) => String(pickDate(r)).slice(0, 10)).map((x) => x || __("Sin fecha"));
+    let values = rows.map((r) => toFloat(r.price_list_rate));
 
-	  // Si solo hay 1 punto, duplica para que el "line chart" sea visible
-	  if (labels.length === 1) {
-		const d0 = labels[0];
-		let d1 = d0;
+    // Duplicate single point for visible line chart
+    if (labels.length === 1) {
+      const d0 = labels[0];
+      let d1 = d0;
 
-		// intenta sumar 1 día si es fecha válida YYYY-MM-DD
-		if (/^\d{4}-\d{2}-\d{2}$/.test(d0)) {
-		  d1 = frappe.datetime.add_days(d0, 1);
-		} else {
-		  d1 = `${d0} `;
-		}
+      if (/^\d{4}-\d{2}-\d{2}$/.test(d0)) {
+        d1 = frappe.datetime.add_days(d0, 1);
+      } else {
+        d1 = `${d0} `;
+      }
 
-		labels = [d0, d1];
-		values = [values[0], values[0]];
-	  }
+      labels = [d0, d1];
+      values = [values[0], values[0]];
+    }
 
-	  this.$priceChart.empty();
-	  this.$priceChart.css("min-height", "260px");
+    this.$priceChart.empty();
+    this.$priceChart.css("min-height", "260px");
 
-	  if (!labels.length) {
-		this.$priceChart.html(`<div class="text-muted">${__("No hay puntos para graficar.")}</div>`);
-	  } else if (!frappe.Chart) {
-		this.$priceChart.html(`<div class="text-muted">${__("No se encontró frappe.Chart (assets).")}</div>`);
-	  } else {
-		// recrear chart
-		this._price_chart = new frappe.Chart(this.$priceChart[0], {
-		  title: `${__("Histórico")} • ${price_list}`,
-		  data: { labels, datasets: [{ name: price_list, values }] },
-		  type: "line",
-		  height: 260,
-		  // trucos para que se vea mejor en móvil
-		  truncateLegends: true,
-		  lineOptions: {
-			regionFill: 0,
-			hideDots: 0,
-		  },
-		});
-	  }
+    if (!labels.length) {
+      this.$priceChart.html(`<div class="text-muted">${__("No hay puntos para graficar.")}</div>`);
+    } else if (!frappe.Chart) {
+      this.$priceChart.html(
+        `<div class="text-muted">${__("No se encontró frappe.Chart (assets).")}</div>`
+      );
+    } else {
+      this._price_chart = new frappe.Chart(this.$priceChart[0], {
+        title: `${__("Histórico")} • ${price_list}`,
+        data: { labels, datasets: [{ name: price_list, values }] },
+        type: "line",
+        height: 260,
+        truncateLegends: true,
+        lineOptions: {
+          regionFill: 0,
+          hideDots: 0,
+        },
+      });
+    }
 
-	  // Tabla
-	  this.$priceTable.html(this.render_table(
-		["valid_from", "price_list_rate", "currency", "modified"],
-		rows,
-		{
-		  valid_from: __("Desde"),
-		  price_list_rate: __("Precio"),
-		  currency: __("Moneda"),
-		  modified: __("Modificado"),
-		}
-	  ));
-	}
+    // Price table
+    this.$priceTable.html(
+      this.render_table(["valid_from", "price_list_rate", "currency", "modified"], rows, {
+        valid_from: __("Desde"),
+        price_list_rate: __("Precio"),
+        currency: __("Moneda"),
+        modified: __("Modificado"),
+      })
+    );
+  }
 
+  /**
+   * Render an HTML table
+   * @param {Array} columns - Column keys
+   * @param {Array} rows - Data rows
+   * @param {Object} labels - Column labels map
+   * @returns {string} HTML table string
+   */
   render_table(columns, rows, labels) {
     rows = rows || [];
-    const ths = columns.map(c => `<th>${frappe.utils.escape_html(labels[c] || c)}</th>`).join("");
-    const trs = rows.map(r => {
-      const tds = columns.map(c => `<td>${this.format_cell(c, r[c])}</td>`).join("");
-      return `<tr>${tds}</tr>`;
-    }).join("");
+    const ths = columns
+      .map((c) => `<th scope="col">${frappe.utils.escape_html(labels[c] || c)}</th>`)
+      .join("");
+    const trs = rows
+      .map((r) => {
+        const tds = columns.map((c) => `<td>${this.format_cell(c, r[c])}</td>`).join("");
+        return `<tr>${tds}</tr>`;
+      })
+      .join("");
 
     return `
       <div class="table-responsive">
-        <table class="table table-bordered table-sm">
+        <table class="table table-bordered table-sm" role="table">
           <thead><tr>${ths}</tr></thead>
           <tbody>${trs || `<tr><td colspan="${columns.length}" class="text-muted">${__("Sin datos")}</td></tr>`}</tbody>
         </table>
@@ -405,14 +566,32 @@ retail_tools.ItemInspector = class ItemInspector {
     `;
   }
 
+  /**
+   * Format a cell value based on column type
+   * @param {string} col - Column name
+   * @param {*} val - Cell value
+   * @returns {string} Formatted HTML string
+   */
   format_cell(col, val) {
     if (val === null || val === undefined) return "-";
 
-    const numCols = ["actual_qty", "reserved_qty", "projected_qty", "qty", "rate", "amount", "valuation_rate", "stock_value_est", "price_list_rate"];
+    const numCols = [
+      "actual_qty",
+      "reserved_qty",
+      "projected_qty",
+      "qty",
+      "rate",
+      "amount",
+      "valuation_rate",
+      "stock_value_est",
+      "price_list_rate",
+    ];
+
     if (numCols.includes(col)) {
       const isCurrency = ["rate", "amount", "valuation_rate", "stock_value_est", "price_list_rate"].includes(col);
       return frappe.format(flt(val) || 0, { fieldtype: isCurrency ? "Currency" : "Float" });
     }
+
     return frappe.utils.escape_html(String(val));
   }
 };

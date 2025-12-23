@@ -1,29 +1,82 @@
+"""
+Item Inspector - Backend API
+
+Provides API endpoints for the Item Inspector page to lookup items
+by barcode and retrieve comprehensive item snapshots including:
+- Stock levels by warehouse
+- Price history by price list
+- Recent sales and purchase transactions
+"""
+
+from functools import lru_cache
+
 import frappe
 from frappe import _
 
 
+@lru_cache(maxsize=64)
 def _has_doctype(doctype: str) -> bool:
+    """
+    Check if a DocType exists in the system.
+
+    Args:
+        doctype: Name of the DocType to check
+
+    Returns:
+        True if the DocType exists, False otherwise
+    """
     return bool(frappe.db.exists("DocType", doctype))
 
 
+@lru_cache(maxsize=128)
 def _has_field(doctype: str, fieldname: str) -> bool:
+    """
+    Check if a field exists in a DocType.
+
+    Args:
+        doctype: Name of the DocType
+        fieldname: Name of the field to check
+
+    Returns:
+        True if the field exists in the DocType, False otherwise
+    """
     try:
-        return frappe.get_meta(doctype).has_field(fieldname)
-    except Exception:
+        meta = frappe.get_meta(doctype)
+        return meta.has_field(fieldname) if meta else False
+    except frappe.DoesNotExistError:
+        return False
+    except AttributeError:
         return False
 
 
 @frappe.whitelist()
-def resolve_item_from_barcode(barcode: str):
-    """Return {item_code} or {matches:[...]} for a barcode string."""
+def resolve_item_from_barcode(barcode: str) -> dict:
+    """
+    Resolve an item code from a barcode string.
+
+    Searches in multiple sources:
+    1. Item Barcode child table (standard in v14/v15)
+    2. Item.barcode field (legacy setups)
+    3. Direct item_code match
+
+    Args:
+        barcode: The barcode string to search for
+
+    Returns:
+        dict with keys:
+        - ok (bool): Whether the operation succeeded
+        - item_code (str): The resolved item code (if single match)
+        - matches (list): List of matching items (if multiple matches)
+        - message (str): Error message (if failed)
+    """
     barcode = (barcode or "").strip()
     if not barcode:
         return {"ok": False, "message": _("Empty barcode")}
 
+    matches: list[str] = []
+
     # 1) Item Barcode child table (v14/v15 usually)
-    matches = []
     if _has_doctype("Item Barcode"):
-        # Item Barcode is a child table; "parent" points to Item.name (item_code)
         rows = frappe.get_all(
             "Item Barcode",
             filters={"barcode": barcode},
@@ -42,7 +95,7 @@ def resolve_item_from_barcode(barcode: str):
     if not matches and frappe.db.exists("Item", barcode):
         matches.append(barcode)
 
-    # Normalize unique
+    # Normalize to unique values preserving order
     matches = list(dict.fromkeys(matches))
 
     if not matches:
@@ -62,12 +115,55 @@ def resolve_item_from_barcode(barcode: str):
 
 
 @frappe.whitelist()
-def get_item_snapshot(item_code: str):
-    """Return a dashboard-like snapshot for the item."""
+def get_item_snapshot(item_code: str) -> dict:
+    """
+    Return a comprehensive dashboard-like snapshot for an item.
+
+    Includes:
+    - Basic item information (name, group, brand, UoM, etc.)
+    - Barcodes associated with the item
+    - Stock levels by warehouse with valuation rates
+    - Price history by price list
+    - Recent sales transactions (last 10)
+    - Recent purchase transactions (last 10)
+
+    Args:
+        item_code: The item code to get snapshot for
+
+    Returns:
+        dict with keys:
+        - ok (bool): Whether the operation succeeded
+        - item (dict): Item master data
+        - barcodes (list): List of barcode strings
+        - bins (list): Stock by warehouse with valuation
+        - price_history (list): Item prices by list
+        - recent_sales (list): Last 10 sales
+        - recent_purchases (list): Last 10 purchases
+    """
     item_code = (item_code or "").strip()
     if not item_code or not frappe.db.exists("Item", item_code):
         frappe.throw(_("Item not found: {0}").format(item_code))
 
+    item = _get_item_data(item_code)
+    barcodes = _get_barcodes(item_code)
+    bins = _get_stock_by_warehouse(item_code)
+    price_rows = _get_price_history(item_code)
+    recent_sales = _get_recent_sales(item_code)
+    recent_purchases = _get_recent_purchases(item_code)
+
+    return {
+        "ok": True,
+        "item": item,
+        "barcodes": barcodes,
+        "bins": bins,
+        "price_history": price_rows,
+        "recent_sales": recent_sales,
+        "recent_purchases": recent_purchases,
+    }
+
+
+def _get_item_data(item_code: str) -> dict:
+    """Get basic item master data."""
     item_fields = [
         "name as item_code",
         "item_name",
@@ -79,27 +175,38 @@ def get_item_snapshot(item_code: str):
         "disabled",
         "is_stock_item",
     ]
+
     if _has_field("Item", "standard_rate"):
-        item_fields.append("standard_rate")  # sometimes used as standard buying rate
+        item_fields.append("standard_rate")
     if _has_field("Item", "last_purchase_rate"):
         item_fields.append("last_purchase_rate")
 
-    item = frappe.db.get_value("Item", item_code, item_fields, as_dict=True)
+    return frappe.db.get_value("Item", item_code, item_fields, as_dict=True) or {}
 
-    # Barcodes
-    barcodes = []
-    if _has_doctype("Item Barcode"):
-        barcodes = frappe.get_all(
-            "Item Barcode",
-            filters={"parent": item_code},
-            fields=["barcode"],
-            order_by="idx asc",
-            limit_page_length=50,
-        )
-        barcodes = [b["barcode"] for b in barcodes if b.get("barcode")]
 
-    # Stock by warehouse (Bin)
+def _get_barcodes(item_code: str) -> list[str]:
+    """Get all barcodes associated with an item."""
+    if not _has_doctype("Item Barcode"):
+        return []
+
+    barcodes = frappe.get_all(
+        "Item Barcode",
+        filters={"parent": item_code},
+        fields=["barcode"],
+        order_by="idx asc",
+        limit_page_length=50,
+    )
+    return [b["barcode"] for b in barcodes if b.get("barcode")]
+
+
+def _get_stock_by_warehouse(item_code: str) -> list[dict]:
+    """
+    Get stock levels by warehouse with valuation rates.
+
+    Uses ROW_NUMBER() for efficient latest valuation lookup.
+    """
     bin_fields = ["warehouse", "actual_qty", "projected_qty", "reserved_qty", "ordered_qty"]
+
     if _has_field("Bin", "indented_qty"):
         bin_fields.append("indented_qty")
     if _has_field("Bin", "planned_qty"):
@@ -113,79 +220,8 @@ def get_item_snapshot(item_code: str):
         limit_page_length=500,
     )
 
-    # Latest valuation_rate by warehouse from Stock Ledger Entry
-    valuation_by_wh = {}
-    if _has_doctype("Stock Ledger Entry"):
-        # pick last SLE per warehouse (safe + fast enough)
-        rows = frappe.db.sql(
-            """
-            SELECT sle.warehouse, sle.valuation_rate
-            FROM `tabStock Ledger Entry` sle
-            INNER JOIN (
-                SELECT warehouse,
-                       MAX(CONCAT(posting_date, ' ', TIME_FORMAT(posting_time, '%%H:%%i:%%s'), ' ', creation)) AS max_key
-                FROM `tabStock Ledger Entry`
-                WHERE item_code=%s AND is_cancelled=0 AND warehouse IS NOT NULL
-                GROUP BY warehouse
-            ) latest
-              ON latest.warehouse = sle.warehouse
-             AND CONCAT(sle.posting_date, ' ', TIME_FORMAT(sle.posting_time, '%%H:%%i:%%s'), ' ', sle.creation) = latest.max_key
-            WHERE sle.item_code=%s AND sle.is_cancelled=0
-            """,
-            (item_code, item_code),
-            as_dict=True,
-        )
-        valuation_by_wh = {r["warehouse"]: (r.get("valuation_rate") or 0) for r in rows}
-
-    # Price history (Item Price) - by price_list
-    ip_doctype = "Item Price"
-    price_rows = []
-    if _has_doctype(ip_doctype):
-        ip_fields = ["name", "price_list", "price_list_rate", "currency", "modified", "creation"]
-        if _has_field(ip_doctype, "valid_from"):
-            ip_fields.append("valid_from")
-        if _has_field(ip_doctype, "valid_upto"):
-            ip_fields.append("valid_upto")
-
-        price_rows = frappe.get_all(
-            ip_doctype,
-            filters={"item_code": item_code},
-            fields=ip_fields,
-            order_by="COALESCE(valid_from, creation) asc",
-            limit_page_length=1000,
-        )
-
-    # Recent sales (Sales Invoice Item)
-    recent_sales = []
-    if _has_doctype("Sales Invoice Item") and _has_doctype("Sales Invoice"):
-        recent_sales = frappe.db.sql(
-            """
-            SELECT sii.parent as sales_invoice, si.posting_date, sii.qty, sii.rate, sii.amount, si.customer
-            FROM `tabSales Invoice Item` sii
-            INNER JOIN `tabSales Invoice` si ON si.name = sii.parent
-            WHERE sii.item_code=%s AND si.docstatus=1
-            ORDER BY si.posting_date DESC, si.modified DESC
-            LIMIT 10
-            """,
-            (item_code,),
-            as_dict=True,
-        )
-
-    # Recent purchases (Purchase Invoice Item)
-    recent_purchases = []
-    if _has_doctype("Purchase Invoice Item") and _has_doctype("Purchase Invoice"):
-        recent_purchases = frappe.db.sql(
-            """
-            SELECT pii.parent as purchase_invoice, pi.posting_date, pii.qty, pii.rate, pii.amount, pi.supplier
-            FROM `tabPurchase Invoice Item` pii
-            INNER JOIN `tabPurchase Invoice` pi ON pi.name = pii.parent
-            WHERE pii.item_code=%s AND pi.docstatus=1
-            ORDER BY pi.posting_date DESC, pi.modified DESC
-            LIMIT 10
-            """,
-            (item_code,),
-            as_dict=True,
-        )
+    # Get latest valuation_rate by warehouse using ROW_NUMBER (optimized)
+    valuation_by_wh = _get_valuation_rates(item_code)
 
     # Enrich bins with valuation + stock_value
     for b in bins:
@@ -193,12 +229,119 @@ def get_item_snapshot(item_code: str):
         b["valuation_rate"] = vr
         b["stock_value_est"] = (b.get("actual_qty") or 0) * vr
 
-    return {
-        "ok": True,
-        "item": item,
-        "barcodes": barcodes,
-        "bins": bins,
-        "price_history": price_rows,
-        "recent_sales": recent_sales,
-        "recent_purchases": recent_purchases,
-    }
+    return bins
+
+
+def _get_valuation_rates(item_code: str) -> dict[str, float]:
+    """
+    Get latest valuation rate by warehouse using optimized SQL with ROW_NUMBER().
+
+    This is more efficient than the previous CONCAT-based approach
+    as it uses window functions to get the latest entry per warehouse.
+
+    Args:
+        item_code: The item code to get valuation rates for
+
+    Returns:
+        dict mapping warehouse name to valuation rate
+    """
+    if not _has_doctype("Stock Ledger Entry"):
+        return {}
+
+    # Using ROW_NUMBER() for better performance
+    rows = frappe.db.sql(
+        """
+        SELECT warehouse, valuation_rate
+        FROM (
+            SELECT
+                warehouse,
+                valuation_rate,
+                ROW_NUMBER() OVER (
+                    PARTITION BY warehouse
+                    ORDER BY posting_date DESC, posting_time DESC, creation DESC
+                ) as rn
+            FROM `tabStock Ledger Entry`
+            WHERE item_code = %s
+              AND is_cancelled = 0
+              AND warehouse IS NOT NULL
+        ) ranked
+        WHERE rn = 1
+        """,
+        (item_code,),
+        as_dict=True,
+    )
+
+    return {r["warehouse"]: (r.get("valuation_rate") or 0) for r in rows}
+
+
+def _get_price_history(item_code: str) -> list[dict]:
+    """Get price history from Item Price doctype."""
+    ip_doctype = "Item Price"
+
+    if not _has_doctype(ip_doctype):
+        return []
+
+    ip_fields = ["name", "price_list", "price_list_rate", "currency", "modified", "creation"]
+
+    if _has_field(ip_doctype, "valid_from"):
+        ip_fields.append("valid_from")
+    if _has_field(ip_doctype, "valid_upto"):
+        ip_fields.append("valid_upto")
+
+    return frappe.get_all(
+        ip_doctype,
+        filters={"item_code": item_code},
+        fields=ip_fields,
+        order_by="COALESCE(valid_from, creation) asc",
+        limit_page_length=1000,
+    )
+
+
+def _get_recent_sales(item_code: str, limit: int = 10) -> list[dict]:
+    """Get recent sales invoice items for the item."""
+    if not (_has_doctype("Sales Invoice Item") and _has_doctype("Sales Invoice")):
+        return []
+
+    return frappe.db.sql(
+        """
+        SELECT
+            sii.parent as sales_invoice,
+            si.posting_date,
+            sii.qty,
+            sii.rate,
+            sii.amount,
+            si.customer
+        FROM `tabSales Invoice Item` sii
+        INNER JOIN `tabSales Invoice` si ON si.name = sii.parent
+        WHERE sii.item_code = %s AND si.docstatus = 1
+        ORDER BY si.posting_date DESC, si.modified DESC
+        LIMIT %s
+        """,
+        (item_code, limit),
+        as_dict=True,
+    )
+
+
+def _get_recent_purchases(item_code: str, limit: int = 10) -> list[dict]:
+    """Get recent purchase invoice items for the item."""
+    if not (_has_doctype("Purchase Invoice Item") and _has_doctype("Purchase Invoice")):
+        return []
+
+    return frappe.db.sql(
+        """
+        SELECT
+            pii.parent as purchase_invoice,
+            pi.posting_date,
+            pii.qty,
+            pii.rate,
+            pii.amount,
+            pi.supplier
+        FROM `tabPurchase Invoice Item` pii
+        INNER JOIN `tabPurchase Invoice` pi ON pi.name = pii.parent
+        WHERE pii.item_code = %s AND pi.docstatus = 1
+        ORDER BY pi.posting_date DESC, pi.modified DESC
+        LIMIT %s
+        """,
+        (item_code, limit),
+        as_dict=True,
+    )
