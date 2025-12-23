@@ -1,0 +1,242 @@
+/* =========================================================
+   ITEM INSPECTOR - Responsive (Mobile-first) + Fixes
+   - Evita overflow en móvil (min-width:0, word-break, etc.)
+   - Oculta toolbar superior de Frappe en móviles (porque rompe el layout)
+   - (Opcional) Soporte para barra sticky móvil si la agregaste en JS
+   ========================================================= */
+
+/* --- Frappe page header: en móvil suele verse mal con add_field --- */
+@media (max-width: 575.98px){
+  /* Oculta solo los fields del header, NO las acciones */
+  .page-head .page-form{
+    display: none !important;
+  }
+
+  /* Asegura que las acciones sigan visibles */
+  .page-head .page-actions{
+    display: flex !important;
+  }
+
+  .page-head .page-title{
+    font-size: 16px;
+    line-height: 1.2;
+  }
+}
+
+/* (Opcional) Barra sticky móvil si la agregaste en JS */
+.item-inspector .ii-mobile-bar{
+  display:none;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  padding: 10px;
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 14px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.06);
+  margin-bottom: 12px;
+}
+
+.item-inspector .ii-mobile-row{
+  display:flex;
+  gap: 8px;
+  align-items:center;
+}
+
+.item-inspector .ii-mobile-row + .ii-mobile-row{
+  margin-top: 8px;
+}
+
+.item-inspector .ii-mobile-bar input.form-control{
+  height: 44px;
+  border-radius: 12px;
+}
+
+.item-inspector .ii-mobile-bar .btn{
+  height: 44px;
+  border-radius: 12px;
+  font-weight: 700;
+  padding: 0 14px;
+}
+
+@media (max-width: 575.98px){
+  .item-inspector .ii-mobile-bar{
+    display:block;
+  }
+}
+
+/* =========================
+   Layout / Grid
+   ========================= */
+.item-inspector{
+  max-width: 100%;
+}
+
+.item-inspector .ii-grid{
+  display:grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+/* Cards */
+.item-inspector .ii-card{
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: 0 1px 2px rgba(0,0,0,.04);
+  overflow: hidden;          /* evita que algo se “salga” de la card */
+}
+
+.item-inspector .ii-card-title{
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+/* =========================
+   Header
+   ========================= */
+.item-inspector .ii-header{
+  display:flex;
+  gap: 12px;
+  align-items:flex-start;
+  flex-wrap: wrap;
+}
+
+.item-inspector .ii-image{
+  width: 72px;
+  height: 72px;
+  flex: 0 0 auto;
+}
+
+.item-inspector .ii-img-fallback{
+  width:72px;height:72px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size: 28px;
+  background:#f3f4f6;
+}
+
+.item-inspector .ii-main{
+  min-width: 0;              /* CLAVE: evita overflow horizontal */
+  flex: 1 1 220px;
+}
+
+.item-inspector .ii-title .h4{
+  margin: 0;
+  line-height: 1.15;
+}
+
+.item-inspector .ii-meta{
+  word-break: break-word;    /* para texto largo */
+  overflow-wrap: anywhere;
+}
+
+/* Tags */
+.item-inspector .ii-tags{
+  margin-top: 6px;
+}
+.item-inspector .ii-tags .badge{
+  display:inline-block;
+  margin-bottom: 6px;
+  max-width: 100%;
+  white-space: normal;       /* permite que el badge rompa línea */
+}
+
+/* =========================
+   Actions: grandes y fáciles de tocar
+   ========================= */
+.item-inspector .ii-actions-grid{
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.item-inspector .ii-actions-grid .btn{
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-weight: 700;
+}
+
+/* =========================
+   KPI cards
+   ========================= */
+.item-inspector .ii-kpis{
+  display:grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.item-inspector .ii-kpi{
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 12px;
+  padding: 10px;
+  background:#fcfcfd;
+  min-width: 0;
+}
+.item-inspector .ii-kpi-label{
+  font-size: 12px;
+  color: #6b7280;
+}
+.item-inspector .ii-kpi-value{
+  font-size: 15px;
+  font-weight: 700;
+  margin-top: 4px;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* =========================
+   Tablas: scroll horizontal suave en móvil
+   ========================= */
+.item-inspector .table-responsive{
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.item-inspector table.table{
+  margin-bottom: 0;
+}
+
+.item-inspector table.table td,
+.item-inspector table.table th{
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+/* =========================
+   Chart
+   ========================= */
+.item-inspector .ii-chart,
+.item-inspector #ii-price-chart{
+  width: 100%;
+  min-height: 260px;        /* un poco más alto para móvil */
+}
+
+.item-inspector #ii-price-chart svg{
+  max-width: 100% !important;
+}
+
+/* -------- Breakpoints -------- */
+
+/* >= 576px */
+@media (min-width: 576px){
+  .item-inspector .ii-kpis{
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .item-inspector .ii-actions-grid{
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* >= 992px: 2 columnas */
+@media (min-width: 992px){
+  .item-inspector .ii-grid{
+    grid-template-columns: 1fr 1fr;
+  }
+  .item-inspector .ii-overview{
+    grid-column: 1 / -1;
+  }
+  .item-inspector .ii-kpis{
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}

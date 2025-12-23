@@ -1,0 +1,32 @@
+{
+ "content": null,
+ "creation": "2025-12-23 15:43:13.842437",
+ "docstatus": 0,
+ "doctype": "Page",
+ "idx": 0,
+ "modified": "2025-12-23 15:44:27.380010",
+ "modified_by": "Administrator",
+ "module": "Retail Tools",
+ "name": "item-inspector-",
+ "owner": "Administrator",
+ "page_name": "item-inspector-",
+ "roles": [
+  {
+   "role": "Sales User"
+  },
+  {
+   "role": "Sales Manager"
+  },
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Administrator"
+  }
+ ],
+ "script": null,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0,
+ "title": "Item Inspector"
+}
