@@ -702,6 +702,16 @@ retail_tools.ItemInspector = class ItemInspector {
       return `<a href="/app/${frappe.router.slug(doctype)}/${encodeURIComponent(val)}" class="ii-doc-link">${escaped}</a>`;
     }
 
+    // Format modified datetime to show only date and hour:minute
+    if (col === "modified" && val) {
+      const str = String(val);
+      // Extract date and time (HH:MM), remove seconds
+      const match = str.match(/^(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2})/);
+      if (match) {
+        return `${match[1]} ${match[2]}`;
+      }
+    }
+
     return frappe.utils.escape_html(String(val));
   }
 };
