@@ -306,7 +306,11 @@ def _get_price_history(item_code: str) -> list[dict]:
 
 
 def _get_recent_sales(item_code: str, limit: int = 10) -> list[dict]:
-    """Get recent sales invoice items for the item."""
+    """Get recent sales invoice items for the item.
+
+    Uses stock_qty for proper UoM conversion and base amounts
+    for multi-currency support.
+    """
     if not (_has_doctype("Sales Invoice Item") and _has_doctype("Sales Invoice")):
         return []
 
@@ -315,10 +319,11 @@ def _get_recent_sales(item_code: str, limit: int = 10) -> list[dict]:
         SELECT
             sii.parent as sales_invoice,
             si.posting_date,
-            sii.qty,
-            sii.rate,
-            sii.amount,
-            si.customer
+            sii.stock_qty as qty,
+            (sii.rate * si.conversion_rate) as rate,
+            sii.base_net_amount as amount,
+            si.customer,
+            si.currency
         FROM `tabSales Invoice Item` sii
         INNER JOIN `tabSales Invoice` si ON si.name = sii.parent
         WHERE sii.item_code = %s AND si.docstatus = 1
@@ -331,7 +336,11 @@ def _get_recent_sales(item_code: str, limit: int = 10) -> list[dict]:
 
 
 def _get_recent_purchases(item_code: str, limit: int = 10) -> list[dict]:
-    """Get recent purchase invoice items for the item."""
+    """Get recent purchase invoice items for the item.
+
+    Uses stock_uom_rate for proper UoM conversion and base amounts
+    for multi-currency support.
+    """
     if not (_has_doctype("Purchase Invoice Item") and _has_doctype("Purchase Invoice")):
         return []
 
@@ -340,10 +349,11 @@ def _get_recent_purchases(item_code: str, limit: int = 10) -> list[dict]:
         SELECT
             pii.parent as purchase_invoice,
             pi.posting_date,
-            pii.qty,
-            pii.rate,
-            pii.amount,
-            pi.supplier
+            pii.stock_qty as qty,
+            (pii.stock_uom_rate * pi.conversion_rate) as rate,
+            pii.base_net_amount as amount,
+            pi.supplier,
+            pi.currency
         FROM `tabPurchase Invoice Item` pii
         INNER JOIN `tabPurchase Invoice` pi ON pi.name = pii.parent
         WHERE pii.item_code = %s AND pi.docstatus = 1
