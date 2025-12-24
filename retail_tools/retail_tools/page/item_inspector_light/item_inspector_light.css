@@ -1,0 +1,275 @@
+/* =========================================================
+   ITEM INSPECTOR LIGHT - Responsive (Mobile-first) + Dark Mode
+   Simplified version with essential styles
+   ========================================================= */
+
+/* =========================
+   CSS Custom Properties (Dark Mode Support)
+   ========================= */
+:root {
+    --ii-card-bg: var(--card-bg, #ffffff);
+    --ii-card-border: var(--border-color, #e5e7eb);
+    --ii-card-shadow: rgba(0, 0, 0, 0.04);
+    --ii-text-primary: var(--text-color, #1f2937);
+    --ii-text-muted: var(--text-muted, #6b7280);
+    --ii-kpi-bg: var(--control-bg, #fcfcfd);
+    --ii-fallback-bg: var(--bg-color, #f3f4f6);
+    --ii-badge-bg: var(--subtle-bg, #e5e7eb);
+    --ii-badge-text: var(--text-color, #374151);
+}
+
+/* Dark mode overrides */
+[data-theme="dark"],
+.dark {
+    --ii-card-bg: var(--card-bg, #1f2937);
+    --ii-card-border: var(--border-color, #374151);
+    --ii-card-shadow: rgba(0, 0, 0, 0.2);
+    --ii-text-primary: var(--text-color, #f9fafb);
+    --ii-text-muted: var(--text-muted, #9ca3af);
+    --ii-kpi-bg: var(--control-bg, #374151);
+    --ii-fallback-bg: var(--bg-color, #374151);
+    --ii-badge-bg: var(--subtle-bg, #4b5563);
+    --ii-badge-text: var(--text-color, #e5e7eb);
+}
+
+/* =========================
+   Layout / Grid
+   ========================= */
+.item-inspector-light {
+    max-width: 100%;
+    color: var(--ii-text-primary);
+}
+
+.item-inspector-light .ii-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+}
+
+/* =========================
+   Cards
+   ========================= */
+.item-inspector-light .ii-card {
+    background: var(--ii-card-bg);
+    border: 1px solid var(--ii-card-border);
+    border-radius: 14px;
+    padding: 14px;
+    box-shadow: 0 1px 2px var(--ii-card-shadow);
+    overflow: hidden;
+}
+
+.item-inspector-light .ii-card-title {
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: var(--ii-text-primary);
+}
+
+/* =========================
+   Header
+   ========================= */
+.item-inspector-light .ii-header {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+}
+
+.item-inspector-light .ii-image {
+    width: 72px;
+    height: 72px;
+    flex: 0 0 auto;
+}
+
+.item-inspector-light .ii-img-fallback {
+    width: 72px;
+    height: 72px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    background: var(--ii-fallback-bg);
+    color: var(--ii-text-muted);
+}
+
+.item-inspector-light .ii-main {
+    min-width: 0;
+    flex: 1 1 220px;
+}
+
+.item-inspector-light .ii-title .h4 {
+    margin: 0;
+    line-height: 1.15;
+    color: var(--ii-text-primary);
+}
+
+.item-inspector-light .ii-title .text-muted {
+    color: var(--ii-text-muted);
+}
+
+.item-inspector-light .ii-meta {
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    color: var(--ii-text-muted);
+}
+
+.item-inspector-light .ii-meta b {
+    color: var(--ii-text-primary);
+}
+
+/* =========================
+   Tags / Badges
+   ========================= */
+.item-inspector-light .ii-tags {
+    margin-top: 6px;
+}
+
+.item-inspector-light .ii-tags .badge {
+    display: inline-block;
+    margin-bottom: 6px;
+    max-width: 100%;
+    white-space: normal;
+    background: var(--ii-badge-bg);
+    color: var(--ii-badge-text);
+    border: none;
+}
+
+/* =========================
+   KPI Cards
+   ========================= */
+.item-inspector-light .ii-kpis {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+}
+
+.item-inspector-light .ii-kpi {
+    border: 1px solid var(--ii-card-border);
+    border-radius: 12px;
+    padding: 10px;
+    background: var(--ii-kpi-bg);
+    min-width: 0;
+}
+
+.item-inspector-light .ii-kpi-label {
+    font-size: 12px;
+    color: var(--ii-text-muted);
+}
+
+.item-inspector-light .ii-kpi-value {
+    font-size: 15px;
+    font-weight: 700;
+    margin-top: 4px;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    color: var(--ii-text-primary);
+}
+
+/* =========================
+   Tables
+   ========================= */
+.item-inspector-light .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.item-inspector-light table.table {
+    margin-bottom: 0;
+    background: var(--ii-card-bg);
+    color: var(--ii-text-primary);
+}
+
+.item-inspector-light table.table thead {
+    background: var(--ii-kpi-bg);
+}
+
+.item-inspector-light table.table th {
+    color: var(--ii-text-primary);
+    font-weight: 600;
+    border-color: var(--ii-card-border);
+}
+
+.item-inspector-light table.table td,
+.item-inspector-light table.table th {
+    white-space: nowrap;
+    vertical-align: middle;
+    border-color: var(--ii-card-border);
+}
+
+.item-inspector-light table.table tbody tr:hover {
+    background: var(--ii-fallback-bg);
+}
+
+/* =========================
+   Chart
+   ========================= */
+.item-inspector-light .ii-chart,
+.item-inspector-light #ii-price-chart-light {
+    width: 100%;
+    min-height: 260px;
+}
+
+.item-inspector-light #ii-price-chart-light svg {
+    max-width: 100% !important;
+}
+
+/* Chart text colors for dark mode */
+[data-theme="dark"] .item-inspector-light .ii-chart text,
+.dark .item-inspector-light .ii-chart text {
+    fill: var(--ii-text-muted) !important;
+}
+
+/* =========================
+   Responsive Breakpoints
+   ========================= */
+
+/* >= 576px */
+@media (min-width: 576px) {
+    .item-inspector-light .ii-kpis {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+/* >= 992px: 2 columns */
+@media (min-width: 992px) {
+    .item-inspector-light .ii-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .item-inspector-light .ii-overview {
+        grid-column: 1 / -1;
+    }
+
+    .item-inspector-light .ii-kpis {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+/* =========================
+   Focus States (Accessibility)
+   ========================= */
+.item-inspector-light select:focus,
+.item-inspector-light input:focus {
+    outline: 2px solid var(--primary-color, #2490ef);
+    outline-offset: 2px;
+}
+
+.item-inspector-light select:focus:not(:focus-visible),
+.item-inspector-light input:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* =========================
+   Print Styles
+   ========================= */
+@media print {
+    .item-inspector-light .ii-price-controls {
+        display: none !important;
+    }
+
+    .item-inspector-light .ii-card {
+        break-inside: avoid;
+        box-shadow: none;
+        border: 1px solid #ccc;
+    }
+}
