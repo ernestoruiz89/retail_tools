@@ -421,7 +421,7 @@ retail_tools.ItemInspector = class ItemInspector {
         <div class="ii-kpi-value">${sell_price > 0 ? frappe.format(sell_price, { fieldtype: "Currency" }) : "-"}</div>
       </div>
       <div class="ii-kpi" role="listitem">
-        <div class="ii-kpi-label">${__("Ventas 30 días")} <small class="text-muted" style="white-space:nowrap">(${flt(salesLast30.qty)} ${__("unidades")})</small></div>
+        <div class="ii-kpi-label">${__("Ventas 30 días")} <small class="text-muted" style="white-space:nowrap">(${flt(salesLast30.qty)} ${__("unidades")} / ${salesLast30.count} ${__("facturas")})</small></div>
         <div class="ii-kpi-value">${frappe.format(salesLast30.amount, { fieldtype: "Currency" })}</div>
       </div>
       <div class="ii-kpi" role="listitem" id="ii-kpi-margin">
