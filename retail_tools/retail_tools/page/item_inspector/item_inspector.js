@@ -316,7 +316,7 @@ retail_tools.ItemInspector = class ItemInspector {
         &nbsp;•&nbsp;
         ${__("UoM")}: <b>${frappe.utils.escape_html(item.stock_uom || "-")}</b>
       </div>
-      <div class="mt-1">${frappe.utils.escape_html((item.description || "").slice(0, 160))}</div>
+      <div class="mt-1">${frappe.utils.escape_html(frappe.utils.html2text(item.description || "").slice(0, 160))}</div>
     `);
 
     const tags = [];
@@ -587,9 +587,22 @@ retail_tools.ItemInspector = class ItemInspector {
       "price_list_rate",
     ];
 
+    // Document link columns - map column name to DocType
+    const docLinkCols = {
+      sales_invoice: "Sales Invoice",
+      purchase_invoice: "Purchase Invoice",
+    };
+
     if (numCols.includes(col)) {
       const isCurrency = ["rate", "amount", "valuation_rate", "stock_value_est", "price_list_rate"].includes(col);
       return frappe.format(flt(val) || 0, { fieldtype: isCurrency ? "Currency" : "Float" });
+    }
+
+    // Render document links as clickable anchors
+    if (docLinkCols[col] && val) {
+      const doctype = docLinkCols[col];
+      const escaped = frappe.utils.escape_html(String(val));
+      return `<a href="/app/${frappe.router.slug(doctype)}/${encodeURIComponent(val)}" class="ii-doc-link">${escaped}</a>`;
     }
 
     return frappe.utils.escape_html(String(val));
