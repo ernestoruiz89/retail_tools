@@ -435,12 +435,12 @@ retail_tools.ItemInspector = class ItemInspector {
       <div class="ii-kpi" role="listitem">
         <div class="ii-kpi-label">${__("Última venta")}${last_sale ? ` (${last_sale.posting_date})` : ""}</div>
         <div class="ii-kpi-value">${last_sale ? frappe.format(last_sale.amount, { fieldtype: "Currency" }) : "-"}</div>
-        ${last_sale ? `<div class="ii-kpi-detail text-muted" style="font-size:11px;margin-top:2px;white-space:nowrap">${flt(last_sale.qty)} ${__("unidades")} a ${frappe.format(last_sale.rate, { fieldtype: "Currency" })}</div>` : ""}
+        ${last_sale ? `<small class="text-muted">${flt(last_sale.qty)} ${__("unidades")} a ${format_currency(last_sale.rate)}</small>` : ""}
       </div>
       <div class="ii-kpi" role="listitem">
         <div class="ii-kpi-label">${__("Última compra")}${last_purchase ? ` (${last_purchase.posting_date})` : ""}</div>
         <div class="ii-kpi-value">${last_purchase ? frappe.format(last_purchase.amount, { fieldtype: "Currency" }) : "-"}</div>
-        ${last_purchase ? `<div class="ii-kpi-detail text-muted" style="font-size:11px;margin-top:2px;white-space:nowrap">${flt(last_purchase.qty)} ${__("unidades")} a ${frappe.format(last_purchase.rate, { fieldtype: "Currency" })}</div>` : ""}
+        ${last_purchase ? `<small class="text-muted">${flt(last_purchase.qty)} ${__("unidades")} a ${format_currency(last_purchase.rate)}</small>` : ""}
       </div>
     `);
 
