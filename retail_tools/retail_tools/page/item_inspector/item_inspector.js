@@ -409,7 +409,7 @@ retail_tools.ItemInspector = class ItemInspector {
         <div class="ii-kpi-label">${__("Valor estimado (stock)")}</div>
         <div class="ii-kpi-value">${frappe.format(total_value, { fieldtype: "Currency" })}</div>
       </div>
-      <div class="ii-kpi" role="listitem">
+      <div class="ii-kpi" role="listitem" id="ii-kpi-price">
         <div class="ii-kpi-label">${__("Precio actual")}${sellingPrice.price_list ? ` <small class="text-muted">(${frappe.utils.escape_html(sellingPrice.price_list)})</small>` : ""}</div>
         <div class="ii-kpi-value">${sell_price > 0 ? frappe.format(sell_price, { fieldtype: "Currency" }) : "-"}</div>
       </div>
@@ -417,7 +417,7 @@ retail_tools.ItemInspector = class ItemInspector {
         <div class="ii-kpi-label">${__("Ventas 30 días")}</div>
         <div class="ii-kpi-value">${frappe.format(salesLast30.qty, { fieldtype: "Float" })} <small class="text-muted">(${salesLast30.count} ${__("facturas")})</small></div>
       </div>
-      <div class="ii-kpi" role="listitem">
+      <div class="ii-kpi" role="listitem" id="ii-kpi-margin">
         <div class="ii-kpi-label">${__("Margen de utilidad")}</div>
         <div class="ii-kpi-value ${margin_class}">${sell_price > 0 ? margin_pct.toFixed(1) + "%" : "-"}</div>
       </div>
@@ -434,6 +434,10 @@ retail_tools.ItemInspector = class ItemInspector {
         <div class="ii-kpi-value">${last_purchase ? frappe.format(last_purchase.rate, { fieldtype: "Currency" }) : "-"}</div>
       </div>
     `);
+
+    // Store bins data for margin recalculation when price list changes
+    this.state.bins = bins;
+    this.state.avg_valuation = avg_valuation;
   }
 
   /**
@@ -521,8 +525,45 @@ retail_tools.ItemInspector = class ItemInspector {
     );
   }
 
+  /**
+   * Update price and margin KPIs based on selected price list
+   */
+  _update_price_kpi(priceRows, price_list) {
+    const $priceKpi = $("#ii-kpi-price");
+    const $marginKpi = $("#ii-kpi-margin");
+
+    if (!$priceKpi.length) return;
+
+    // Get the most recent price for this price list
+    const latestPrice = priceRows.length > 0 ? priceRows[priceRows.length - 1] : null;
+    const sell_price = latestPrice ? flt(latestPrice.price_list_rate) : 0;
+
+    // Update price KPI
+    $priceKpi.html(`
+      <div class="ii-kpi-label">${__("Precio actual")}${price_list ? ` <small class="text-muted">(${frappe.utils.escape_html(price_list)})</small>` : ""}</div>
+      <div class="ii-kpi-value">${sell_price > 0 ? frappe.format(sell_price, { fieldtype: "Currency" }) : "-"}</div>
+    `);
+
+    // Update margin KPI
+    const avg_valuation = this.state.avg_valuation || 0;
+    let margin_pct = 0;
+    let margin_class = "";
+    if (sell_price > 0 && avg_valuation > 0) {
+      margin_pct = ((sell_price - avg_valuation) / sell_price) * 100;
+      margin_class = margin_pct >= 20 ? "text-success" : margin_pct >= 10 ? "text-warning" : "text-danger";
+    }
+
+    $marginKpi.html(`
+      <div class="ii-kpi-label">${__("Margen de utilidad")}</div>
+      <div class="ii-kpi-value ${margin_class}">${sell_price > 0 ? margin_pct.toFixed(1) + "%" : "-"}</div>
+    `);
+  }
+
   render_price_section(prices, price_list) {
     const rows = (prices || []).filter((p) => p.price_list === price_list);
+
+    // Update the price and margin KPIs based on selected price list
+    this._update_price_kpi(rows, price_list);
 
     const toFloat = (x) => {
       if (x === null || x === undefined) return 0;
