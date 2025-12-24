@@ -321,13 +321,13 @@ retail_tools.ItemInspector = class ItemInspector {
 
     const tags = [];
     if (barcodes.length)
-      tags.push(`${__("Barcodes")}: ${barcodes.map(frappe.utils.escape_html).join(", ")}`);
-    if (item.disabled) tags.push(__("DESHABILITADO"));
-    if (!item.is_stock_item) tags.push(__("No es stock item"));
+      tags.push({ text: `${__("Barcodes")}: ${barcodes.map(frappe.utils.escape_html).join(", ")}`, color: "light" });
+    if (item.disabled) tags.push({ text: __("DESHABILITADO"), color: "danger" });
+    if (!item.is_stock_item) tags.push({ text: __("No es stock item"), color: "warning" });
 
     this.$tags.html(
       tags
-        .map((t) => `<span class="badge badge-light mr-1" role="listitem">${t}</span>`)
+        .map((t) => `<span class="badge badge-${t.color} mr-1" role="listitem">${t.text}</span>`)
         .join("")
     );
 
