@@ -573,9 +573,9 @@ retail_tools.ItemInspector = class ItemInspector {
       });
     }
 
-    // Price table
+    // Price table (limited to 10 most recent)
     this.$priceTable.html(
-      this.render_table(["valid_from", "price_list_rate", "currency", "modified"], rows, {
+      this.render_table(["valid_from", "price_list_rate", "currency", "modified"], rows.slice(-10).reverse(), {
         valid_from: __("Desde"),
         price_list_rate: __("Precio"),
         currency: __("Moneda"),
