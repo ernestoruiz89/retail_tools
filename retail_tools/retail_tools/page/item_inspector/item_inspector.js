@@ -414,8 +414,8 @@ retail_tools.ItemInspector = class ItemInspector {
         <div class="ii-kpi-value">${sell_price > 0 ? frappe.format(sell_price, { fieldtype: "Currency" }) : "-"}</div>
       </div>
       <div class="ii-kpi" role="listitem">
-        <div class="ii-kpi-label">${__("Ventas 30 días")}</div>
-        <div class="ii-kpi-value">${frappe.format(salesLast30.qty, { fieldtype: "Float" })} <small class="text-muted">(${salesLast30.count} ${__("facturas")})</small></div>
+        <div class="ii-kpi-label">${__("Ventas 30 días")} <small class="text-muted">(${frappe.format(salesLast30.qty, { fieldtype: "Float" })} ${__("unidades")})</small></div>
+        <div class="ii-kpi-value">${frappe.format(salesLast30.amount, { fieldtype: "Currency" })}</div>
       </div>
       <div class="ii-kpi" role="listitem" id="ii-kpi-margin">
         <div class="ii-kpi-label">${__("Margen de utilidad")}</div>

@@ -363,10 +363,10 @@ def _get_sales_last_30_days(item_code: str) -> dict:
         item_code: The item code to get sales data for
 
     Returns:
-        dict with qty (total quantity sold) and count (number of transactions)
+        dict with qty (total quantity sold), amount (total revenue), and count (number of transactions)
     """
     if not (_has_doctype("Sales Invoice Item") and _has_doctype("Sales Invoice")):
-        return {"qty": 0, "count": 0}
+        return {"qty": 0, "amount": 0, "count": 0}
 
     from frappe.utils import add_days, nowdate
 
@@ -376,6 +376,7 @@ def _get_sales_last_30_days(item_code: str) -> dict:
         """
         SELECT
             COALESCE(SUM(sii.qty), 0) as qty,
+            COALESCE(SUM(sii.amount), 0) as amount,
             COUNT(DISTINCT sii.parent) as count
         FROM `tabSales Invoice Item` sii
         INNER JOIN `tabSales Invoice` si ON si.name = sii.parent
@@ -388,8 +389,12 @@ def _get_sales_last_30_days(item_code: str) -> dict:
     )
 
     if result:
-        return {"qty": result[0].get("qty") or 0, "count": result[0].get("count") or 0}
-    return {"qty": 0, "count": 0}
+        return {
+            "qty": result[0].get("qty") or 0,
+            "amount": result[0].get("amount") or 0,
+            "count": result[0].get("count") or 0,
+        }
+    return {"qty": 0, "amount": 0, "count": 0}
 
 
 def _get_default_selling_price(item_code: str) -> dict:
