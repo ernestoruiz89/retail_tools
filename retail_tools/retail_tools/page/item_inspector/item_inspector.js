@@ -288,9 +288,10 @@ retail_tools.ItemInspector = class ItemInspector {
     const purchases = res.recent_purchases || [];
     const salesLast30 = res.sales_last_30_days || { qty: 0, count: 0 };
     const sellingPrice = res.selling_price || { price: 0 };
+    const daysSinceLastSale = res.days_since_last_sale;
 
-    this._render_header(item, barcodes);
-    this._render_kpis(bins, sales, purchases, salesLast30, sellingPrice);
+    this._render_header(item, barcodes, bins, daysSinceLastSale);
+    this._render_kpis(bins, sales, purchases, salesLast30, sellingPrice, daysSinceLastSale);
     this._render_stock_table(bins);
     this._render_price_section(prices);
     this._render_transaction_tables(sales, purchases);
@@ -299,7 +300,7 @@ retail_tools.ItemInspector = class ItemInspector {
   /**
    * Render the header section with item info
    */
-  _render_header(item, barcodes) {
+  _render_header(item, barcodes, bins, daysSinceLastSale) {
     const img = item.image
       ? `<img src="${encodeURI(item.image)}" alt="${frappe.utils.escape_html(item.item_name || "Item")}" style="width:72px;height:72px;object-fit:cover;border-radius:12px;" />`
       : `<div class="ii-img-fallback" aria-label="${__("Sin imagen")}">${(item.item_name || item.item_code || "?").slice(0, 1)}</div>`;
@@ -326,6 +327,18 @@ retail_tools.ItemInspector = class ItemInspector {
       tags.push({ text: `${__("Barcodes")}: ${barcodes.map(frappe.utils.escape_html).join(", ")}`, color: "light" });
     if (item.disabled) tags.push({ text: __("DESHABILITADO"), color: "danger" });
     if (!item.is_stock_item) tags.push({ text: __("No es stock item"), color: "warning" });
+
+    // Alert: Low stock (below reorder level)
+    const total_qty = bins.reduce((acc, b) => acc + (flt(b.actual_qty) || 0), 0);
+    const reorder_level = flt(item.reorder_level) || 0;
+    if (reorder_level > 0 && total_qty < reorder_level) {
+      tags.push({ text: `⚠️ ${__("Stock bajo")}`, color: "danger" });
+    }
+
+    // Alert: No sales in 60+ days
+    if (daysSinceLastSale !== null && daysSinceLastSale >= 60) {
+      tags.push({ text: `⏰ ${__("Sin ventas 60+ días")}`, color: "warning" });
+    }
 
     this.$tags.html(
       tags
@@ -364,7 +377,7 @@ retail_tools.ItemInspector = class ItemInspector {
   /**
    * Render KPI cards
    */
-  _render_kpis(bins, sales, purchases, salesLast30, sellingPrice) {
+  _render_kpis(bins, sales, purchases, salesLast30, sellingPrice, daysSinceLastSale) {
     const total_qty = bins.reduce((acc, b) => acc + (flt(b.actual_qty) || 0), 0);
     const total_value = bins.reduce((acc, b) => acc + (flt(b.stock_value_est) || 0), 0);
 
@@ -381,6 +394,12 @@ retail_tools.ItemInspector = class ItemInspector {
       margin_class = margin_pct >= 20 ? "text-success" : margin_pct >= 10 ? "text-warning" : "text-danger";
     }
 
+    // Days without movement color coding
+    let days_class = "";
+    if (daysSinceLastSale !== null) {
+      days_class = daysSinceLastSale >= 60 ? "text-danger" : daysSinceLastSale >= 30 ? "text-warning" : "text-success";
+    }
+
     this.$kpis.html(`
       <div class="ii-kpi" role="listitem">
         <div class="ii-kpi-label">${__("Existencia total")}</div>
@@ -391,12 +410,20 @@ retail_tools.ItemInspector = class ItemInspector {
         <div class="ii-kpi-value">${frappe.format(total_value, { fieldtype: "Currency" })}</div>
       </div>
       <div class="ii-kpi" role="listitem">
+        <div class="ii-kpi-label">${__("Precio actual")}${sellingPrice.price_list ? ` <small class="text-muted">(${frappe.utils.escape_html(sellingPrice.price_list)})</small>` : ""}</div>
+        <div class="ii-kpi-value">${sell_price > 0 ? frappe.format(sell_price, { fieldtype: "Currency" }) : "-"}</div>
+      </div>
+      <div class="ii-kpi" role="listitem">
         <div class="ii-kpi-label">${__("Ventas 30 días")}</div>
         <div class="ii-kpi-value">${frappe.format(salesLast30.qty, { fieldtype: "Float" })} <small class="text-muted">(${salesLast30.count} ${__("facturas")})</small></div>
       </div>
       <div class="ii-kpi" role="listitem">
         <div class="ii-kpi-label">${__("Margen de utilidad")}</div>
         <div class="ii-kpi-value ${margin_class}">${sell_price > 0 ? margin_pct.toFixed(1) + "%" : "-"}</div>
+      </div>
+      <div class="ii-kpi" role="listitem">
+        <div class="ii-kpi-label">${__("Días sin movimiento")}</div>
+        <div class="ii-kpi-value ${days_class}">${daysSinceLastSale !== null ? daysSinceLastSale : "-"}</div>
       </div>
       <div class="ii-kpi" role="listitem">
         <div class="ii-kpi-label">${__("Última venta")}${last_sale ? ` (${last_sale.posting_date})` : ""}</div>

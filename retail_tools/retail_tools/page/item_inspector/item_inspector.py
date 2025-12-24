@@ -152,6 +152,7 @@ def get_item_snapshot(item_code: str) -> dict:
     recent_purchases = _get_recent_purchases(item_code)
     sales_last_30_days = _get_sales_last_30_days(item_code)
     selling_price = _get_default_selling_price(item_code)
+    days_since_last_sale = _get_days_since_last_sale(item_code)
 
     return {
         "ok": True,
@@ -163,6 +164,7 @@ def get_item_snapshot(item_code: str) -> dict:
         "recent_purchases": recent_purchases,
         "sales_last_30_days": sales_last_30_days,
         "selling_price": selling_price,
+        "days_since_last_sale": days_since_last_sale,
     }
 
 
@@ -184,6 +186,8 @@ def _get_item_data(item_code: str) -> dict:
         item_fields.append("standard_rate")
     if _has_field("Item", "last_purchase_rate"):
         item_fields.append("last_purchase_rate")
+    if _has_field("Item", "reorder_level"):
+        item_fields.append("reorder_level")
 
     return frappe.db.get_value("Item", item_code, item_fields, as_dict=True) or {}
 
@@ -432,3 +436,36 @@ def _get_default_selling_price(item_code: str) -> dict:
         }
 
     return {"price": 0, "price_list": None, "currency": None}
+
+
+def _get_days_since_last_sale(item_code: str) -> int | None:
+    """
+    Get the number of days since the last sale of this item.
+
+    Args:
+        item_code: The item code to check
+
+    Returns:
+        Number of days since last sale, or None if never sold
+    """
+    if not (_has_doctype("Sales Invoice Item") and _has_doctype("Sales Invoice")):
+        return None
+
+    from frappe.utils import date_diff, nowdate
+
+    result = frappe.db.sql(
+        """
+        SELECT MAX(si.posting_date) as last_sale_date
+        FROM `tabSales Invoice Item` sii
+        INNER JOIN `tabSales Invoice` si ON si.name = sii.parent
+        WHERE sii.item_code = %s
+          AND si.docstatus = 1
+        """,
+        (item_code,),
+        as_dict=True,
+    )
+
+    if result and result[0].get("last_sale_date"):
+        return date_diff(nowdate(), result[0]["last_sale_date"])
+
+    return None
