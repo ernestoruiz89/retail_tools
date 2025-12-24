@@ -413,7 +413,7 @@ retail_tools.ItemInspector = class ItemInspector {
         <div class="ii-kpi-value">${frappe.format(total_qty, { fieldtype: "Float" })}</div>
       </div>
       <div class="ii-kpi" role="listitem">
-        <div class="ii-kpi-label">${__("Valor estimado (stock)")}</div>
+        <div class="ii-kpi-label">${__("Costo estimado (stock)")}</div>
         <div class="ii-kpi-value">${frappe.format(total_value, { fieldtype: "Currency" })}</div>
       </div>
       <div class="ii-kpi" role="listitem" id="ii-kpi-price">
