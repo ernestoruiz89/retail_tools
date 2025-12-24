@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"_9o9pLe5W2\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Retail Tools</span>\",\"col\":12}},{\"id\":\"14j_b1zio3\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Item Inspector\",\"col\":3}}]",
+ "content": "[{\"id\":\"_9o9pLe5W2\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Retail Tools</span>\",\"col\":12}},{\"id\":\"14j_b1zio3\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Item Inspector\",\"col\":3}},{\"id\":\"QLrM1zyHgi\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Item Inspector (Light)\",\"col\":3}}]",
  "creation": "2025-12-24 08:19:06.939869",
  "custom_blocks": [],
  "docstatus": 0,
@@ -13,7 +13,7 @@
  "is_hidden": 0,
  "label": "Retail Tools",
  "links": [],
- "modified": "2025-12-24 08:20:13.054491",
+ "modified": "2025-12-24 11:48:54.410609",
  "modified_by": "Administrator",
  "module": "Retail Tools",
  "name": "Retail Tools",
@@ -24,13 +24,20 @@
  "quick_lists": [],
  "restrict_to_domain": "",
  "roles": [],
- "sequence_id": 39.0,
+ "sequence_id": 22.0,
  "shortcuts": [
   {
    "color": "Grey",
    "doc_view": "List",
    "label": "Item Inspector",
    "link_to": "item-inspector",
+   "type": "Page"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Item Inspector (Light)",
+   "link_to": "item-inspector-light",
    "type": "Page"
   }
  ],
