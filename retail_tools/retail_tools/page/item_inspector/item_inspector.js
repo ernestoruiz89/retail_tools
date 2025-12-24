@@ -402,7 +402,7 @@ retail_tools.ItemInspector = class ItemInspector {
           actual_qty: __("Qty"),
           reserved_qty: __("Reservado"),
           projected_qty: __("Proyectado"),
-          valuation_rate: __("Costo (Valuation)"),
+          valuation_rate: __("Costo"),
           stock_value_est: __("Valor Est."),
         }
       )
