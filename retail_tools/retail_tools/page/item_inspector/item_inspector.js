@@ -361,8 +361,8 @@ retail_tools.ItemInspector = class ItemInspector {
     this.$actions.html(`
       <div class="ii-actions-grid">
         <button class="btn btn-sm btn-primary" data-open-item aria-label="${__("Abrir formulario de Item")}">${__("Abrir Item")}</button>
-        <button class="btn btn-sm btn-default" data-open-stock aria-label="${__("Ver reporte de Stock Balance")}">${__("Stock Balance")}</button>
-        <button class="btn btn-sm btn-default" data-open-ledger aria-label="${__("Ver movimientos de inventario")}">${__("Stock Ledger")}</button>
+        <button class="btn btn-sm btn-default" data-open-stock aria-label="${__("Ver reporte de Stock Balance")}">${__("Saldos")}</button>
+        <button class="btn btn-sm btn-default" data-open-ledger aria-label="${__("Ver movimientos de inventario")}">${__("Movimientos")}</button>
       </div>
     `);
 
@@ -421,7 +421,7 @@ retail_tools.ItemInspector = class ItemInspector {
         <div class="ii-kpi-value">${sell_price > 0 ? frappe.format(sell_price, { fieldtype: "Currency" }) : "-"}</div>
       </div>
       <div class="ii-kpi" role="listitem">
-        <div class="ii-kpi-label">${__("Ventas 30 días")} <small class="text-muted">(${frappe.format(salesLast30.qty, { fieldtype: "Float" })} ${__("unidades")})</small></div>
+        <div class="ii-kpi-label">${__("Ventas 30 días")} <small class="text-muted" style="white-space:nowrap">(${flt(salesLast30.qty)} ${__("unidades")})</small></div>
         <div class="ii-kpi-value">${frappe.format(salesLast30.amount, { fieldtype: "Currency" })}</div>
       </div>
       <div class="ii-kpi" role="listitem" id="ii-kpi-margin">
