@@ -379,12 +379,12 @@ retail_tools.ItemInspector = class ItemInspector {
         <div class="ii-kpi-value">${frappe.format(total_value, { fieldtype: "Currency" })}</div>
       </div>
       <div class="ii-kpi" role="listitem">
-        <div class="ii-kpi-label">${__("Última venta")}</div>
-        <div class="ii-kpi-value">${last_sale ? `${last_sale.posting_date} • ${frappe.format(last_sale.rate, { fieldtype: "Currency" })}` : "-"}</div>
+        <div class="ii-kpi-label">${__("Última venta")}${last_sale ? ` (${last_sale.posting_date})` : ""}</div>
+        <div class="ii-kpi-value">${last_sale ? frappe.format(last_sale.rate, { fieldtype: "Currency" }) : "-"}</div>
       </div>
       <div class="ii-kpi" role="listitem">
-        <div class="ii-kpi-label">${__("Última compra")}</div>
-        <div class="ii-kpi-value">${last_purchase ? `${last_purchase.posting_date} • ${frappe.format(last_purchase.rate, { fieldtype: "Currency" })}` : "-"}</div>
+        <div class="ii-kpi-label">${__("Última compra")}${last_purchase ? ` (${last_purchase.posting_date})` : ""}</div>
+        <div class="ii-kpi-value">${last_purchase ? frappe.format(last_purchase.rate, { fieldtype: "Currency" }) : "-"}</div>
       </div>
     `);
   }
