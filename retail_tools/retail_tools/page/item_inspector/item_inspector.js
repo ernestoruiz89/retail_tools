@@ -356,11 +356,13 @@ retail_tools.ItemInspector = class ItemInspector {
     // Remove old handlers first
     this.$actions.find("[data-open-item]").off("click");
     this.$actions.find("[data-open-stock]").off("click");
+    this.$actions.find("[data-open-ledger]").off("click");
 
     this.$actions.html(`
       <div class="ii-actions-grid">
         <button class="btn btn-sm btn-primary" data-open-item aria-label="${__("Abrir formulario de Item")}">${__("Abrir Item")}</button>
         <button class="btn btn-sm btn-default" data-open-stock aria-label="${__("Ver reporte de Stock Balance")}">${__("Stock Balance")}</button>
+        <button class="btn btn-sm btn-default" data-open-ledger aria-label="${__("Ver movimientos de inventario")}">${__("Stock Ledger")}</button>
       </div>
     `);
 
@@ -371,6 +373,11 @@ retail_tools.ItemInspector = class ItemInspector {
     this.$actions.find("[data-open-stock]").on("click", () => {
       const item_code = this.state?.item_code || this.item_field.get_value();
       frappe.set_route("query-report", "Stock Balance", { item_code });
+    });
+
+    this.$actions.find("[data-open-ledger]").on("click", () => {
+      const item_code = this.state?.item_code || this.item_field.get_value();
+      frappe.set_route("query-report", "Stock Ledger", { item_code });
     });
   }
 
