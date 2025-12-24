@@ -150,6 +150,8 @@ def get_item_snapshot(item_code: str) -> dict:
     price_rows = _get_price_history(item_code)
     recent_sales = _get_recent_sales(item_code)
     recent_purchases = _get_recent_purchases(item_code)
+    sales_last_30_days = _get_sales_last_30_days(item_code)
+    selling_price = _get_default_selling_price(item_code)
 
     return {
         "ok": True,
@@ -159,6 +161,8 @@ def get_item_snapshot(item_code: str) -> dict:
         "price_history": price_rows,
         "recent_sales": recent_sales,
         "recent_purchases": recent_purchases,
+        "sales_last_30_days": sales_last_30_days,
+        "selling_price": selling_price,
     }
 
 
@@ -345,3 +349,86 @@ def _get_recent_purchases(item_code: str, limit: int = 10) -> list[dict]:
         (item_code, limit),
         as_dict=True,
     )
+
+
+def _get_sales_last_30_days(item_code: str) -> dict:
+    """
+    Get total quantity sold in the last 30 days.
+
+    Args:
+        item_code: The item code to get sales data for
+
+    Returns:
+        dict with qty (total quantity sold) and count (number of transactions)
+    """
+    if not (_has_doctype("Sales Invoice Item") and _has_doctype("Sales Invoice")):
+        return {"qty": 0, "count": 0}
+
+    from frappe.utils import add_days, nowdate
+
+    thirty_days_ago = add_days(nowdate(), -30)
+
+    result = frappe.db.sql(
+        """
+        SELECT
+            COALESCE(SUM(sii.qty), 0) as qty,
+            COUNT(DISTINCT sii.parent) as count
+        FROM `tabSales Invoice Item` sii
+        INNER JOIN `tabSales Invoice` si ON si.name = sii.parent
+        WHERE sii.item_code = %s
+          AND si.docstatus = 1
+          AND si.posting_date >= %s
+        """,
+        (item_code, thirty_days_ago),
+        as_dict=True,
+    )
+
+    if result:
+        return {"qty": result[0].get("qty") or 0, "count": result[0].get("count") or 0}
+    return {"qty": 0, "count": 0}
+
+
+def _get_default_selling_price(item_code: str) -> dict:
+    """
+    Get the default selling price for an item.
+
+    Uses the selling_price_list from Stock Settings or the first selling price list found.
+
+    Args:
+        item_code: The item code to get selling price for
+
+    Returns:
+        dict with price, price_list, and currency
+    """
+    if not _has_doctype("Item Price"):
+        return {"price": 0, "price_list": None, "currency": None}
+
+    # Try to get default selling price list from Stock Settings
+    default_pl = None
+    if _has_doctype("Stock Settings") and _has_field("Stock Settings", "default_selling_price_list"):
+        default_pl = frappe.db.get_single_value("Stock Settings", "default_selling_price_list")
+
+    # If no default, try Selling Settings
+    if not default_pl and _has_doctype("Selling Settings") and _has_field("Selling Settings", "selling_price_list"):
+        default_pl = frappe.db.get_single_value("Selling Settings", "selling_price_list")
+
+    filters = {"item_code": item_code, "selling": 1}
+    if default_pl:
+        filters["price_list"] = default_pl
+
+    price_row = frappe.get_all(
+        "Item Price",
+        filters=filters,
+        fields=["price_list_rate", "price_list", "currency"],
+        order_by="modified desc",
+        limit_page_length=1,
+    )
+
+    if price_row:
+        return {
+            "price": price_row[0].get("price_list_rate") or 0,
+            "price_list": price_row[0].get("price_list"),
+            "currency": price_row[0].get("currency"),
+        }
+
+    return {"price": 0, "price_list": None, "currency": None}

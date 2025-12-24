@@ -286,9 +286,11 @@ retail_tools.ItemInspector = class ItemInspector {
     const prices = res.price_history || [];
     const sales = res.recent_sales || [];
     const purchases = res.recent_purchases || [];
+    const salesLast30 = res.sales_last_30_days || { qty: 0, count: 0 };
+    const sellingPrice = res.selling_price || { price: 0 };
 
     this._render_header(item, barcodes);
-    this._render_kpis(bins, sales, purchases);
+    this._render_kpis(bins, sales, purchases, salesLast30, sellingPrice);
     this._render_stock_table(bins);
     this._render_price_section(prices);
     this._render_transaction_tables(sales, purchases);
@@ -362,12 +364,22 @@ retail_tools.ItemInspector = class ItemInspector {
   /**
    * Render KPI cards
    */
-  _render_kpis(bins, sales, purchases) {
+  _render_kpis(bins, sales, purchases, salesLast30, sellingPrice) {
     const total_qty = bins.reduce((acc, b) => acc + (flt(b.actual_qty) || 0), 0);
     const total_value = bins.reduce((acc, b) => acc + (flt(b.stock_value_est) || 0), 0);
 
     const last_sale = sales[0];
     const last_purchase = purchases[0];
+
+    // Calculate profit margin: (selling_price - avg_valuation_rate) / selling_price * 100
+    const avg_valuation = total_qty > 0 ? total_value / total_qty : 0;
+    const sell_price = flt(sellingPrice.price) || 0;
+    let margin_pct = 0;
+    let margin_class = "";
+    if (sell_price > 0 && avg_valuation > 0) {
+      margin_pct = ((sell_price - avg_valuation) / sell_price) * 100;
+      margin_class = margin_pct >= 20 ? "text-success" : margin_pct >= 10 ? "text-warning" : "text-danger";
+    }
 
     this.$kpis.html(`
       <div class="ii-kpi" role="listitem">
@@ -377,6 +389,14 @@ retail_tools.ItemInspector = class ItemInspector {
       <div class="ii-kpi" role="listitem">
         <div class="ii-kpi-label">${__("Valor estimado (stock)")}</div>
         <div class="ii-kpi-value">${frappe.format(total_value, { fieldtype: "Currency" })}</div>
+      </div>
+      <div class="ii-kpi" role="listitem">
+        <div class="ii-kpi-label">${__("Ventas 30 días")}</div>
+        <div class="ii-kpi-value">${frappe.format(salesLast30.qty, { fieldtype: "Float" })} <small class="text-muted">(${salesLast30.count} ${__("facturas")})</small></div>
+      </div>
+      <div class="ii-kpi" role="listitem">
+        <div class="ii-kpi-label">${__("Margen de utilidad")}</div>
+        <div class="ii-kpi-value ${margin_class}">${sell_price > 0 ? margin_pct.toFixed(1) + "%" : "-"}</div>
       </div>
       <div class="ii-kpi" role="listitem">
         <div class="ii-kpi-label">${__("Última venta")}${last_sale ? ` (${last_sale.posting_date})` : ""}</div>
