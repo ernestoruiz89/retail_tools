@@ -5,6 +5,16 @@ app_description = "Retail Tools"
 app_email = "eruiz@wbapps.com"
 app_license = "mit"
 
+# Fixtures
+# --------
+# Automatically export/import these DocTypes during app install/migrate
+fixtures = [
+    {
+        "doctype": "Print Format",
+        "filters": [["module", "=", "Retail Tools"]]
+    }
+]
+
 # Apps
 # ------------------
 
