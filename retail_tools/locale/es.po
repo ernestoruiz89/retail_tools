@@ -65,7 +65,7 @@ msgstr "Marca"
 
 #: retail_tools/templates/print_formats/pos_closing.html:94
 msgid "Cashier Signature"
-msgstr ""
+msgstr "Firma del Cajero"
 
 #. Label of a shortcut in the Retail Tools Workspace
 #: retail_tools/retail_tools/page/catalog_generator/catalog_generator.js:17
@@ -79,7 +79,7 @@ msgstr "Limpiar Todo"
 
 #: retail_tools/templates/print_formats/pos_closing.html:46
 msgid "Closing"
-msgstr ""
+msgstr "Cierre"
 
 #: retail_tools/retail_tools/page/catalog_generator/catalog_generator.js:49
 msgid "Columns"
@@ -139,7 +139,7 @@ msgstr "Días sin Ventas"
 
 #: retail_tools/templates/print_formats/pos_closing.html:47
 msgid "Diff."
-msgstr ""
+msgstr "Dif."
 
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:516
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:531
@@ -194,7 +194,7 @@ msgstr "Costo Estimado (Stock)"
 
 #: retail_tools/templates/print_formats/pos_closing.html:45
 msgid "Expect."
-msgstr ""
+msgstr "Esper."
 
 #: retail_tools/retail_tools/page/label_generator/label_generator.js:121
 msgid "Format"
@@ -272,7 +272,7 @@ msgstr "Consulta de Producto (Ligera)"
 
 #: retail_tools/templates/print_formats/pos_closing.html:26
 msgid "Item Quantity"
-msgstr ""
+msgstr "Cantidad de Artículos"
 
 #: retail_tools/retail_tools/page/label_generator/label_generator.py:85
 msgid "Item code is required"
@@ -342,7 +342,7 @@ msgstr "Mediano (50x30mm) - 3 cols"
 
 #: retail_tools/templates/print_formats/pos_closing.html:44
 msgid "Method / Opening"
-msgstr ""
+msgstr "Método / Apertura"
 
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:632
 #: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:387
@@ -351,7 +351,7 @@ msgstr "Modificado"
 
 #: retail_tools/templates/print_formats/pos_closing.html:30
 msgid "Net"
-msgstr ""
+msgstr "Neto"
 
 #: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:250
 msgid "Never"
@@ -439,15 +439,15 @@ msgstr "Saldo Pendiente"
 
 #: retail_tools/templates/print_formats/pos_closing.html:7
 msgid "POS"
-msgstr ""
+msgstr "POS"
 
 #: retail_tools/templates/print_formats/pos_closing.html:4
 msgid "POS CLOSING"
-msgstr ""
+msgstr "CIERRE DE CAJA"
 
 #: retail_tools/templates/print_formats/pos_closing.html:40
 msgid "Payment Methods"
-msgstr ""
+msgstr "Métodos de Pago"
 
 #: retail_tools/retail_tools/page/label_generator/label_generator.js:300
 msgid "Please add items first"
@@ -493,7 +493,7 @@ msgstr "Imprimir"
 
 #: retail_tools/templates/print_formats/pos_closing.html:97
 msgid "Printed"
-msgstr ""
+msgstr "Impreso"
 
 #: retail_tools/retail_tools/page/catalog_generator/catalog_generator.js:236
 msgid "Product Catalog"
@@ -522,7 +522,7 @@ msgstr "Consulta Rápida"
 
 #: retail_tools/templates/print_formats/pos_closing.html:80
 msgid "RET"
-msgstr ""
+msgstr "DEV"
 
 #: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:275
 #: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:304
@@ -553,7 +553,7 @@ msgstr "Ventas 30 Días"
 
 #: retail_tools/templates/print_formats/pos_closing.html:20
 msgid "Sales Summary"
-msgstr ""
+msgstr "Resumen de Ventas"
 
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:111
 #: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:83
@@ -642,7 +642,7 @@ msgstr "Proveedor"
 #: retail_tools/templates/print_formats/pos_closing.html:34
 #: retail_tools/templates/print_formats/pos_closing.html:64
 msgid "TOTAL"
-msgstr ""
+msgstr "TOTAL"
 
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:515
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:530
@@ -657,7 +657,7 @@ msgstr "Stock Total"
 #: retail_tools/templates/print_formats/pos_closing.html:22
 #: retail_tools/templates/print_formats/pos_closing.html:74
 msgid "Transactions"
-msgstr ""
+msgstr "Transacciones"
 
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:314
 #: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:246
@@ -666,7 +666,7 @@ msgstr "UdM"
 
 #: retail_tools/templates/print_formats/pos_closing.html:8
 msgid "User"
-msgstr ""
+msgstr "Usuario"
 
 #: retail_tools/retail_tools/page/catalog_generator/catalog_generator.js:138
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:461
