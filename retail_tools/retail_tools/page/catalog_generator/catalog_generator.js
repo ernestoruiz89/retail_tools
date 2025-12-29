@@ -12,73 +12,50 @@
  */
 
 frappe.pages["catalog-generator"].on_page_load = function (wrapper) {
-    const page = frappe.ui.make_app_page({
-        parent: wrapper,
-        title: __("Catalog Generator"),
-        single_column: true,
-    });
+  const page = frappe.ui.make_app_page({
+    parent: wrapper,
+    title: __("Catalog Generator"),
+    single_column: true,
+  });
 
-    page.catalog_generator = new retail_tools.CatalogGenerator(page, wrapper);
+  page.catalog_generator = new retail_tools.CatalogGenerator(page, wrapper);
 };
 
 frappe.provide("retail_tools");
 
 retail_tools.CatalogGenerator = class CatalogGenerator {
-    constructor(page, wrapper) {
-        this.page = page;
-        this.wrapper = wrapper;
-        this.$body = $(this.page.body);
+  constructor(page, wrapper) {
+    this.page = page;
+    this.wrapper = wrapper;
+    this.$body = $(this.page.body);
 
-        this.make_filters();
-        this.make_layout();
-    }
+    this.make_filters();
+    this.make_layout();
+  }
 
-    make_filters() {
-        // Item Group filter
-        this.item_group_field = this.page.add_field({
-            label: __("Item Group"),
-            fieldtype: "Link",
-            fieldname: "item_group",
-            options: "Item Group",
-        });
+  make_filters() {
+    // Filters will be created in make_layout
 
-        // Brand filter
-        this.brand_field = this.page.add_field({
-            label: __("Brand"),
-            fieldtype: "Link",
-            fieldname: "brand",
-            options: "Brand",
-        });
+    // Generate button
+    this.page.set_primary_action(__("Generate Preview"), () =>
+      this.generate_preview()
+    );
 
-        // Warehouse filter
-        this.warehouse_field = this.page.add_field({
-            label: __("Warehouse"),
-            fieldtype: "Link",
-            fieldname: "warehouse",
-            options: "Warehouse",
-        });
+    // Print button
+    this.page.add_inner_button(__("Print"), () => this.print_catalog());
+  }
 
-        // Price List filter
-        this.price_list_field = this.page.add_field({
-            label: __("Price List"),
-            fieldtype: "Link",
-            fieldname: "price_list",
-            options: "Price List",
-            filters: { selling: 1 },
-        });
-
-        // Generate button
-        this.page.set_primary_action(__("Generate Preview"), () =>
-            this.generate_preview()
-        );
-
-        // Print button
-        this.page.add_inner_button(__("Print"), () => this.print_catalog());
-    }
-
-    make_layout() {
-        this.$body.html(`
+  make_layout() {
+    this.$body.html(`
       <div class="cg-wrapper">
+        <div class="cg-filters">
+          <div class="cg-filter-row">
+            <div class="cg-filter-field" id="cg-item-group"></div>
+            <div class="cg-filter-field" id="cg-brand"></div>
+            <div class="cg-filter-field" id="cg-warehouse"></div>
+            <div class="cg-filter-field" id="cg-price-list"></div>
+          </div>
+        </div>
         <div class="cg-options">
           <div class="cg-option-group">
             <label>${__("Columns")}</label>
@@ -112,85 +89,133 @@ retail_tools.CatalogGenerator = class CatalogGenerator {
               </svg>
             </div>
             <h3>${__("Generate a Catalog")}</h3>
-            <p class="text-muted">${__(
-            "Select filters and click Generate Preview"
-        )}</p>
+            <p class="text-muted">${__("Select filters and click Generate Preview")}</p>
           </div>
           <div class="cg-preview" style="display: none;"></div>
         </div>
       </div>
     `);
 
-        // Bind column selector
-        this.$body.find(".cg-columns-selector .btn").on("click", (e) => {
-            this.$body.find(".cg-columns-selector .btn").removeClass("active");
-            $(e.target).addClass("active");
-        });
-    }
+    // Create filter fields
+    this.item_group_field = frappe.ui.form.make_control({
+      df: {
+        fieldtype: "Link",
+        fieldname: "item_group",
+        label: __("Item Group"),
+        options: "Item Group",
+      },
+      parent: this.$body.find("#cg-item-group"),
+      render_input: true,
+    });
+    this.item_group_field.refresh();
 
-    get_options() {
-        return {
-            item_group: this.item_group_field.get_value(),
-            brand: this.brand_field.get_value(),
-            warehouse: this.warehouse_field.get_value(),
-            price_list: this.price_list_field.get_value(),
-            columns:
-                this.$body.find(".cg-columns-selector .btn.active").data("columns") ||
-                3,
-            show_barcode: this.$body.find("#cg-show-barcode").is(":checked") ? 1 : 0,
-            show_price: this.$body.find("#cg-show-price").is(":checked") ? 1 : 0,
-            show_description: this.$body.find("#cg-show-desc").is(":checked") ? 1 : 0,
-        };
-    }
+    this.brand_field = frappe.ui.form.make_control({
+      df: {
+        fieldtype: "Link",
+        fieldname: "brand",
+        label: __("Brand"),
+        options: "Brand",
+      },
+      parent: this.$body.find("#cg-brand"),
+      render_input: true,
+    });
+    this.brand_field.refresh();
 
-    generate_preview() {
-        const options = this.get_options();
+    this.warehouse_field = frappe.ui.form.make_control({
+      df: {
+        fieldtype: "Link",
+        fieldname: "warehouse",
+        label: __("Warehouse"),
+        options: "Warehouse",
+      },
+      parent: this.$body.find("#cg-warehouse"),
+      render_input: true,
+    });
+    this.warehouse_field.refresh();
 
-        frappe.call({
-            method:
-                "retail_tools.retail_tools.page.catalog_generator.catalog_generator.generate_catalog_html",
-            args: options,
-            freeze: true,
-            freeze_message: __("Generating catalog..."),
-            callback: (r) => {
-                if (r.message && r.message.ok) {
-                    this.$body.find(".cg-empty-state").hide();
-                    this.$body.find(".cg-preview").html(r.message.html).show();
-                    frappe.show_alert({
-                        message: __("{0} products in catalog", [r.message.count]),
-                        indicator: "green",
-                    });
-                } else {
-                    frappe.show_alert({
-                        message: r.message?.message || __("No items found"),
-                        indicator: "orange",
-                    });
-                }
-            },
-            error: (err) => {
-                console.error("Catalog error:", err);
-                frappe.show_alert({
-                    message: __("Error generating catalog"),
-                    indicator: "red",
-                });
-            },
-        });
-    }
+    this.price_list_field = frappe.ui.form.make_control({
+      df: {
+        fieldtype: "Link",
+        fieldname: "price_list",
+        label: __("Price List"),
+        options: "Price List",
+        get_query: () => ({ filters: { selling: 1 } }),
+      },
+      parent: this.$body.find("#cg-price-list"),
+      render_input: true,
+    });
+    this.price_list_field.refresh();
 
-    print_catalog() {
-        const $preview = this.$body.find(".cg-preview");
-        if (!$preview.html()) {
-            frappe.show_alert({
-                message: __("Please generate a preview first"),
-                indicator: "orange",
-            });
-            return;
+    // Bind column selector
+    this.$body.find(".cg-columns-selector .btn").on("click", (e) => {
+      this.$body.find(".cg-columns-selector .btn").removeClass("active");
+      $(e.target).addClass("active");
+    });
+  }
+
+  get_options() {
+    return {
+      item_group: this.item_group_field.get_value(),
+      brand: this.brand_field.get_value(),
+      warehouse: this.warehouse_field.get_value(),
+      price_list: this.price_list_field.get_value(),
+      columns:
+        this.$body.find(".cg-columns-selector .btn.active").data("columns") ||
+        3,
+      show_barcode: this.$body.find("#cg-show-barcode").is(":checked") ? 1 : 0,
+      show_price: this.$body.find("#cg-show-price").is(":checked") ? 1 : 0,
+      show_description: this.$body.find("#cg-show-desc").is(":checked") ? 1 : 0,
+    };
+  }
+
+  generate_preview() {
+    const options = this.get_options();
+
+    frappe.call({
+      method:
+        "retail_tools.retail_tools.page.catalog_generator.catalog_generator.generate_catalog_html",
+      args: options,
+      freeze: true,
+      freeze_message: __("Generating catalog..."),
+      callback: (r) => {
+        if (r.message && r.message.ok) {
+          this.$body.find(".cg-empty-state").hide();
+          this.$body.find(".cg-preview").html(r.message.html).show();
+          frappe.show_alert({
+            message: __("{0} products in catalog", [r.message.count]),
+            indicator: "green",
+          });
+        } else {
+          frappe.show_alert({
+            message: r.message?.message || __("No items found"),
+            indicator: "orange",
+          });
         }
+      },
+      error: (err) => {
+        console.error("Catalog error:", err);
+        frappe.show_alert({
+          message: __("Error generating catalog"),
+          indicator: "red",
+        });
+      },
+    });
+  }
 
-        // Open print dialog
-        const printContent = $preview.html();
-        const printWindow = window.open("", "_blank");
-        printWindow.document.write(`
+  print_catalog() {
+    const $preview = this.$body.find(".cg-preview");
+    if (!$preview.html()) {
+      frappe.show_alert({
+        message: __("Please generate a preview first"),
+        indicator: "orange",
+      });
+      return;
+    }
+
+    // Open print dialog
+    const printContent = $preview.html();
+    const printWindow = window.open("", "_blank");
+    printWindow.document.write(`
       <!DOCTYPE html>
       <html>
       <head>
@@ -208,6 +233,6 @@ retail_tools.CatalogGenerator = class CatalogGenerator {
       </body>
       </html>
     `);
-        printWindow.document.close();
-    }
+    printWindow.document.close();
+  }
 };

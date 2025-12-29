@@ -7,6 +7,25 @@
     padding: 15px;
 }
 
+/* Filters Section */
+.cg-filters {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-lg);
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+.cg-filter-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.cg-filter-field .frappe-control {
+    margin-bottom: 0;
+}
+
 /* Options Bar */
 .cg-options {
     display: flex;
