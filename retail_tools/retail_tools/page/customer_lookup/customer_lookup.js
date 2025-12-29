@@ -53,24 +53,29 @@ retail_tools.CustomerLookup = class CustomerLookup {
      * Clean up event handlers and resources
      */
     destroy() {
-        if (this.$search_input) {
-            this.$search_input.off();
-        }
+        // Cleanup handled by Frappe
     }
 
     make_filters() {
-        // We'll bind events after layout is created
+        // Create Link field for Customer
+        this.customer_field = this.page.add_field({
+            label: __("Customer"),
+            fieldtype: "Link",
+            fieldname: "customer",
+            options: "Customer",
+            placeholder: __("Search customer..."),
+            change: () => {
+                const value = this.customer_field.get_value();
+                if (value) {
+                    this.load_snapshot(value);
+                }
+            },
+        });
     }
 
     make_layout() {
         this.$container.html(`
       <div class="cl-wrapper">
-        <div class="cl-search-container">
-          <div class="cl-search-box">
-            <i class="fa fa-search cl-search-icon"></i>
-            <input type="text" class="cl-search-input" placeholder="${__("Enter name, code, phone, or email...")}">
-          </div>
-        </div>
         <div class="cl-empty-state">
           <div class="cl-empty-icon">
             <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
@@ -79,7 +84,7 @@ retail_tools.CustomerLookup = class CustomerLookup {
             </svg>
           </div>
           <h3>${__("Search for a Customer")}</h3>
-          <p class="text-muted">${__("Enter a name, code, phone number, or email above")}</p>
+          <p class="text-muted">${__("Use the search field above to find a customer")}</p>
         </div>
         <div class="cl-content" style="display: none;">
           <div class="cl-header"></div>
@@ -91,30 +96,6 @@ retail_tools.CustomerLookup = class CustomerLookup {
         </div>
       </div>
     `);
-
-        // Bind search events
-        this.$search_input = this.$container.find(".cl-search-input");
-
-        this.$search_input.on("keypress", (e) => {
-            if (e.which === 13) {
-                const value = this.$search_input.val();
-                if (value && value.length >= 2) {
-                    this.search_customer(value);
-                }
-            }
-        });
-
-        // Also search on blur/change after typing
-        let searchTimeout;
-        this.$search_input.on("input", (e) => {
-            clearTimeout(searchTimeout);
-            const value = this.$search_input.val();
-            if (value && value.length >= 3) {
-                searchTimeout = setTimeout(() => {
-                    this.search_customer(value);
-                }, 500);
-            }
-        });
     }
 
     search_customer(query) {
