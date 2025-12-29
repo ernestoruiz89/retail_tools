@@ -1,0 +1,286 @@
+/* Customer Lookup Page Styles */
+
+/* Wrapper */
+.cl-wrapper {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 15px;
+}
+
+/* Empty State */
+.cl-empty-state {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.cl-empty-icon {
+  color: var(--gray-400);
+  margin-bottom: 20px;
+}
+
+.cl-empty-state h3 {
+  margin-bottom: 10px;
+  color: var(--heading-color);
+}
+
+/* Customer Card */
+.cl-customer-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  padding: 20px;
+  background: var(--card-bg);
+  border-radius: var(--border-radius-lg);
+  border: 1px solid var(--border-color);
+  margin-bottom: 20px;
+}
+
+.cl-customer-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.cl-customer-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.cl-customer-name {
+  margin: 0 0 8px 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.cl-customer-name a {
+  color: var(--heading-color);
+  text-decoration: none;
+}
+
+.cl-customer-name a:hover {
+  color: var(--primary);
+}
+
+.cl-customer-meta {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.cl-badge {
+  background: var(--bg-light-gray);
+  padding: 2px 8px;
+  border-radius: var(--border-radius);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.cl-customer-contact {
+  display: flex;
+  gap: 16px;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  flex-wrap: wrap;
+}
+
+.cl-customer-contact i {
+  margin-right: 4px;
+}
+
+/* KPI Grid */
+.cl-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.cl-kpi {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  padding: 20px;
+  text-align: center;
+}
+
+.cl-kpi-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--heading-color);
+  margin-bottom: 5px;
+}
+
+.cl-kpi-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cl-kpi-warning {
+  border-left: 4px solid var(--orange-500);
+}
+
+.cl-kpi-warning .cl-kpi-value {
+  color: var(--orange-500);
+}
+
+.cl-kpi-success {
+  border-left: 4px solid var(--green-500);
+}
+
+.cl-kpi-success .cl-kpi-value {
+  color: var(--green-500);
+}
+
+/* Sections */
+.cl-section {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.cl-section-title {
+  margin: 0 0 15px 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--heading-color);
+}
+
+/* Table */
+.cl-table-wrapper {
+  overflow-x: auto;
+}
+
+.cl-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.cl-table th {
+  text-align: left;
+  padding: 10px 8px;
+  border-bottom: 2px solid var(--border-color);
+  font-weight: 600;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cl-table td {
+  padding: 12px 8px;
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
+}
+
+.cl-table tr:last-child td {
+  border-bottom: none;
+}
+
+.cl-table a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.cl-table a:hover {
+  text-decoration: underline;
+}
+
+.cl-return-badge {
+  display: inline-block;
+  background: var(--bg-dark-gray);
+  color: white;
+  padding: 1px 6px;
+  border-radius: var(--border-radius-sm);
+  font-size: 0.625rem;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+/* Loyalty Section */
+.cl-loyalty-card {
+  text-align: center;
+  padding: 20px;
+}
+
+.cl-loyalty-program {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+.cl-loyalty-points {
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--primary);
+  line-height: 1;
+}
+
+.cl-loyalty-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 5px;
+}
+
+.cl-loyalty-warning {
+  margin-top: 15px;
+  padding: 10px;
+  background: var(--yellow-50);
+  border-radius: var(--border-radius);
+  color: var(--orange-600);
+  font-size: 0.875rem;
+}
+
+.cl-loyalty-warning i {
+  margin-right: 6px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .cl-customer-card {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .cl-customer-meta,
+  .cl-customer-contact {
+    justify-content: center;
+  }
+
+  .cl-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cl-table {
+    font-size: 0.8rem;
+  }
+
+  .cl-table th,
+  .cl-table td {
+    padding: 8px 4px;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .cl-loyalty-warning {
+    background: rgba(255, 193, 7, 0.1);
+  }
+}

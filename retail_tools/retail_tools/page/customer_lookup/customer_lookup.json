@@ -1,0 +1,35 @@
+{
+    "content": null,
+    "creation": "2025-12-28 21:25:00.000000",
+    "docstatus": 0,
+    "doctype": "Page",
+    "idx": 0,
+    "modified": "2025-12-28 21:25:00.000000",
+    "modified_by": "Administrator",
+    "module": "Retail Tools",
+    "name": "customer-lookup",
+    "owner": "Administrator",
+    "page_name": "customer-lookup",
+    "roles": [
+        {
+            "role": "Sales User"
+        },
+        {
+            "role": "Sales Manager"
+        },
+        {
+            "role": "System Manager"
+        },
+        {
+            "role": "Administrator"
+        },
+        {
+            "role": "Accounts User"
+        }
+    ],
+    "script": null,
+    "standard": "Yes",
+    "style": null,
+    "system_page": 0,
+    "title": "Customer Lookup"
+}
