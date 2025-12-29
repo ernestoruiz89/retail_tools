@@ -1,0 +1,679 @@
+# Translations template for Retail Tools.
+# Copyright (C) 2025 Ernesto Ruiz
+# This file is distributed under the same license as the Retail Tools project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Retail Tools VERSION\n"
+"Report-Msgid-Bugs-To: eruiz@wbapps.com\n"
+"POT-Creation-Date: 2025-12-29 13:56+0000\n"
+"PO-Revision-Date: 2025-12-29 13:56+0000\n"
+"Last-Translator: eruiz@wbapps.com\n"
+"Language-Team: eruiz@wbapps.com\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.13.1\n"
+
+#. Header text in the Retail Tools Workspace
+#: retail_tools/retail_tools/workspace/retail_tools/retail_tools.json
+msgid "<span class=\"h4\">Retail Tools</span>"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:250
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:191
+msgid "Abrir"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:361
+msgid "Abrir Item"
+msgstr ""
+
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:47
+msgid "Add"
+msgstr ""
+
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:47
+msgid "Add items to generate labels"
+msgstr ""
+
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:142
+msgid "All warehouses"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:461
+msgid "Almacén"
+msgstr ""
+
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:304
+msgid "Amount"
+msgstr ""
+
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:334
+msgid "Available Points"
+msgstr ""
+
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:47
+msgid "Barcode"
+msgstr ""
+
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:386
+msgid "Barcode Labels"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:327
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:254
+msgid "Barcodes"
+msgstr ""
+
+#: retail_tools/retail_tools/page/catalog_generator/catalog_generator.js:126
+msgid "Brand"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:95
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:67
+msgid "Buscar"
+msgstr ""
+
+#. Label of a shortcut in the Retail Tools Workspace
+#: retail_tools/retail_tools/page/catalog_generator/catalog_generator.js:17
+#: retail_tools/retail_tools/workspace/retail_tools/retail_tools.json
+msgid "Catalog Generator"
+msgstr ""
+
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:43
+msgid "Clear All"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:512
+msgid "Cliente"
+msgstr ""
+
+#: retail_tools/retail_tools/page/catalog_generator/catalog_generator.js:49
+msgid "Columns"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:16
+msgid "Consulta Rápida"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:21
+msgid "Consulta de Producto"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:465
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:529
+msgid "Costo"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:280
+msgid "Costo estimado"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:410
+msgid "Costo estimado (stock)"
+msgstr ""
+
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:72
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:161
+msgid "Customer"
+msgstr ""
+
+#. Label of a shortcut in the Retail Tools Workspace
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:21
+#: retail_tools/retail_tools/workspace/retail_tools/retail_tools.json
+msgid "Customer Lookup"
+msgstr ""
+
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.py:97
+msgid "Customer is required"
+msgstr ""
+
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.py:100
+msgid "Customer not found"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:106
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:78
+msgid "Código de barras"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:328
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:255
+msgid "DESHABILITADO"
+msgstr ""
+
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:304
+msgid "Date"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:629
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:384
+msgid "Desde"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:516
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:531
+msgid "Documento"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:420
+msgid "Días sin movimiento"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.py:74
+msgid "Empty barcode"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:200
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:146
+msgid "Error"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:202
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:148
+msgid "Error al {0}. Por favor intente nuevamente."
+msgstr ""
+
+#: retail_tools/retail_tools/page/catalog_generator/catalog_generator.js:216
+msgid "Error generating catalog"
+msgstr ""
+
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:329
+msgid "Error generating labels"
+msgstr ""
+
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:188
+msgid "Error loading customer"
+msgstr ""
+
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:196
+msgid "Error loading customer data"
+msgstr ""
+
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:139
+msgid "Error searching customers"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:111
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:83
+msgid "Escanear con cámara"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:117
+msgid "Existencia por almacén"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:410
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:280
+msgid "Existencia total"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:511
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:526
+msgid "Fecha"
+msgstr ""
+
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:121
+msgid "Format"
+msgstr ""
+
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:37
+msgid "Generate Labels"
+msgstr ""
+
+#: retail_tools/retail_tools/page/catalog_generator/catalog_generator.js:40
+msgid "Generate Preview"
+msgstr ""
+
+#: retail_tools/retail_tools/page/catalog_generator/catalog_generator.js:49
+msgid "Generate a Catalog"
+msgstr ""
+
+#: retail_tools/retail_tools/page/catalog_generator/catalog_generator.js:191
+msgid "Generating catalog..."
+msgstr ""
+
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:318
+msgid "Generating labels..."
+msgstr ""
+
+#: retail_tools/retail_tools/page/catalog_generator/catalog_generator.js:49
+msgid "Group by Item Group"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:314
+msgid "Grupo"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:614
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:373
+msgid "Histórico"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:117
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:89
+msgid "Histórico de precios por lista"
+msgstr ""
+
+#: retail_tools/retail_tools/page/label_generator/label_generator.py:139
+msgid "Invalid items data"
+msgstr ""
+
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:304
+msgid "Invoice"
+msgstr ""
+
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:47
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:93
+msgid "Item"
+msgstr ""
+
+#: retail_tools/retail_tools/page/catalog_generator/catalog_generator.js:114
+msgid "Item Group"
+msgstr ""
+
+#. Label of a shortcut in the Retail Tools Workspace
+#: retail_tools/retail_tools/workspace/retail_tools/retail_tools.json
+msgid "Item Inspector"
+msgstr ""
+
+#. Label of a shortcut in the Retail Tools Workspace
+#: retail_tools/retail_tools/workspace/retail_tools/retail_tools.json
+msgid "Item Inspector (Light)"
+msgstr ""
+
+#: retail_tools/retail_tools/page/label_generator/label_generator.py:85
+msgid "Item code is required"
+msgstr ""
+
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:200
+#: retail_tools/retail_tools/page/label_generator/label_generator.py:89
+msgid "Item not found"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.py:145
+msgid "Item not found: {0}"
+msgstr ""
+
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:47
+msgid "Label Format"
+msgstr ""
+
+#. Label of a shortcut in the Retail Tools Workspace
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:16
+#: retail_tools/retail_tools/workspace/retail_tools/retail_tools.json
+msgid "Label Generator"
+msgstr ""
+
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:125
+msgid "Large (70x40mm) - 2 cols"
+msgstr ""
+
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:255
+msgid "Last Purchase"
+msgstr ""
+
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:255
+msgid "Lifetime Purchases"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:481
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:302
+msgid "Lista de precios"
+msgstr ""
+
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:47
+msgid "Load Items with Stock"
+msgstr ""
+
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:268
+msgid "Loading items with stock..."
+msgstr ""
+
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:334
+msgid "Loyalty Points"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:314
+msgid "Marca"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:420
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:565
+msgid "Margen de utilidad"
+msgstr ""
+
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:124
+msgid "Medium (50x30mm) - 3 cols"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:632
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:387
+msgid "Modificado"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:631
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:386
+msgid "Moneda"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:361
+msgid "Movimientos"
+msgstr ""
+
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:250
+msgid "Never"
+msgstr ""
+
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:131
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.py:73
+msgid "No customers found"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:329
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:256
+msgid "No es stock item"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:485
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:306
+msgid "No hay Item Price para este producto."
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:607
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:368
+msgid "No hay puntos para graficar."
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.py:102
+msgid "No item found for barcode: {0}"
+msgstr ""
+
+#: retail_tools/retail_tools/page/catalog_generator/catalog_generator.js:208
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:289
+msgid "No items found"
+msgstr ""
+
+#: retail_tools/retail_tools/page/catalog_generator/catalog_generator.py:226
+msgid "No items found with the selected filters"
+msgstr ""
+
+#: retail_tools/retail_tools/page/label_generator/label_generator.py:142
+msgid "No items provided"
+msgstr ""
+
+#: retail_tools/retail_tools/page/label_generator/label_generator.py:59
+msgid "No items with stock found"
+msgstr ""
+
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:275
+msgid "No purchase history found"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:610
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:370
+msgid "No se encontró frappe.Chart (assets)."
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:216
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:161
+msgid "No se encontró producto."
+msgstr ""
+
+#: retail_tools/retail_tools/page/label_generator/label_generator.py:166
+msgid "No valid items found"
+msgstr ""
+
+#: retail_tools/retail_tools/page/catalog_generator/catalog_generator.py:274
+msgid "Other"
+msgstr ""
+
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:255
+msgid "Outstanding Balance"
+msgstr ""
+
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:300
+msgid "Please add items first"
+msgstr ""
+
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.py:47
+msgid "Please enter at least 2 characters"
+msgstr ""
+
+#: retail_tools/retail_tools/page/catalog_generator/catalog_generator.js:227
+msgid "Please generate a preview first"
+msgstr ""
+
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:378
+msgid "Please generate labels first"
+msgstr ""
+
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:169
+msgid "Please select an item"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:514
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:630
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:385
+msgid "Precio"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:410
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:551
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:280
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:330
+msgid "Precio actual"
+msgstr ""
+
+#: retail_tools/retail_tools/page/catalog_generator/catalog_generator.js:150
+msgid "Price List"
+msgstr ""
+
+#: retail_tools/retail_tools/page/catalog_generator/catalog_generator.js:45
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:41
+msgid "Print"
+msgstr ""
+
+#: retail_tools/retail_tools/page/catalog_generator/catalog_generator.js:236
+msgid "Product Catalog"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:98
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:245
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:70
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:186
+msgid "Producto"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:527
+msgid "Proveedor"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:464
+msgid "Proyectado"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:462
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:513
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:528
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:47
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:107
+msgid "Qty"
+msgstr ""
+
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:275
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:304
+msgid "Recent Purchases"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:463
+msgid "Reservado"
+msgstr ""
+
+#. Name of a Workspace
+#: retail_tools/retail_tools/workspace/retail_tools/retail_tools.json
+msgid "Retail Tools"
+msgstr ""
+
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:289
+msgid "Return"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:361
+msgid "Saldos"
+msgstr ""
+
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:107
+msgid "Search customer..."
+msgstr ""
+
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:72
+msgid "Search for a Customer"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:240
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:181
+msgid "Selecciona un producto"
+msgstr ""
+
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:166
+msgid "Select"
+msgstr ""
+
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:156
+msgid "Select Customer"
+msgstr ""
+
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:72
+msgid "Select a customer from the field above"
+msgstr ""
+
+#: retail_tools/retail_tools/page/catalog_generator/catalog_generator.js:49
+msgid "Select filters and click Generate Preview"
+msgstr ""
+
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:95
+msgid "Select or scan item..."
+msgstr ""
+
+#: retail_tools/retail_tools/page/catalog_generator/catalog_generator.js:49
+msgid "Show Barcode"
+msgstr ""
+
+#: retail_tools/retail_tools/page/catalog_generator/catalog_generator.js:49
+msgid "Show Barcode Image"
+msgstr ""
+
+#: retail_tools/retail_tools/page/catalog_generator/catalog_generator.js:49
+msgid "Show Description"
+msgstr ""
+
+#: retail_tools/retail_tools/page/catalog_generator/catalog_generator.js:49
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:47
+msgid "Show Price"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:660
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:408
+msgid "Sin datos"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:585
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:349
+msgid "Sin fecha"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:340
+msgid "Sin ventas 60+ días"
+msgstr ""
+
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:123
+msgid "Small (38x25mm) - 4 cols"
+msgstr ""
+
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:304
+msgid "Status"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:335
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:262
+msgid "Stock bajo"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:515
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:530
+msgid "Total"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:314
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:246
+msgid "UoM"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:466
+msgid "Valor Est."
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:420
+msgid "Ventas 30 días"
+msgstr ""
+
+#: retail_tools/retail_tools/page/catalog_generator/catalog_generator.js:138
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:140
+msgid "Warehouse"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:230
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:175
+msgid "buscar código de barras"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:278
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:219
+msgid "cargar información del producto"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:420
+msgid "facturas"
+msgstr ""
+
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:331
+msgid "points expiring in 30 days"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:420
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:438
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:443
+msgid "unidades"
+msgstr ""
+
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:284
+msgid "{0} items loaded"
+msgstr ""
+
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:324
+msgid "{0} labels generated"
+msgstr ""
+
+#: retail_tools/retail_tools/page/catalog_generator/catalog_generator.js:203
+msgid "{0} products in catalog"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:438
+msgid "Última compra"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:420
+msgid "Última venta"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:117
+msgid "Últimas compras"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:117
+msgid "Últimas ventas"
+msgstr ""
+
