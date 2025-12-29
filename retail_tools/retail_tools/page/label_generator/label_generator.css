@@ -33,7 +33,7 @@
 
 .lg-add-btn {
     height: 36px;
-    margin-top: 24px;
+    margin-bottom: 2px;
 }
 
 .lg-bulk-row {
@@ -52,7 +52,7 @@
 .lg-load-stock-btn {
     height: 36px;
     white-space: nowrap;
-    margin-top: 24px;
+    margin-bottom: 2px;
 }
 
 .lg-format-row {
