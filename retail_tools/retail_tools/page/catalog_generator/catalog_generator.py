@@ -316,7 +316,7 @@ def _build_catalog_html(
         .catalog-header {{ text-align: center; margin-bottom: 20px; }}
         .catalog-header h2 {{ margin: 0; }}
         .catalog-meta {{ color: #666; margin-top: 5px; }}
-        .catalog-group {{ margin-bottom: 30px; }}
+        .catalog-group {{ margin-bottom: 30px; page-break-inside: avoid; }}
         .catalog-group-title {{
             font-size: 18px;
             font-weight: 600;
@@ -325,14 +325,21 @@ def _build_catalog_html(
             padding-bottom: 8px;
             margin-bottom: 15px;
         }}
-        .catalog-grid {{ display: flex; flex-wrap: wrap; }}
-        .catalog-item {{ padding: 10px; box-sizing: border-box; }}
+        .catalog-grid {{ 
+            display: grid; 
+            grid-template-columns: repeat({columns}, 1fr);
+            gap: 15px;
+        }}
+        .catalog-item {{ box-sizing: border-box; }}
         .catalog-item-inner {{
             border: 1px solid #ddd;
             border-radius: 8px;
             padding: 15px;
             text-align: center;
             height: 100%;
+            display: flex;
+            flex-direction: column;
+            page-break-inside: avoid;
         }}
         .catalog-item-image {{
             width: 100%;
@@ -439,7 +446,7 @@ def _build_items_html(
             desc_html = f'<div class="catalog-item-desc">{desc_text}</div>'
 
         items_html += f"""
-        <div class="catalog-item" style="width: {width_percent}%;">
+        <div class="catalog-item">
             <div class="catalog-item-inner">
                 {image_html}
                 <div class="catalog-item-name">{item.item_name}</div>
