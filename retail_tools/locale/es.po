@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Retail Tools VERSION\n"
 "Report-Msgid-Bugs-To: eruiz@wbapps.com\n"
-"POT-Creation-Date: 2025-12-29 14:51+0000\n"
+"POT-Creation-Date: 2025-12-29 15:23+0000\n"
 "PO-Revision-Date: 2025-12-29 14:52+0000\n"
 "Last-Translator: eruiz@wbapps.com\n"
 "Language: es\n"
@@ -125,7 +125,7 @@ msgstr "DESHABILITADO"
 msgid "Date"
 msgstr "Fecha"
 
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:128
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:420
 msgid "Days Without Sales"
 msgstr "Días sin Ventas"
 
@@ -401,10 +401,6 @@ msgstr "Abrir"
 msgid "Open Item"
 msgstr "Abrir Artículo"
 
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:361
-msgid "Open Item Form"
-msgstr "Abrir formulario de Artículo"
-
 #: retail_tools/retail_tools/page/catalog_generator/catalog_generator.py:274
 msgid "Other"
 msgstr "Otros"
@@ -450,11 +446,6 @@ msgstr "Histórico de Precios por Lista"
 msgid "Price List"
 msgstr "Lista de Precios"
 
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:117
-#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:89
-msgid "Price Table"
-msgstr "Tabla de Precios"
-
 #: retail_tools/retail_tools/page/catalog_generator/catalog_generator.js:45
 #: retail_tools/retail_tools/page/label_generator/label_generator.js:41
 msgid "Print"
@@ -463,10 +454,6 @@ msgstr "Imprimir"
 #: retail_tools/retail_tools/page/catalog_generator/catalog_generator.js:236
 msgid "Product Catalog"
 msgstr "Catálogo de Productos"
-
-#: retail_tools/retail_tools/page/catalog_generator/catalog_generator.py:263
-msgid "products"
-msgstr "productos"
 
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:420
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:565
@@ -555,11 +542,6 @@ msgstr "Seleccionar un Artículo"
 msgid "Select filters and click Generate Preview"
 msgstr "Seleccione filtros y haga clic en Generar Vista Previa"
 
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:481
-#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:302
-msgid "Select Price List"
-msgstr "Seleccionar Lista de Precios"
-
 #: retail_tools/retail_tools/page/label_generator/label_generator.js:95
 msgid "Select or scan item..."
 msgstr "Seleccionar o escanear artículo..."
@@ -605,11 +587,6 @@ msgstr "Stock por Almacén"
 msgid "Supplier"
 msgstr "Proveedor"
 
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:117
-#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:89
-msgid "Tags"
-msgstr "Etiquetas"
-
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:515
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:530
 msgid "Total"
@@ -630,28 +607,6 @@ msgstr "UdM"
 #: retail_tools/retail_tools/page/label_generator/label_generator.js:140
 msgid "Warehouse"
 msgstr "Almacén"
-
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:361
-msgid "View Stock Balance Report"
-msgstr "Ver Reporte de Saldo de Inventario"
-
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:361
-msgid "View Stock Ledger"
-msgstr "Ver Libro de Inventario"
-
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:117
-#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:89
-msgid "Key Metrics"
-msgstr "Indicadores Clave"
-
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:306
-#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:238
-msgid "No image"
-msgstr "Sin imagen"
-
-#: retail_tools/retail_tools/page/label_generator/label_generator.py:213
-msgid "No barcode"
-msgstr "Sin código de barras"
 
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:610
 #: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:370
