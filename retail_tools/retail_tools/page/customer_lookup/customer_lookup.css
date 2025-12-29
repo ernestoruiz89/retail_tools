@@ -7,45 +7,38 @@
     padding: 15px;
 }
 
-/* Search Box */
-.cl-search-container {
-    margin-bottom: 20px;
+/* Search Section */
+.cl-search-section {
+    max-width: 400px;
+    margin: 0 auto 20px;
 }
 
-.cl-search-box {
-    position: relative;
-    max-width: 500px;
-    margin: 0 auto;
+.cl-label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--heading-color);
 }
 
-.cl-search-icon {
-    position: absolute;
-    left: 16px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--text-muted);
-    font-size: 16px;
+.cl-field-container {
+    background: var(--card-bg);
+    border-radius: var(--border-radius-lg);
 }
 
-.cl-search-input {
-    width: 100%;
-    padding: 14px 16px 14px 44px;
+.cl-field-container .form-control {
+    height: 44px;
     font-size: 16px;
     border: 2px solid var(--border-color);
     border-radius: var(--border-radius-lg);
-    background: var(--card-bg);
-    color: var(--text-color);
-    transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.cl-search-input:focus {
-    outline: none;
+.cl-field-container .form-control:focus {
     border-color: var(--primary);
     box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
 }
 
-.cl-search-input::placeholder {
-    color: var(--text-muted);
+.cl-field-container .link-btn {
+    height: 44px;
 }
 
 /* Empty State */

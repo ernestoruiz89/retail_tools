@@ -56,21 +56,11 @@ retail_tools.CustomerLookup = class CustomerLookup {
     }
 
     make_filters() {
-        // Add primary action button
-        this.page.set_primary_action(__("Search"), () => this.load_selected_customer());
-
-        // Create Link field for Customer
-        this.customer_field = this.page.add_field({
-            label: __("Customer"),
-            fieldtype: "Link",
-            fieldname: "customer",
-            options: "Customer",
-            change: () => this.load_selected_customer(),
-        });
+        // Will be created in make_layout
     }
 
     load_selected_customer() {
-        const customer = this.customer_field.get_value();
+        const customer = this.customer_field?.get_value();
         if (customer) {
             this.load_snapshot(customer);
         }
@@ -81,6 +71,10 @@ retail_tools.CustomerLookup = class CustomerLookup {
 
         $body.html(`
       <div class="cl-wrapper">
+        <div class="cl-search-section">
+          <label class="cl-label">${__("Customer")}</label>
+          <div class="cl-field-container"></div>
+        </div>
         <div class="cl-empty-state">
           <div class="cl-empty-icon">
             <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
@@ -89,7 +83,7 @@ retail_tools.CustomerLookup = class CustomerLookup {
             </svg>
           </div>
           <h3>${__("Search for a Customer")}</h3>
-          <p class="text-muted">${__("Use the customer field above to search")}</p>
+          <p class="text-muted">${__("Select a customer from the field above")}</p>
         </div>
         <div class="cl-content" style="display: none;">
           <div class="cl-header"></div>
@@ -103,6 +97,20 @@ retail_tools.CustomerLookup = class CustomerLookup {
     `);
 
         this.$body = $body;
+
+        // Create Link field using Frappe control
+        this.customer_field = frappe.ui.form.make_control({
+            df: {
+                fieldtype: "Link",
+                fieldname: "customer",
+                options: "Customer",
+                placeholder: __("Search customer..."),
+                change: () => this.load_selected_customer(),
+            },
+            parent: $body.find(".cl-field-container"),
+            render_input: true,
+        });
+        this.customer_field.refresh();
     }
 
     search_customer(query) {
