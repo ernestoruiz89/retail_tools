@@ -329,23 +329,31 @@ def _build_catalog_html(
             display: grid; 
             grid-template-columns: repeat({columns}, 1fr);
             gap: 15px;
+            align-items: start;
         }}
-        .catalog-item {{ box-sizing: border-box; }}
+        .catalog-item {{ 
+            box-sizing: border-box;
+            background: white;
+        }}
         .catalog-item-inner {{
             border: 1px solid #ddd;
             border-radius: 8px;
             padding: 15px;
             text-align: center;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
             page-break-inside: avoid;
+            background: white;
+        }}
+        .catalog-item-image-container {{
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
         }}
         .catalog-item-image {{
-            width: 100%;
-            max-height: 120px;
+            max-width: 100%;
+            max-height: 100px;
             object-fit: contain;
-            margin-bottom: 10px;
         }}
         .catalog-item-placeholder {{
             width: 100%;
@@ -364,6 +372,7 @@ def _build_catalog_html(
             font-size: 13px;
             margin-bottom: 4px;
             line-height: 1.2;
+            min-height: 32px;
         }}
         .catalog-item-code {{
             color: #666;
@@ -389,6 +398,7 @@ def _build_catalog_html(
             font-size: 16px;
             font-weight: 700;
             color: #2e7d32;
+            margin-top: auto;
         }}
         .catalog-item-desc {{
             font-size: 10px;
@@ -421,9 +431,9 @@ def _build_items_html(
     for item in items:
         image_html = ""
         if item.get("image"):
-            image_html = f'<img src="{item.image}" alt="{item.item_name}" class="catalog-item-image">'
+            image_html = f'<div class="catalog-item-image-container"><img src="{item.image}" alt="{item.item_name}" class="catalog-item-image"></div>'
         else:
-            image_html = f'<div class="catalog-item-placeholder">{item.item_name[:1]}</div>'
+            image_html = f'<div class="catalog-item-image-container"><div class="catalog-item-placeholder">{item.item_name[:1]}</div></div>'
 
         barcode_html = ""
         if show_barcode and item.get("barcode") and not show_barcode_image:
