@@ -177,6 +177,23 @@ def _build_labels_html(labels: list, format_config: dict, show_price: int = 1) -
     label_width = format_config["width"]
     label_height = format_config["height"]
 
+    # Adjust sizes based on format (fewer columns = larger labels)
+    name_size = "11px"
+    price_size = "12px"
+    code_size = "9px"
+    char_limit = 30
+    
+    if columns == 2:  # Large labels
+        name_size = "14px"
+        price_size = "16px"
+        code_size = "11px"
+        char_limit = 40
+    elif columns == 4:  # Small labels
+        name_size = "10px"
+        price_size = "11px"
+        code_size = "8px"
+        char_limit = 25
+
     labels_html = ""
     for label in labels:
         price_html = ""
@@ -195,7 +212,7 @@ def _build_labels_html(labels: list, format_config: dict, show_price: int = 1) -
         labels_html += f"""
         <div class="label-item">
             <div class="label-barcode">{barcode_html}</div>
-            <div class="label-name">{label["item_name"][:30]}</div>
+            <div class="label-name">{label["item_name"][:char_limit]}</div>
             <div class="label-code">{label["item_code"]}</div>
             {price_html}
         </div>
@@ -218,6 +235,9 @@ def _build_labels_html(labels: list, format_config: dict, show_price: int = 1) -
             min-height: {label_height}mm;
             box-sizing: border-box;
             page-break-inside: avoid;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }}
         .label-barcode {{
             margin-bottom: 4px;
@@ -233,7 +253,7 @@ def _build_labels_html(labels: list, format_config: dict, show_price: int = 1) -
         }}
         .label-name {{
             font-weight: 600;
-            font-size: 11px;
+            font-size: {name_size};
             line-height: 1.2;
             margin-bottom: 2px;
             overflow: hidden;
@@ -241,14 +261,15 @@ def _build_labels_html(labels: list, format_config: dict, show_price: int = 1) -
             white-space: nowrap;
         }}
         .label-code {{
-            font-size: 9px;
+            font-size: {code_size};
             color: #666;
             margin-bottom: 2px;
         }}
         .label-price {{
             font-weight: 700;
-            font-size: 12px;
+            font-size: {price_size};
             color: #333;
+            margin-top: auto;
         }}
         @media print {{
             .label-item {{
