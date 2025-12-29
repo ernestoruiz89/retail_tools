@@ -1,0 +1,27 @@
+{
+    "doctype": "Page",
+    "name": "catalog-generator",
+    "module": "Retail Tools",
+    "standard": "Yes",
+    "page_name": "catalog-generator",
+    "title": "Catalog Generator",
+    "icon": "icon-book",
+    "system_page": 0,
+    "roles": [
+        {
+            "role": "System Manager"
+        },
+        {
+            "role": "Sales Manager"
+        },
+        {
+            "role": "Sales User"
+        },
+        {
+            "role": "Stock Manager"
+        },
+        {
+            "role": "Stock User"
+        }
+    ]
+}
