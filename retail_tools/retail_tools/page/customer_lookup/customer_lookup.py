@@ -134,6 +134,7 @@ def _get_customer_data(customer: str) -> dict:
         "customer_type",
         "mobile_no",
         "email_id",
+        "image",
         "primary_address",
         "customer_primary_contact",
     ]

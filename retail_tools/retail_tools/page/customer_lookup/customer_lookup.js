@@ -214,10 +214,15 @@ retail_tools.CustomerLookup = class CustomerLookup {
         const address = customer.address_display || "";
         const contact = customer.mobile_no || customer.email_id || "";
 
+        // Show image if available, otherwise show initial letter
+        const avatarContent = customer.image
+            ? `<img src="${encodeURI(customer.image)}" alt="${frappe.utils.escape_html(customer.customer_name)}" class="cl-customer-photo">`
+            : customer.customer_name.charAt(0).toUpperCase();
+
         this.$body.find(".cl-header").html(`
       <div class="cl-customer-card">
-        <div class="cl-customer-avatar">
-          ${customer.customer_name.charAt(0).toUpperCase()}
+        <div class="cl-customer-avatar ${customer.image ? 'has-image' : ''}">
+          ${avatarContent}
         </div>
         <div class="cl-customer-info">
           <h2 class="cl-customer-name">
