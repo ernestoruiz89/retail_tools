@@ -31,22 +31,6 @@
 .cl-field-container .form-control {
     height: 44px;
     font-size: 16px;
-    border: none;
-    box-shadow: none;
-}
-
-.cl-field-container .control-input-wrapper {
-    border: 2px solid var(--border-color);
-    border-radius: var(--border-radius-lg);
-}
-
-.cl-field-container .control-input-wrapper:focus-within {
-    border-color: var(--primary);
-}
-
-.cl-field-container .link-btn {
-    border: none;
-    background: transparent;
 }
 
 /* Empty State */
