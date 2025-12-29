@@ -245,6 +245,62 @@
     vertical-align: middle;
 }
 
+/* Status Tags */
+.cl-status-tag {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.cl-status-paid {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.cl-status-unpaid {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.cl-status-overdue {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.cl-status-default {
+    background: #e5e7eb;
+    color: #4b5563;
+}
+
+/* Dark mode status tags */
+[data-theme="dark"] .cl-status-paid,
+.dark .cl-status-paid {
+    background: #064e3b;
+    color: #a7f3d0;
+}
+
+[data-theme="dark"] .cl-status-unpaid,
+.dark .cl-status-unpaid {
+    background: #78350f;
+    color: #fde68a;
+}
+
+[data-theme="dark"] .cl-status-overdue,
+.dark .cl-status-overdue {
+    background: #7f1d1d;
+    color: #fecaca;
+}
+
+[data-theme="dark"] .cl-status-default,
+.dark .cl-status-default {
+    background: #374151;
+    color: #d1d5db;
+}
+
 /* Loyalty Section */
 .cl-loyalty-card {
     text-align: center;

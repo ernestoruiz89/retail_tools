@@ -277,7 +277,10 @@ retail_tools.CustomerLookup = class CustomerLookup {
         }
 
         const rows = invoices.map((inv) => {
-            const statusClass = inv.status === "Paid" ? "success" : inv.status === "Overdue" ? "danger" : "warning";
+            const statusClass = inv.status === "Paid" ? "cl-status-paid"
+                : inv.status === "Overdue" ? "cl-status-overdue"
+                    : inv.status === "Unpaid" ? "cl-status-unpaid"
+                        : "cl-status-default";
             const returnBadge = inv.is_return ? `<span class="cl-return-badge">${__("Return")}</span>` : "";
 
             return `
@@ -288,7 +291,7 @@ retail_tools.CustomerLookup = class CustomerLookup {
           </td>
           <td>${frappe.format(inv.posting_date, { fieldtype: "Date" })}</td>
           <td class="text-right">${frappe.format(inv.grand_total, { fieldtype: "Currency", currency: inv.currency })}</td>
-          <td><span class="indicator-pill ${statusClass}">${inv.status}</span></td>
+          <td><span class="cl-status-tag ${statusClass}">${inv.status}</span></td>
         </tr>
       `;
         }).join("");
