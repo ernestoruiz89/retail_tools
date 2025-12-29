@@ -1,0 +1,8 @@
+{
+    "css/retail_tools.bundle.css": [
+        "public/css/retail_tools.css"
+    ],
+    "js/retail_tools.bundle.js": [
+        "public/js/retail_tools.js"
+    ]
+}
