@@ -1,0 +1,8 @@
+{
+    "js/retail_tools.min.js": [
+        "public/js/retail_tools.bundle.js"
+    ],
+    "css/retail_tools.min.css": [
+        "public/css/retail_tools.bundle.css"
+    ]
+}
