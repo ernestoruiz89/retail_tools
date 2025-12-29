@@ -13,7 +13,7 @@
 frappe.pages["item-inspector-light"].on_page_load = function (wrapper) {
     const page = frappe.ui.make_app_page({
         parent: wrapper,
-        title: __("Consulta Rápida"),
+        title: __("Quick Lookup"),
         single_column: true,
     });
 
@@ -64,10 +64,10 @@ retail_tools.ItemInspectorLight = class ItemInspectorLight {
     }
 
     make_filters() {
-        this.page.set_primary_action(__("Buscar"), () => this.load_selected_item());
+        this.page.set_primary_action(__("Search"), () => this.load_selected_item());
 
         this.item_field = this.page.add_field({
-            label: __("Producto"),
+            label: __("Item"),
             fieldtype: "Link",
             options: "Item",
             fieldname: "item_code",
@@ -75,19 +75,19 @@ retail_tools.ItemInspectorLight = class ItemInspectorLight {
         });
 
         this.barcode_field = this.page.add_field({
-            label: __("Código de barras"),
+            label: __("Barcode"),
             fieldtype: "Data",
             fieldname: "barcode",
         });
 
-        this.page.add_action_item(__("Escanear con cámara"), () => this.open_scanner());
+        this.page.add_action_item(__("Scan with Camera"), () => this.open_scanner());
     }
 
     make_layout() {
         const $body = $(this.page.body);
 
         $body.append(`
-      <div class="item-inspector-light" role="main" aria-label="${__("Consulta Rápida")}">
+      <div class="item-inspector-light" role="main" aria-label="${__("Quick Lookup")}">
         <div class="ii-grid">
           <div class="ii-card ii-overview">
             <div class="ii-header">
@@ -95,17 +95,17 @@ retail_tools.ItemInspectorLight = class ItemInspectorLight {
               <div class="ii-main">
                 <div class="ii-title"></div>
                 <div class="ii-meta"></div>
-                <div class="ii-tags" role="list" aria-label="${__("Etiquetas")}"></div>
+                <div class="ii-tags" role="list" aria-label="${__("Tags")}"></div>
               </div>
             </div>
-            <div class="ii-kpis mt-3" role="list" aria-label="${__("Indicadores clave")}"></div>
+            <div class="ii-kpis mt-3" role="list" aria-label="${__("Key Metrics")}"></div>
           </div>
 
           <div class="ii-card">
-            <div class="ii-card-title" id="price-chart-heading">${__("Histórico de precios por lista")}</div>
+            <div class="ii-card-title" id="price-chart-heading">${__("Price History by List")}</div>
             <div class="ii-price-controls mb-2"></div>
             <div class="ii-chart" id="ii-price-chart-light" role="img" aria-labelledby="price-chart-heading"></div>
-            <div class="ii-table ii-price-table mt-3" role="region" aria-label="${__("Tabla de precios")}"></div>
+            <div class="ii-table ii-price-table mt-3" role="region" aria-label="${__("Price Table")}"></div>
           </div>
         </div>
       </div>
@@ -145,7 +145,7 @@ retail_tools.ItemInspectorLight = class ItemInspectorLight {
         frappe.msgprint({
             title: __("Error"),
             indicator: "red",
-            message: __("Error al {0}. Por favor intente nuevamente.", [context]),
+            message: __("Error {0}. Please try again.", [context]),
         });
     }
 
@@ -158,7 +158,7 @@ retail_tools.ItemInspectorLight = class ItemInspectorLight {
 
                 const res = r.message;
                 if (!res || !res.ok) {
-                    frappe.msgprint(res?.message || __("No se encontró producto."));
+                    frappe.msgprint(res?.message || __("Item not found."));
                     return;
                 }
 
@@ -172,23 +172,23 @@ retail_tools.ItemInspectorLight = class ItemInspectorLight {
                     this._show_item_selector(res.matches);
                 }
             },
-            error: (err) => this._handle_error(err, __("buscar código de barras")),
+            error: (err) => this._handle_error(err, __("searching barcode")),
         });
     }
 
     _show_item_selector(matches) {
         const d = new frappe.ui.Dialog({
-            title: __("Selecciona un producto"),
+            title: __("Select an Item"),
             fields: [
                 {
                     fieldtype: "Select",
                     fieldname: "item_code",
-                    label: __("Producto"),
+                    label: __("Item"),
                     options: matches.map((x) => `${x.item_code} - ${x.item_name || ""}`),
                     reqd: 1,
                 },
             ],
-            primary_action_label: __("Abrir"),
+            primary_action_label: __("Open"),
             primary_action: () => {
                 const val = d.get_value("item_code");
                 const code = val.split(" - ")[0].trim();
@@ -216,7 +216,7 @@ retail_tools.ItemInspectorLight = class ItemInspectorLight {
                 this.state.snapshot = res;
                 this.render(res);
             },
-            error: (err) => this._handle_error(err, __("cargar información del producto")),
+            error: (err) => this._handle_error(err, __("loading item information")),
         });
     }
 
@@ -235,7 +235,7 @@ retail_tools.ItemInspectorLight = class ItemInspectorLight {
     _render_header(item, barcodes, bins) {
         const img = item.image
             ? `<img src="${encodeURI(item.image)}" alt="${frappe.utils.escape_html(item.item_name || "Item")}" style="width:72px;height:72px;object-fit:cover;border-radius:12px;" />`
-            : `<div class="ii-img-fallback" aria-label="${__("Sin imagen")}">${(item.item_name || item.item_code || "?").slice(0, 1)}</div>`;
+            : `<div class="ii-img-fallback" aria-label="${__("No image")}">${(item.item_name || item.item_code || "?").slice(0, 1)}</div>`;
 
         this.$image.html(img);
         this.$title.html(`
@@ -252,14 +252,14 @@ retail_tools.ItemInspectorLight = class ItemInspectorLight {
         const tags = [];
         if (barcodes.length)
             tags.push({ text: `${__("Barcodes")}: ${barcodes.map(frappe.utils.escape_html).join(", ")}`, color: "light" });
-        if (item.disabled) tags.push({ text: __("DESHABILITADO"), color: "danger" });
-        if (!item.is_stock_item) tags.push({ text: __("No es stock item"), color: "warning" });
+        if (item.disabled) tags.push({ text: __("DISABLED"), color: "danger" });
+        if (!item.is_stock_item) tags.push({ text: __("Not a Stock Item"), color: "warning" });
 
         // Alert: Low stock
         const total_qty = bins.reduce((acc, b) => acc + (flt(b.actual_qty) || 0), 0);
         const reorder_level = flt(item.reorder_level) || 0;
         if (reorder_level > 0 && total_qty < reorder_level) {
-            tags.push({ text: `⚠️ ${__("Stock bajo")}`, color: "danger" });
+            tags.push({ text: `⚠️ ${__("Low Stock")}`, color: "danger" });
         }
 
         this.$tags.html(
@@ -279,15 +279,15 @@ retail_tools.ItemInspectorLight = class ItemInspectorLight {
 
         this.$kpis.html(`
       <div class="ii-kpi" role="listitem">
-        <div class="ii-kpi-label">${__("Existencia total")}</div>
+        <div class="ii-kpi-label">${__("Total Stock")}</div>
         <div class="ii-kpi-value">${frappe.format(total_qty, { fieldtype: "Float" })}</div>
       </div>
       <div class="ii-kpi" role="listitem">
-        <div class="ii-kpi-label">${__("Costo estimado")}</div>
+        <div class="ii-kpi-label">${__("Estimated Cost")}</div>
         <div class="ii-kpi-value">${frappe.format(total_value, { fieldtype: "Currency" })}</div>
       </div>
       <div class="ii-kpi" role="listitem" id="ii-kpi-price-light">
-        <div class="ii-kpi-label">${__("Precio actual")}${sellingPrice.price_list ? ` <small class="text-muted">(${frappe.utils.escape_html(sellingPrice.price_list)})</small>` : ""}</div>
+        <div class="ii-kpi-label">${__("Current Price")}${sellingPrice.price_list ? ` <small class="text-muted">(${frappe.utils.escape_html(sellingPrice.price_list)})</small>` : ""}</div>
         <div class="ii-kpi-value">${sell_price > 0 ? frappe.format(sell_price, { fieldtype: "Currency" }) : "-"}</div>
       </div>
     `);
@@ -300,10 +300,10 @@ retail_tools.ItemInspectorLight = class ItemInspectorLight {
         this.$priceControls.html(
             priceLists.length
                 ? `<div class="form-inline">
-             <label class="mr-2" for="price-list-select-light">${__("Lista de precios")}</label>
-             <select class="form-control form-control-sm" id="price-list-select-light" data-pl aria-label="${__("Seleccionar lista de precios")}"></select>
+             <label class="mr-2" for="price-list-select-light">${__("Price List")}</label>
+             <select class="form-control form-control-sm" id="price-list-select-light" data-pl aria-label="${__("Select Price List")}"></select>
            </div>`
-                : `<div class="text-muted">${__("No hay Item Price para este producto.")}</div>`
+                : `<div class="text-muted">${__("No Item Price for this item.")}</div>`
         );
 
         if (priceLists.length) {
@@ -328,7 +328,7 @@ retail_tools.ItemInspectorLight = class ItemInspectorLight {
         const sell_price = latestPrice ? flt(latestPrice.price_list_rate) : 0;
 
         $priceKpi.html(`
-      <div class="ii-kpi-label">${__("Precio actual")}${price_list ? ` <small class="text-muted">(${frappe.utils.escape_html(price_list)})</small>` : ""}</div>
+      <div class="ii-kpi-label">${__("Current Price")}${price_list ? ` <small class="text-muted">(${frappe.utils.escape_html(price_list)})</small>` : ""}</div>
       <div class="ii-kpi-value">${sell_price > 0 ? frappe.format(sell_price, { fieldtype: "Currency" }) : "-"}</div>
     `);
     }
@@ -346,7 +346,7 @@ retail_tools.ItemInspectorLight = class ItemInspectorLight {
         };
 
         const pickDate = (r) => r.valid_from || r.creation || r.modified || "";
-        let labels = rows.map((r) => String(pickDate(r)).slice(0, 10)).map((x) => x || __("Sin fecha"));
+        let labels = rows.map((r) => String(pickDate(r)).slice(0, 10)).map((x) => x || __("No date"));
         let values = rows.map((r) => toFloat(r.price_list_rate));
 
         if (labels.length === 1) {
@@ -365,12 +365,12 @@ retail_tools.ItemInspectorLight = class ItemInspectorLight {
         this.$priceChart.css("min-height", "260px");
 
         if (!labels.length) {
-            this.$priceChart.html(`<div class="text-muted">${__("No hay puntos para graficar.")}</div>`);
+            this.$priceChart.html(`<div class="text-muted">${__("No data points to chart.")}</div>`);
         } else if (!frappe.Chart) {
-            this.$priceChart.html(`<div class="text-muted">${__("No se encontró frappe.Chart (assets).")}</div>`);
+            this.$priceChart.html(`<div class="text-muted">${__("frappe.Chart not found (assets).")}</div>`);
         } else {
             this._price_chart = new frappe.Chart(this.$priceChart[0], {
-                title: `${__("Histórico")} • ${price_list}`,
+                title: `${__("History")} • ${price_list}`,
                 data: { labels, datasets: [{ name: price_list, values }] },
                 type: "line",
                 height: 260,
@@ -381,10 +381,10 @@ retail_tools.ItemInspectorLight = class ItemInspectorLight {
 
         this.$priceTable.html(
             this.render_table(["valid_from", "price_list_rate", "currency", "modified"], rows.slice(-10).reverse(), {
-                valid_from: __("Desde"),
-                price_list_rate: __("Precio"),
-                currency: __("Moneda"),
-                modified: __("Modificado"),
+                valid_from: __("From"),
+                price_list_rate: __("Price"),
+                currency: __("Currency"),
+                modified: __("Modified"),
             })
         );
     }
@@ -405,7 +405,7 @@ retail_tools.ItemInspectorLight = class ItemInspectorLight {
       <div class="table-responsive">
         <table class="table table-bordered table-sm" role="table">
           <thead><tr>${ths}</tr></thead>
-          <tbody>${trs || `<tr><td colspan="${columns.length}" class="text-muted">${__("Sin datos")}</td></tr>`}</tbody>
+          <tbody>${trs || `<tr><td colspan="${columns.length}" class="text-muted">${__("No data")}</td></tr>`}</tbody>
         </table>
       </div>
     `;
