@@ -35,8 +35,8 @@ fixtures = [
 # ------------------
 
 # include js, css files in header of desk.html
-app_include_css = "/assets/retail_tools/css/retail_tools.bundle.css"
-app_include_js = "/assets/retail_tools/js/retail_tools.bundle.js"
+app_include_css = "/assets/retail_tools/css/retail_tools.min.css"
+app_include_js = "/assets/retail_tools/js/retail_tools.min.js"
 
 # include js, css files in header of web template
 # web_include_css = "/assets/retail_tools/css/retail_tools.css"
