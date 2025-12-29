@@ -1,0 +1,24 @@
+{
+    "doctype": "Page",
+    "name": "label-generator",
+    "module": "Retail Tools",
+    "standard": "Yes",
+    "page_name": "label-generator",
+    "title": "Label Generator",
+    "icon": "icon-tag",
+    "system_page": 0,
+    "roles": [
+        {
+            "role": "System Manager"
+        },
+        {
+            "role": "Stock Manager"
+        },
+        {
+            "role": "Stock User"
+        },
+        {
+            "role": "Sales User"
+        }
+    ]
+}
