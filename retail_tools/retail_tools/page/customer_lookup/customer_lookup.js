@@ -16,76 +16,61 @@
  */
 
 frappe.pages["customer-lookup"].on_page_load = function (wrapper) {
-  const page = frappe.ui.make_app_page({
-    parent: wrapper,
-    title: __("Customer Lookup"),
-    single_column: true,
-  });
+    const page = frappe.ui.make_app_page({
+        parent: wrapper,
+        title: __("Customer Lookup"),
+        single_column: true,
+    });
 
-  page.customer_lookup = new retail_tools.CustomerLookup(page, wrapper);
+    page.customer_lookup = new retail_tools.CustomerLookup(page, wrapper);
 };
 
 frappe.pages["customer-lookup"].on_page_hide = function (wrapper) {
-  if (wrapper.page.customer_lookup) {
-    wrapper.page.customer_lookup.destroy();
-  }
+    if (wrapper.page.customer_lookup) {
+        wrapper.page.customer_lookup.destroy();
+    }
 };
 
 frappe.provide("retail_tools");
 
 retail_tools.CustomerLookup = class CustomerLookup {
-  /**
-   * Initialize the Customer Lookup component
-   * @param {Object} page - Frappe page object
-   * @param {HTMLElement} wrapper - Page wrapper element
-   */
-  constructor(page, wrapper) {
-    this.page = page;
-    this.wrapper = wrapper;
-    this.$container = $(wrapper).find(".layout-main-section");
-    this.current_customer = null;
+    /**
+     * Initialize the Customer Lookup component
+     * @param {Object} page - Frappe page object
+     * @param {HTMLElement} wrapper - Page wrapper element
+     */
+    constructor(page, wrapper) {
+        this.page = page;
+        this.wrapper = wrapper;
+        this.$container = $(wrapper).find(".layout-main-section");
+        this.current_customer = null;
 
-    this.make_filters();
-    this.make_layout();
-  }
-
-  /**
-   * Clean up event handlers and resources
-   */
-  destroy() {
-    if (this.search_field) {
-      this.search_field.$input.off();
+        this.make_filters();
+        this.make_layout();
     }
-  }
 
-  make_filters() {
-    this.search_field = this.page.add_field({
-      label: __("Search Customer"),
-      fieldtype: "Data",
-      fieldname: "customer_search",
-      placeholder: __("Enter name, code, phone, or email..."),
-      change: () => {
-        const value = this.search_field.get_value();
-        if (value && value.length >= 2) {
-          this.search_customer(value);
+    /**
+     * Clean up event handlers and resources
+     */
+    destroy() {
+        if (this.$search_input) {
+            this.$search_input.off();
         }
-      },
-    });
+    }
 
-    // Add search on Enter key
-    this.search_field.$input.on("keypress", (e) => {
-      if (e.which === 13) {
-        const value = this.search_field.get_value();
-        if (value) {
-          this.search_customer(value);
-        }
-      }
-    });
-  }
+    make_filters() {
+        // We'll bind events after layout is created
+    }
 
-  make_layout() {
-    this.$container.html(`
+    make_layout() {
+        this.$container.html(`
       <div class="cl-wrapper">
+        <div class="cl-search-container">
+          <div class="cl-search-box">
+            <i class="fa fa-search cl-search-icon"></i>
+            <input type="text" class="cl-search-input" placeholder="${__("Enter name, code, phone, or email...")}">
+          </div>
+        </div>
         <div class="cl-empty-state">
           <div class="cl-empty-icon">
             <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
@@ -94,7 +79,7 @@ retail_tools.CustomerLookup = class CustomerLookup {
             </svg>
           </div>
           <h3>${__("Search for a Customer")}</h3>
-          <p class="text-muted">${__("Enter a name, code, phone number, or email to get started")}</p>
+          <p class="text-muted">${__("Enter a name, code, phone number, or email above")}</p>
         </div>
         <div class="cl-content" style="display: none;">
           <div class="cl-header"></div>
@@ -106,110 +91,134 @@ retail_tools.CustomerLookup = class CustomerLookup {
         </div>
       </div>
     `);
-  }
 
-  search_customer(query) {
-    frappe.call({
-      method:
-        "retail_tools.retail_tools.page.customer_lookup.customer_lookup.search_customer",
-      args: { query },
-      callback: (r) => {
-        if (r.message && r.message.ok) {
-          const customers = r.message.customers;
-          if (customers.length === 1) {
-            this.load_snapshot(customers[0].name);
-          } else {
-            this._show_customer_selector(customers);
-          }
-        } else {
-          frappe.show_alert({
-            message: r.message?.message || __("No customers found"),
-            indicator: "orange",
-          });
-        }
-      },
-      error: (err) => {
-        console.error("Search error:", err);
-        frappe.show_alert({
-          message: __("Error searching customers"),
-          indicator: "red",
+        // Bind search events
+        this.$search_input = this.$container.find(".cl-search-input");
+
+        this.$search_input.on("keypress", (e) => {
+            if (e.which === 13) {
+                const value = this.$search_input.val();
+                if (value && value.length >= 2) {
+                    this.search_customer(value);
+                }
+            }
         });
-      },
-    });
-  }
 
-  /**
-   * Show dialog to select from multiple matching customers
-   * @param {Array} customers - List of matching customers
-   */
-  _show_customer_selector(customers) {
-    const options = customers.map(
-      (c) => `${c.name} - ${c.customer_name} (${c.mobile_no || c.email_id || ""})`
-    );
-
-    const d = new frappe.ui.Dialog({
-      title: __("Select Customer"),
-      fields: [
-        {
-          fieldtype: "Select",
-          fieldname: "customer",
-          label: __("Customer"),
-          options: options.join("\n"),
-          reqd: 1,
-        },
-      ],
-      primary_action_label: __("Select"),
-      primary_action: () => {
-        const selected = d.get_value("customer");
-        const customer_name = selected.split(" - ")[0];
-        d.hide();
-        this.load_snapshot(customer_name);
-      },
-    });
-    d.show();
-  }
-
-  load_snapshot(customer) {
-    frappe.call({
-      method:
-        "retail_tools.retail_tools.page.customer_lookup.customer_lookup.get_customer_snapshot",
-      args: { customer },
-      callback: (r) => {
-        if (r.message && r.message.ok) {
-          this.current_customer = customer;
-          this.render(r.message);
-        } else {
-          frappe.show_alert({
-            message: r.message?.message || __("Error loading customer"),
-            indicator: "red",
-          });
-        }
-      },
-      error: (err) => {
-        console.error("Snapshot error:", err);
-        frappe.show_alert({
-          message: __("Error loading customer data"),
-          indicator: "red",
+        // Also search on blur/change after typing
+        let searchTimeout;
+        this.$search_input.on("input", (e) => {
+            clearTimeout(searchTimeout);
+            const value = this.$search_input.val();
+            if (value && value.length >= 3) {
+                searchTimeout = setTimeout(() => {
+                    this.search_customer(value);
+                }, 500);
+            }
         });
-      },
-    });
-  }
+    }
 
-  render(data) {
-    this.$container.find(".cl-empty-state").hide();
-    this.$container.find(".cl-content").show();
+    search_customer(query) {
+        frappe.call({
+            method:
+                "retail_tools.retail_tools.page.customer_lookup.customer_lookup.search_customer",
+            args: { query },
+            callback: (r) => {
+                if (r.message && r.message.ok) {
+                    const customers = r.message.customers;
+                    if (customers.length === 1) {
+                        this.load_snapshot(customers[0].name);
+                    } else {
+                        this._show_customer_selector(customers);
+                    }
+                } else {
+                    frappe.show_alert({
+                        message: r.message?.message || __("No customers found"),
+                        indicator: "orange",
+                    });
+                }
+            },
+            error: (err) => {
+                console.error("Search error:", err);
+                frappe.show_alert({
+                    message: __("Error searching customers"),
+                    indicator: "red",
+                });
+            },
+        });
+    }
 
-    this._render_header(data.customer);
-    this._render_kpis(data.outstanding, data.lifetime_value, data.last_purchase);
-    this._render_invoices(data.recent_invoices);
-    this._render_loyalty(data.loyalty);
-  }
+    /**
+     * Show dialog to select from multiple matching customers
+     * @param {Array} customers - List of matching customers
+     */
+    _show_customer_selector(customers) {
+        const options = customers.map(
+            (c) => `${c.name} - ${c.customer_name} (${c.mobile_no || c.email_id || ""})`
+        );
 
-  _render_header(customer) {
-    const address = customer.address_display || "";
-    const contact = customer.mobile_no || customer.email_id || "";
+        const d = new frappe.ui.Dialog({
+            title: __("Select Customer"),
+            fields: [
+                {
+                    fieldtype: "Select",
+                    fieldname: "customer",
+                    label: __("Customer"),
+                    options: options.join("\n"),
+                    reqd: 1,
+                },
+            ],
+            primary_action_label: __("Select"),
+            primary_action: () => {
+                const selected = d.get_value("customer");
+                const customer_name = selected.split(" - ")[0];
+                d.hide();
+                this.load_snapshot(customer_name);
+            },
+        });
+        d.show();
+    }
 
-    this.$container.find(".cl-header").html(`
+    load_snapshot(customer) {
+        frappe.call({
+            method:
+                "retail_tools.retail_tools.page.customer_lookup.customer_lookup.get_customer_snapshot",
+            args: { customer },
+            callback: (r) => {
+                if (r.message && r.message.ok) {
+                    this.current_customer = customer;
+                    this.render(r.message);
+                } else {
+                    frappe.show_alert({
+                        message: r.message?.message || __("Error loading customer"),
+                        indicator: "red",
+                    });
+                }
+            },
+            error: (err) => {
+                console.error("Snapshot error:", err);
+                frappe.show_alert({
+                    message: __("Error loading customer data"),
+                    indicator: "red",
+                });
+            },
+        });
+    }
+
+    render(data) {
+        this.$container.find(".cl-empty-state").hide();
+        this.$container.find(".cl-content").show();
+
+        this._render_header(data.customer);
+        this._render_kpis(data.outstanding, data.lifetime_value, data.last_purchase);
+        this._render_invoices(data.recent_invoices);
+        this._render_loyalty(data.loyalty);
+    }
+
+    _render_header(customer) {
+        const address = customer.address_display || "";
+        const contact = customer.mobile_no || customer.email_id || "";
+
+        this.$container.find(".cl-header").html(`
       <div class="cl-customer-card">
         <div class="cl-customer-avatar">
           ${customer.customer_name.charAt(0).toUpperCase()}
@@ -229,20 +238,20 @@ retail_tools.CustomerLookup = class CustomerLookup {
         </div>
       </div>
     `);
-  }
+    }
 
-  _render_kpis(outstanding, lifetime, lastPurchase) {
-    const formatCurrency = (val, currency) => {
-      return frappe.format(val, { fieldtype: "Currency", currency: currency });
-    };
+    _render_kpis(outstanding, lifetime, lastPurchase) {
+        const formatCurrency = (val, currency) => {
+            return frappe.format(val, { fieldtype: "Currency", currency: currency });
+        };
 
-    const formatDate = (val) => {
-      return val ? frappe.format(val, { fieldtype: "Date" }) : __("Never");
-    };
+        const formatDate = (val) => {
+            return val ? frappe.format(val, { fieldtype: "Date" }) : __("Never");
+        };
 
-    const outstandingClass = outstanding.amount > 0 ? "cl-kpi-warning" : "cl-kpi-success";
+        const outstandingClass = outstanding.amount > 0 ? "cl-kpi-warning" : "cl-kpi-success";
 
-    this.$container.find(".cl-kpis").html(`
+        this.$container.find(".cl-kpis").html(`
       <div class="cl-kpi-grid">
         <div class="cl-kpi ${outstandingClass}">
           <div class="cl-kpi-value">${formatCurrency(outstanding.amount, outstanding.currency)}</div>
@@ -258,24 +267,24 @@ retail_tools.CustomerLookup = class CustomerLookup {
         </div>
       </div>
     `);
-  }
+    }
 
-  _render_invoices(invoices) {
-    if (!invoices || invoices.length === 0) {
-      this.$container.find(".cl-invoices").html(`
+    _render_invoices(invoices) {
+        if (!invoices || invoices.length === 0) {
+            this.$container.find(".cl-invoices").html(`
         <div class="cl-section">
           <h4 class="cl-section-title">${__("Recent Purchases")}</h4>
           <p class="text-muted">${__("No purchase history found")}</p>
         </div>
       `);
-      return;
-    }
+            return;
+        }
 
-    const rows = invoices.map((inv) => {
-      const statusClass = inv.status === "Paid" ? "success" : inv.status === "Overdue" ? "danger" : "warning";
-      const returnBadge = inv.is_return ? `<span class="cl-return-badge">${__("Return")}</span>` : "";
+        const rows = invoices.map((inv) => {
+            const statusClass = inv.status === "Paid" ? "success" : inv.status === "Overdue" ? "danger" : "warning";
+            const returnBadge = inv.is_return ? `<span class="cl-return-badge">${__("Return")}</span>` : "";
 
-      return `
+            return `
         <tr>
           <td>
             <a href="/app/sales-invoice/${encodeURIComponent(inv.name)}">${frappe.utils.escape_html(inv.name)}</a>
@@ -286,9 +295,9 @@ retail_tools.CustomerLookup = class CustomerLookup {
           <td><span class="indicator-pill ${statusClass}">${inv.status}</span></td>
         </tr>
       `;
-    }).join("");
+        }).join("");
 
-    this.$container.find(".cl-invoices").html(`
+        this.$container.find(".cl-invoices").html(`
       <div class="cl-section">
         <h4 class="cl-section-title">${__("Recent Purchases")}</h4>
         <div class="cl-table-wrapper">
@@ -306,19 +315,19 @@ retail_tools.CustomerLookup = class CustomerLookup {
         </div>
       </div>
     `);
-  }
-
-  _render_loyalty(loyalty) {
-    if (!loyalty) {
-      this.$container.find(".cl-loyalty").html("");
-      return;
     }
 
-    const expiringWarning = loyalty.expiring_soon > 0
-      ? `<div class="cl-loyalty-warning"><i class="fa fa-exclamation-triangle"></i> ${loyalty.expiring_soon} ${__("points expiring in 30 days")}</div>`
-      : "";
+    _render_loyalty(loyalty) {
+        if (!loyalty) {
+            this.$container.find(".cl-loyalty").html("");
+            return;
+        }
 
-    this.$container.find(".cl-loyalty").html(`
+        const expiringWarning = loyalty.expiring_soon > 0
+            ? `<div class="cl-loyalty-warning"><i class="fa fa-exclamation-triangle"></i> ${loyalty.expiring_soon} ${__("points expiring in 30 days")}</div>`
+            : "";
+
+        this.$container.find(".cl-loyalty").html(`
       <div class="cl-section cl-loyalty-section">
         <h4 class="cl-section-title">${__("Loyalty Points")}</h4>
         <div class="cl-loyalty-card">
@@ -329,5 +338,5 @@ retail_tools.CustomerLookup = class CustomerLookup {
         </div>
       </div>
     `);
-  }
+    }
 };
