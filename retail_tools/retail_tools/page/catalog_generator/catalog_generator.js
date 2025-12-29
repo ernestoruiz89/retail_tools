@@ -67,8 +67,18 @@ retail_tools.CatalogGenerator = class CatalogGenerator {
           </div>
           <div class="cg-option-group">
             <label class="cg-checkbox">
+              <input type="checkbox" id="cg-group-by-item-group" checked>
+              ${__("Group by Item Group")}
+            </label>
+          </div>
+          <div class="cg-option-group">
+            <label class="cg-checkbox">
               <input type="checkbox" id="cg-show-barcode" checked>
               ${__("Show Barcode")}
+            </label>
+            <label class="cg-checkbox">
+              <input type="checkbox" id="cg-show-barcode-image">
+              ${__("Show Barcode Image")}
             </label>
             <label class="cg-checkbox">
               <input type="checkbox" id="cg-show-price" checked>
@@ -162,7 +172,9 @@ retail_tools.CatalogGenerator = class CatalogGenerator {
       columns:
         this.$body.find(".cg-columns-selector .btn.active").data("columns") ||
         3,
+      group_by_item_group: this.$body.find("#cg-group-by-item-group").is(":checked") ? 1 : 0,
       show_barcode: this.$body.find("#cg-show-barcode").is(":checked") ? 1 : 0,
+      show_barcode_image: this.$body.find("#cg-show-barcode-image").is(":checked") ? 1 : 0,
       show_price: this.$body.find("#cg-show-price").is(":checked") ? 1 : 0,
       show_description: this.$body.find("#cg-show-desc").is(":checked") ? 1 : 0,
     };

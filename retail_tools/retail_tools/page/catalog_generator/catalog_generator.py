@@ -186,8 +186,10 @@ def generate_catalog_html(
     price_list: str = None,
     columns: int = 3,
     show_barcode: int = 1,
+    show_barcode_image: int = 0,
     show_price: int = 1,
     show_description: int = 0,
+    group_by_item_group: int = 1,
 ) -> dict:
     """
     Generate HTML for catalog preview/print.
@@ -198,9 +200,11 @@ def generate_catalog_html(
         warehouse: Filter by warehouse
         price_list: Price list for prices
         columns: Number of columns (2, 3, or 4)
-        show_barcode: Show barcode (0 or 1)
+        show_barcode: Show barcode text (0 or 1)
+        show_barcode_image: Show scannable barcode image (0 or 1)
         show_price: Show price (0 or 1)
         show_description: Show description (0 or 1)
+        group_by_item_group: Group items by item group (0 or 1)
 
     Returns:
         dict with HTML content
@@ -229,8 +233,10 @@ def generate_catalog_html(
         items,
         columns=columns,
         show_barcode=int(show_barcode),
+        show_barcode_image=int(show_barcode_image),
         show_price=int(show_price),
         show_description=int(show_description),
+        group_by_item_group=int(group_by_item_group),
         price_list=price_list,
     )
 
@@ -241,11 +247,13 @@ def _build_catalog_html(
     items: list,
     columns: int,
     show_barcode: int,
+    show_barcode_image: int,
     show_price: int,
     show_description: int,
+    group_by_item_group: int,
     price_list: str = None,
 ) -> str:
-    """Build catalog HTML grid."""
+    """Build catalog HTML grid with optional grouping."""
     width_percent = 100 // columns
 
     header = f"""
@@ -258,41 +266,48 @@ def _build_catalog_html(
     </div>
     """
 
-    items_html = ""
-    for item in items:
-        image_html = ""
-        if item.get("image"):
-            image_html = f'<img src="{item.image}" alt="{item.item_name}" class="catalog-item-image">'
-        else:
-            image_html = f'<div class="catalog-item-placeholder">{item.item_name[:1]}</div>'
+    # Group items if requested
+    if group_by_item_group:
+        from collections import defaultdict
+        grouped = defaultdict(list)
+        for item in items:
+            grouped[item.get("item_group", _("Other"))].append(item)
+        
+        content_html = ""
+        for group_name in sorted(grouped.keys()):
+            group_items = grouped[group_name]
+            content_html += f'<div class="catalog-group"><h3 class="catalog-group-title">{group_name}</h3>'
+            content_html += '<div class="catalog-grid">'
+            content_html += _build_items_html(group_items, width_percent, show_barcode, show_barcode_image, show_price, show_description)
+            content_html += '</div></div>'
+    else:
+        content_html = '<div class="catalog-grid">'
+        content_html += _build_items_html(items, width_percent, show_barcode, show_barcode_image, show_price, show_description)
+        content_html += '</div>'
 
-        barcode_html = ""
-        if show_barcode and item.get("barcode"):
-            barcode_html = f'<div class="catalog-item-barcode">{item.barcode}</div>'
-
-        price_html = ""
-        if show_price and item.get("price"):
-            formatted_price = frappe.format_value(
-                item.price, {"fieldtype": "Currency", "currency": item.get("currency")}
-            )
-            price_html = f'<div class="catalog-item-price">{formatted_price}</div>'
-
-        desc_html = ""
-        if show_description and item.get("description"):
-            desc_text = frappe.utils.strip_html_tags(item.description or "")[:100]
-            desc_html = f'<div class="catalog-item-desc">{desc_text}</div>'
-
-        items_html += f"""
-        <div class="catalog-item" style="width: {width_percent}%;">
-            <div class="catalog-item-inner">
-                {image_html}
-                <div class="catalog-item-name">{item.item_name}</div>
-                <div class="catalog-item-code">{item.item_code}</div>
-                {barcode_html}
-                {price_html}
-                {desc_html}
-            </div>
-        </div>
+    # Include JsBarcode library for barcode images
+    barcode_script = ""
+    if show_barcode_image:
+        barcode_script = """
+        <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                document.querySelectorAll('.barcode-svg').forEach(function(el) {
+                    try {
+                        JsBarcode(el, el.dataset.barcode, {
+                            format: "CODE128",
+                            width: 1.5,
+                            height: 40,
+                            displayValue: true,
+                            fontSize: 10,
+                            margin: 5
+                        });
+                    } catch (e) {
+                        console.log('Barcode error:', e);
+                    }
+                });
+            });
+        </script>
         """
 
     return f"""
@@ -301,6 +316,15 @@ def _build_catalog_html(
         .catalog-header {{ text-align: center; margin-bottom: 20px; }}
         .catalog-header h2 {{ margin: 0; }}
         .catalog-meta {{ color: #666; margin-top: 5px; }}
+        .catalog-group {{ margin-bottom: 30px; }}
+        .catalog-group-title {{
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #333;
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+        }}
         .catalog-grid {{ display: flex; flex-wrap: wrap; }}
         .catalog-item {{ padding: 10px; box-sizing: border-box; }}
         .catalog-item-inner {{
@@ -312,58 +336,121 @@ def _build_catalog_html(
         }}
         .catalog-item-image {{
             width: 100%;
-            max-height: 150px;
+            max-height: 120px;
             object-fit: contain;
             margin-bottom: 10px;
         }}
         .catalog-item-placeholder {{
             width: 100%;
-            height: 100px;
+            height: 80px;
             background: #f0f0f0;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 36px;
+            font-size: 28px;
             color: #999;
             margin-bottom: 10px;
             border-radius: 4px;
         }}
         .catalog-item-name {{
             font-weight: 600;
-            font-size: 14px;
-            margin-bottom: 5px;
+            font-size: 13px;
+            margin-bottom: 4px;
+            line-height: 1.2;
         }}
         .catalog-item-code {{
             color: #666;
-            font-size: 12px;
-            margin-bottom: 8px;
+            font-size: 11px;
+            margin-bottom: 6px;
         }}
         .catalog-item-barcode {{
             font-family: monospace;
-            font-size: 11px;
+            font-size: 10px;
             background: #f5f5f5;
-            padding: 4px;
+            padding: 3px;
             border-radius: 4px;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
+        }}
+        .catalog-item-barcode-image {{
+            margin: 8px 0;
+        }}
+        .catalog-item-barcode-image svg {{
+            max-width: 100%;
+            height: auto;
         }}
         .catalog-item-price {{
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 700;
             color: #2e7d32;
         }}
         .catalog-item-desc {{
-            font-size: 11px;
+            font-size: 10px;
             color: #666;
-            margin-top: 8px;
+            margin-top: 6px;
         }}
         @media print {{
             .catalog-item-inner {{ break-inside: avoid; }}
+            .catalog-group {{ break-inside: avoid; }}
         }}
     </style>
+    {barcode_script}
     <div class="catalog-container">
         {header}
-        <div class="catalog-grid">
-            {items_html}
-        </div>
+        {content_html}
     </div>
     """
+
+
+def _build_items_html(
+    items: list,
+    width_percent: int,
+    show_barcode: int,
+    show_barcode_image: int,
+    show_price: int,
+    show_description: int,
+) -> str:
+    """Build HTML for a list of items."""
+    items_html = ""
+    for item in items:
+        image_html = ""
+        if item.get("image"):
+            image_html = f'<img src="{item.image}" alt="{item.item_name}" class="catalog-item-image">'
+        else:
+            image_html = f'<div class="catalog-item-placeholder">{item.item_name[:1]}</div>'
+
+        barcode_html = ""
+        if show_barcode and item.get("barcode") and not show_barcode_image:
+            barcode_html = f'<div class="catalog-item-barcode">{item.barcode}</div>'
+
+        barcode_image_html = ""
+        if show_barcode_image and item.get("barcode"):
+            barcode_image_html = f'<div class="catalog-item-barcode-image"><svg class="barcode-svg" data-barcode="{item.barcode}"></svg></div>'
+
+        price_html = ""
+        if show_price and item.get("price"):
+            formatted_price = frappe.format_value(
+                item.price, {"fieldtype": "Currency", "currency": item.get("currency")}
+            )
+            price_html = f'<div class="catalog-item-price">{formatted_price}</div>'
+
+        desc_html = ""
+        if show_description and item.get("description"):
+            desc_text = frappe.utils.strip_html_tags(item.description or "")[:80]
+            desc_html = f'<div class="catalog-item-desc">{desc_text}</div>'
+
+        items_html += f"""
+        <div class="catalog-item" style="width: {width_percent}%;">
+            <div class="catalog-item-inner">
+                {image_html}
+                <div class="catalog-item-name">{item.item_name}</div>
+                <div class="catalog-item-code">{item.item_code}</div>
+                {barcode_html}
+                {barcode_image_html}
+                {price_html}
+                {desc_html}
+            </div>
+        </div>
+        """
+
+    return items_html
+
