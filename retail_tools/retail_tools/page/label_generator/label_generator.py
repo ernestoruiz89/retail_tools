@@ -26,6 +26,51 @@ def get_label_formats() -> dict:
 
 
 @frappe.whitelist()
+def get_items_with_stock(warehouse: str = None) -> dict:
+    """
+    Get all items with stock for label generation.
+
+    Args:
+        warehouse: Optional warehouse filter
+
+    Returns:
+        dict with items array
+    """
+    # Get items with stock from Bin
+    filters = {}
+    if warehouse:
+        filters["warehouse"] = warehouse
+
+    bins = frappe.get_all(
+        "Bin",
+        filters=filters,
+        fields=["item_code", "actual_qty", "warehouse"],
+        order_by="item_code",
+    )
+
+    # Filter to positive stock and aggregate by item
+    from collections import defaultdict
+    stock_by_item = defaultdict(float)
+    for b in bins:
+        if b.actual_qty > 0:
+            stock_by_item[b.item_code] += b.actual_qty
+
+    if not stock_by_item:
+        return {"ok": False, "message": _("No items with stock found")}
+
+    # Get item details
+    items = []
+    for item_code, qty in stock_by_item.items():
+        result = get_item_for_label(item_code)
+        if result.get("ok"):
+            item = result["item"]
+            item["qty"] = int(qty)
+            items.append(item)
+
+    return {"ok": True, "items": items, "count": len(items)}
+
+
+@frappe.whitelist()
 def get_item_for_label(item_code: str) -> dict:
     """
     Get item data for label generation.
@@ -75,7 +120,7 @@ def get_item_for_label(item_code: str) -> dict:
 
 
 @frappe.whitelist()
-def generate_labels_html(items: str, label_format: str = "medium") -> dict:
+def generate_labels_html(items: str, label_format: str = "medium", show_price: int = 1) -> dict:
     """
     Generate HTML for label printing.
 
@@ -121,12 +166,12 @@ def generate_labels_html(items: str, label_format: str = "medium") -> dict:
         return {"ok": False, "message": _("No valid items found")}
 
     # Build HTML
-    html = _build_labels_html(labels, format_config)
+    html = _build_labels_html(labels, format_config, int(show_price))
 
     return {"ok": True, "html": html, "count": len(labels)}
 
 
-def _build_labels_html(labels: list, format_config: dict) -> str:
+def _build_labels_html(labels: list, format_config: dict, show_price: int = 1) -> str:
     """Build labels HTML grid."""
     columns = format_config["columns"]
     label_width = format_config["width"]
@@ -135,7 +180,7 @@ def _build_labels_html(labels: list, format_config: dict) -> str:
     labels_html = ""
     for label in labels:
         price_html = ""
-        if label.get("price"):
+        if show_price and label.get("price"):
             formatted_price = frappe.format_value(
                 label["price"], {"fieldtype": "Currency"}
             )

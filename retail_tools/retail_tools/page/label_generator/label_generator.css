@@ -33,6 +33,26 @@
 
 .lg-add-btn {
     height: 36px;
+    margin-top: 24px;
+}
+
+.lg-bulk-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.lg-bulk-row .lg-field {
+    flex: 0 0 200px;
+}
+
+.lg-load-stock-btn {
+    height: 36px;
+    white-space: nowrap;
+    margin-top: 24px;
 }
 
 .lg-format-row {

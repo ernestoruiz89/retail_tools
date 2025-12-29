@@ -52,6 +52,12 @@ retail_tools.LabelGenerator = class LabelGenerator {
             <div class="lg-field lg-qty-field" id="lg-qty-field"></div>
             <button class="btn btn-primary lg-add-btn">${__("Add")}</button>
           </div>
+          <div class="lg-bulk-row">
+            <div class="lg-field" id="lg-warehouse-field"></div>
+            <button class="btn btn-default lg-load-stock-btn">
+              <i class="fa fa-download"></i> ${__("Load Items with Stock")}
+            </button>
+          </div>
           <div class="lg-format-row">
             <label>${__("Label Format")}:</label>
             <div class="lg-field" id="lg-format-field"></div>
@@ -126,8 +132,25 @@ retail_tools.LabelGenerator = class LabelGenerator {
         this.format_field.set_value("medium");
         this.format_field.refresh();
 
+        // Create Warehouse field
+        this.warehouse_field = frappe.ui.form.make_control({
+            df: {
+                fieldtype: "Link",
+                fieldname: "warehouse",
+                label: __("Warehouse"),
+                options: "Warehouse",
+                placeholder: __("All warehouses"),
+            },
+            parent: this.$body.find("#lg-warehouse-field"),
+            render_input: true,
+        });
+        this.warehouse_field.refresh();
+
         // Bind add button
         this.$body.find(".lg-add-btn").on("click", () => this.add_item());
+
+        // Bind load stock button
+        this.$body.find(".lg-load-stock-btn").on("click", () => this.load_items_with_stock());
 
         // Bind enter key on item field
         this.$body.find("#lg-item-field input").on("keypress", (e) => {
@@ -234,6 +257,43 @@ retail_tools.LabelGenerator = class LabelGenerator {
         this.$body.find(".lg-preview").html("");
     }
 
+    load_items_with_stock() {
+        const warehouse = this.warehouse_field.get_value();
+
+        frappe.call({
+            method:
+                "retail_tools.retail_tools.page.label_generator.label_generator.get_items_with_stock",
+            args: { warehouse: warehouse || "" },
+            freeze: true,
+            freeze_message: __("Loading items with stock..."),
+            callback: (r) => {
+                if (r.message && r.message.ok) {
+                    // Merge with existing items
+                    r.message.items.forEach((item) => {
+                        const existing = this.items.find(
+                            (i) => i.item_code === item.item_code
+                        );
+                        if (existing) {
+                            existing.qty += item.qty;
+                        } else {
+                            this.items.push(item);
+                        }
+                    });
+                    this.render_items_list();
+                    frappe.show_alert({
+                        message: __("{0} items loaded", [r.message.count]),
+                        indicator: "green",
+                    });
+                } else {
+                    frappe.show_alert({
+                        message: r.message?.message || __("No items found"),
+                        indicator: "orange",
+                    });
+                }
+            },
+        });
+    }
+
     generate_labels() {
         if (this.items.length === 0) {
             frappe.show_alert({
@@ -244,6 +304,7 @@ retail_tools.LabelGenerator = class LabelGenerator {
         }
 
         const label_format = this.format_field.get_value() || "medium";
+        const show_price = this.$body.find("#lg-show-price").is(":checked") ? 1 : 0;
 
         frappe.call({
             method:
@@ -251,6 +312,7 @@ retail_tools.LabelGenerator = class LabelGenerator {
             args: {
                 items: JSON.stringify(this.items),
                 label_format: label_format,
+                show_price: show_price,
             },
             freeze: true,
             freeze_message: __("Generating labels..."),
