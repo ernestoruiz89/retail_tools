@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Retail Tools VERSION\n"
 "Report-Msgid-Bugs-To: eruiz@wbapps.com\n"
-"POT-Creation-Date: 2025-12-29 13:56+0000\n"
+"POT-Creation-Date: 2025-12-29 14:51+0000\n"
 "PO-Revision-Date: 2025-12-29 13:58+0000\n"
 "Last-Translator: eruiz@wbapps.com\n"
 "Language: es\n"
@@ -23,15 +23,6 @@ msgstr ""
 msgid "<span class=\"h4\">Retail Tools</span>"
 msgstr ""
 
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:250
-#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:191
-msgid "Abrir"
-msgstr ""
-
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:361
-msgid "Abrir Item"
-msgstr ""
-
 #: retail_tools/retail_tools/page/label_generator/label_generator.js:47
 msgid "Add"
 msgstr ""
@@ -44,10 +35,6 @@ msgstr ""
 msgid "All warehouses"
 msgstr ""
 
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:461
-msgid "Almacén"
-msgstr ""
-
 #: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:304
 msgid "Amount"
 msgstr ""
@@ -56,6 +43,8 @@ msgstr ""
 msgid "Available Points"
 msgstr ""
 
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:106
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:78
 #: retail_tools/retail_tools/page/label_generator/label_generator.js:47
 msgid "Barcode"
 msgstr ""
@@ -70,12 +59,8 @@ msgid "Barcodes"
 msgstr ""
 
 #: retail_tools/retail_tools/page/catalog_generator/catalog_generator.js:126
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:314
 msgid "Brand"
-msgstr ""
-
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:95
-#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:67
-msgid "Buscar"
 msgstr ""
 
 #. Label of a shortcut in the Retail Tools Workspace
@@ -88,37 +73,30 @@ msgstr ""
 msgid "Clear All"
 msgstr ""
 
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:512
-msgid "Cliente"
-msgstr ""
-
 #: retail_tools/retail_tools/page/catalog_generator/catalog_generator.js:49
 msgid "Columns"
 msgstr ""
 
-#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:16
-msgid "Consulta Rápida"
-msgstr ""
-
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:21
-msgid "Consulta de Producto"
-msgstr ""
-
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:465
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:529
-msgid "Costo"
+msgid "Cost"
 msgstr ""
 
-#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:280
-msgid "Costo estimado"
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:631
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:386
+msgid "Currency"
 msgstr ""
 
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:410
-msgid "Costo estimado (stock)"
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:551
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:280
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:330
+msgid "Current Price"
 msgstr ""
 
 #: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:72
 #: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:161
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:512
 msgid "Customer"
 msgstr ""
 
@@ -136,32 +114,24 @@ msgstr ""
 msgid "Customer not found"
 msgstr ""
 
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:106
-#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:78
-msgid "Código de barras"
-msgstr ""
-
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:328
 #: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:255
-msgid "DESHABILITADO"
+msgid "DISABLED"
 msgstr ""
 
 #: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:304
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:511
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:526
 msgid "Date"
 msgstr ""
 
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:629
-#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:384
-msgid "Desde"
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:420
+msgid "Days Without Sales"
 msgstr ""
 
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:516
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:531
-msgid "Documento"
-msgstr ""
-
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:420
-msgid "Días sin movimiento"
+msgid "Document"
 msgstr ""
 
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.py:74
@@ -171,11 +141,6 @@ msgstr ""
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:200
 #: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:146
 msgid "Error"
-msgstr ""
-
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:202
-#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:148
-msgid "Error al {0}. Por favor intente nuevamente."
 msgstr ""
 
 #: retail_tools/retail_tools/page/catalog_generator/catalog_generator.js:216
@@ -198,27 +163,30 @@ msgstr ""
 msgid "Error searching customers"
 msgstr ""
 
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:111
-#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:83
-msgid "Escanear con cámara"
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:202
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:148
+msgid "Error {0}. Please try again."
 msgstr ""
 
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:117
-msgid "Existencia por almacén"
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:466
+msgid "Est. Value"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:280
+msgid "Estimated Cost"
 msgstr ""
 
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:410
-#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:280
-msgid "Existencia total"
-msgstr ""
-
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:511
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:526
-msgid "Fecha"
+msgid "Estimated Cost (Stock)"
 msgstr ""
 
 #: retail_tools/retail_tools/page/label_generator/label_generator.js:121
 msgid "Format"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:629
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:384
+msgid "From"
 msgstr ""
 
 #: retail_tools/retail_tools/page/label_generator/label_generator.js:37
@@ -241,22 +209,17 @@ msgstr ""
 msgid "Generating labels..."
 msgstr ""
 
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:314
+msgid "Group"
+msgstr ""
+
 #: retail_tools/retail_tools/page/catalog_generator/catalog_generator.js:49
 msgid "Group by Item Group"
 msgstr ""
 
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:314
-msgid "Grupo"
-msgstr ""
-
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:614
 #: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:373
-msgid "Histórico"
-msgstr ""
-
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:117
-#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:89
-msgid "Histórico de precios por lista"
+msgid "History"
 msgstr ""
 
 #: retail_tools/retail_tools/page/label_generator/label_generator.py:139
@@ -267,6 +230,10 @@ msgstr ""
 msgid "Invoice"
 msgstr ""
 
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:98
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:245
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:70
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:186
 #: retail_tools/retail_tools/page/label_generator/label_generator.js:47
 #: retail_tools/retail_tools/page/label_generator/label_generator.js:93
 msgid "Item"
@@ -277,6 +244,7 @@ msgid "Item Group"
 msgstr ""
 
 #. Label of a shortcut in the Retail Tools Workspace
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:21
 #: retail_tools/retail_tools/workspace/retail_tools/retail_tools.json
 msgid "Item Inspector"
 msgstr ""
@@ -293,6 +261,11 @@ msgstr ""
 #: retail_tools/retail_tools/page/label_generator/label_generator.js:200
 #: retail_tools/retail_tools/page/label_generator/label_generator.py:89
 msgid "Item not found"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:216
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:161
+msgid "Item not found."
 msgstr ""
 
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.py:145
@@ -314,16 +287,16 @@ msgid "Large (70x40mm) - 2 cols"
 msgstr ""
 
 #: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:255
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:438
 msgid "Last Purchase"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:420
+msgid "Last Sale"
 msgstr ""
 
 #: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:255
 msgid "Lifetime Purchases"
-msgstr ""
-
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:481
-#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:302
-msgid "Lista de precios"
 msgstr ""
 
 #: retail_tools/retail_tools/page/label_generator/label_generator.js:47
@@ -334,17 +307,13 @@ msgstr ""
 msgid "Loading items with stock..."
 msgstr ""
 
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:335
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:262
+msgid "Low Stock"
+msgstr ""
+
 #: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:334
 msgid "Loyalty Points"
-msgstr ""
-
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:314
-msgid "Marca"
-msgstr ""
-
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:420
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:565
-msgid "Margen de utilidad"
 msgstr ""
 
 #: retail_tools/retail_tools/page/label_generator/label_generator.js:124
@@ -353,20 +322,16 @@ msgstr ""
 
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:632
 #: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:387
-msgid "Modificado"
-msgstr ""
-
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:631
-#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:386
-msgid "Moneda"
-msgstr ""
-
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:361
-msgid "Movimientos"
+msgid "Modified"
 msgstr ""
 
 #: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:250
 msgid "Never"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:485
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:306
+msgid "No Item Price for this item."
 msgstr ""
 
 #: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:131
@@ -374,19 +339,19 @@ msgstr ""
 msgid "No customers found"
 msgstr ""
 
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:329
-#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:256
-msgid "No es stock item"
-msgstr ""
-
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:485
-#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:306
-msgid "No hay Item Price para este producto."
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:660
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:408
+msgid "No data"
 msgstr ""
 
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:607
 #: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:368
-msgid "No hay puntos para graficar."
+msgid "No data points to chart."
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:585
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:349
+msgid "No date"
 msgstr ""
 
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.py:102
@@ -414,18 +379,26 @@ msgstr ""
 msgid "No purchase history found"
 msgstr ""
 
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:610
-#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:370
-msgid "No se encontró frappe.Chart (assets)."
-msgstr ""
-
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:216
-#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:161
-msgid "No se encontró producto."
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:340
+msgid "No sales 60+ days"
 msgstr ""
 
 #: retail_tools/retail_tools/page/label_generator/label_generator.py:166
 msgid "No valid items found"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:329
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:256
+msgid "Not a Stock Item"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:250
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:191
+msgid "Open"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:361
+msgid "Open Item"
 msgstr ""
 
 #: retail_tools/retail_tools/page/catalog_generator/catalog_generator.py:274
@@ -459,17 +432,17 @@ msgstr ""
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:514
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:630
 #: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:385
-msgid "Precio"
+msgid "Price"
 msgstr ""
 
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:410
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:551
-#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:280
-#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:330
-msgid "Precio actual"
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:117
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:89
+msgid "Price History by List"
 msgstr ""
 
 #: retail_tools/retail_tools/page/catalog_generator/catalog_generator.js:150
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:481
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:302
 msgid "Price List"
 msgstr ""
 
@@ -482,19 +455,13 @@ msgstr ""
 msgid "Product Catalog"
 msgstr ""
 
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:98
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:245
-#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:70
-#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:186
-msgid "Producto"
-msgstr ""
-
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:527
-msgid "Proveedor"
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:420
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:565
+msgid "Profit Margin"
 msgstr ""
 
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:464
-msgid "Proyectado"
+msgid "Projected"
 msgstr ""
 
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:462
@@ -505,13 +472,22 @@ msgstr ""
 msgid "Qty"
 msgstr ""
 
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:16
+msgid "Quick Lookup"
+msgstr ""
+
 #: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:275
 #: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:304
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:117
 msgid "Recent Purchases"
 msgstr ""
 
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:117
+msgid "Recent Sales"
+msgstr ""
+
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:463
-msgid "Reservado"
+msgid "Reserved"
 msgstr ""
 
 #. Name of a Workspace
@@ -523,8 +499,18 @@ msgstr ""
 msgid "Return"
 msgstr ""
 
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:361
-msgid "Saldos"
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:420
+msgid "Sales 30 Days"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:111
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:83
+msgid "Scan with Camera"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:95
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:67
+msgid "Search"
 msgstr ""
 
 #: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:107
@@ -533,11 +519,6 @@ msgstr ""
 
 #: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:72
 msgid "Search for a Customer"
-msgstr ""
-
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:240
-#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:181
-msgid "Selecciona un producto"
 msgstr ""
 
 #: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:166
@@ -550,6 +531,11 @@ msgstr ""
 
 #: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:72
 msgid "Select a customer from the field above"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:240
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:181
+msgid "Select an Item"
 msgstr ""
 
 #: retail_tools/retail_tools/page/catalog_generator/catalog_generator.js:49
@@ -577,20 +563,6 @@ msgstr ""
 msgid "Show Price"
 msgstr ""
 
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:660
-#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:408
-msgid "Sin datos"
-msgstr ""
-
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:585
-#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:349
-msgid "Sin fecha"
-msgstr ""
-
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:340
-msgid "Sin ventas 60+ días"
-msgstr ""
-
 #: retail_tools/retail_tools/page/label_generator/label_generator.js:123
 msgid "Small (38x25mm) - 4 cols"
 msgstr ""
@@ -599,9 +571,20 @@ msgstr ""
 msgid "Status"
 msgstr ""
 
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:335
-#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:262
-msgid "Stock bajo"
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:361
+msgid "Stock Balance"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:361
+msgid "Stock Ledger"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:117
+msgid "Stock by Warehouse"
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:527
+msgid "Supplier"
 msgstr ""
 
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:515
@@ -609,46 +592,49 @@ msgstr ""
 msgid "Total"
 msgstr ""
 
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:410
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:280
+msgid "Total Stock"
+msgstr ""
+
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:314
 #: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:246
 msgid "UoM"
 msgstr ""
 
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:466
-msgid "Valor Est."
-msgstr ""
-
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:420
-msgid "Ventas 30 días"
-msgstr ""
-
 #: retail_tools/retail_tools/page/catalog_generator/catalog_generator.js:138
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:461
 #: retail_tools/retail_tools/page/label_generator/label_generator.js:140
 msgid "Warehouse"
 msgstr ""
 
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:230
-#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:175
-msgid "buscar código de barras"
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:610
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:370
+msgid "frappe.Chart not found (assets)."
+msgstr ""
+
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:420
+msgid "invoices"
 msgstr ""
 
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:278
 #: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:219
-msgid "cargar información del producto"
-msgstr ""
-
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:420
-msgid "facturas"
+msgid "loading item information"
 msgstr ""
 
 #: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:331
 msgid "points expiring in 30 days"
 msgstr ""
 
+#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:230
+#: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:175
+msgid "searching barcode"
+msgstr ""
+
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:420
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:438
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:443
-msgid "unidades"
+msgid "units"
 msgstr ""
 
 #: retail_tools/retail_tools/page/label_generator/label_generator.js:284
@@ -661,21 +647,5 @@ msgstr ""
 
 #: retail_tools/retail_tools/page/catalog_generator/catalog_generator.js:203
 msgid "{0} products in catalog"
-msgstr ""
-
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:438
-msgid "Última compra"
-msgstr ""
-
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:420
-msgid "Última venta"
-msgstr ""
-
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:117
-msgid "Últimas compras"
-msgstr ""
-
-#: retail_tools/retail_tools/page/item_inspector/item_inspector.js:117
-msgid "Últimas ventas"
 msgstr ""
 
