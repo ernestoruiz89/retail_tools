@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Retail Tools VERSION\n"
 "Report-Msgid-Bugs-To: eruiz@wbapps.com\n"
-"POT-Creation-Date: 2025-12-29 15:23+0000\n"
+"POT-Creation-Date: 2025-12-29 15:40+0000\n"
 "PO-Revision-Date: 2025-12-29 14:52+0000\n"
 "Last-Translator: eruiz@wbapps.com\n"
 "Language: es\n"
@@ -63,6 +63,10 @@ msgstr "Códigos de barras"
 msgid "Brand"
 msgstr "Marca"
 
+#: retail_tools/templates/print_formats/pos_closing.html:94
+msgid "Cashier Signature"
+msgstr ""
+
 #. Label of a shortcut in the Retail Tools Workspace
 #: retail_tools/retail_tools/page/catalog_generator/catalog_generator.js:17
 #: retail_tools/retail_tools/workspace/retail_tools/retail_tools.json
@@ -72,6 +76,10 @@ msgstr "Generador de Catálogo"
 #: retail_tools/retail_tools/page/label_generator/label_generator.js:43
 msgid "Clear All"
 msgstr "Limpiar Todo"
+
+#: retail_tools/templates/print_formats/pos_closing.html:46
+msgid "Closing"
+msgstr ""
 
 #: retail_tools/retail_tools/page/catalog_generator/catalog_generator.js:49
 msgid "Columns"
@@ -129,6 +137,10 @@ msgstr "Fecha"
 msgid "Days Without Sales"
 msgstr "Días sin Ventas"
 
+#: retail_tools/templates/print_formats/pos_closing.html:47
+msgid "Diff."
+msgstr ""
+
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:516
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:531
 msgid "Document"
@@ -179,6 +191,10 @@ msgstr "Costo Estimado"
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:410
 msgid "Estimated Cost (Stock)"
 msgstr "Costo Estimado (Stock)"
+
+#: retail_tools/templates/print_formats/pos_closing.html:45
+msgid "Expect."
+msgstr ""
 
 #: retail_tools/retail_tools/page/label_generator/label_generator.js:121
 msgid "Format"
@@ -254,6 +270,10 @@ msgstr "Consulta de Producto"
 msgid "Item Inspector (Light)"
 msgstr "Consulta de Producto (Ligera)"
 
+#: retail_tools/templates/print_formats/pos_closing.html:26
+msgid "Item Quantity"
+msgstr ""
+
 #: retail_tools/retail_tools/page/label_generator/label_generator.py:85
 msgid "Item code is required"
 msgstr "El código de artículo es requerido"
@@ -320,10 +340,18 @@ msgstr "Puntos de Lealtad"
 msgid "Medium (50x30mm) - 3 cols"
 msgstr "Mediano (50x30mm) - 3 cols"
 
+#: retail_tools/templates/print_formats/pos_closing.html:44
+msgid "Method / Opening"
+msgstr ""
+
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:632
 #: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:387
 msgid "Modified"
 msgstr "Modificado"
+
+#: retail_tools/templates/print_formats/pos_closing.html:30
+msgid "Net"
+msgstr ""
 
 #: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:250
 msgid "Never"
@@ -409,6 +437,18 @@ msgstr "Otros"
 msgid "Outstanding Balance"
 msgstr "Saldo Pendiente"
 
+#: retail_tools/templates/print_formats/pos_closing.html:7
+msgid "POS"
+msgstr ""
+
+#: retail_tools/templates/print_formats/pos_closing.html:4
+msgid "POS CLOSING"
+msgstr ""
+
+#: retail_tools/templates/print_formats/pos_closing.html:40
+msgid "Payment Methods"
+msgstr ""
+
 #: retail_tools/retail_tools/page/label_generator/label_generator.js:300
 msgid "Please add items first"
 msgstr "Por favor agregue artículos primero"
@@ -451,6 +491,10 @@ msgstr "Lista de Precios"
 msgid "Print"
 msgstr "Imprimir"
 
+#: retail_tools/templates/print_formats/pos_closing.html:97
+msgid "Printed"
+msgstr ""
+
 #: retail_tools/retail_tools/page/catalog_generator/catalog_generator.js:236
 msgid "Product Catalog"
 msgstr "Catálogo de Productos"
@@ -475,6 +519,10 @@ msgstr "Cant."
 #: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:16
 msgid "Quick Lookup"
 msgstr "Consulta Rápida"
+
+#: retail_tools/templates/print_formats/pos_closing.html:80
+msgid "RET"
+msgstr ""
 
 #: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:275
 #: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:304
@@ -502,6 +550,10 @@ msgstr "Devolución"
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:420
 msgid "Sales 30 Days"
 msgstr "Ventas 30 Días"
+
+#: retail_tools/templates/print_formats/pos_closing.html:20
+msgid "Sales Summary"
+msgstr ""
 
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:111
 #: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:83
@@ -587,6 +639,11 @@ msgstr "Stock por Almacén"
 msgid "Supplier"
 msgstr "Proveedor"
 
+#: retail_tools/templates/print_formats/pos_closing.html:34
+#: retail_tools/templates/print_formats/pos_closing.html:64
+msgid "TOTAL"
+msgstr ""
+
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:515
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:530
 msgid "Total"
@@ -597,10 +654,19 @@ msgstr "Total"
 msgid "Total Stock"
 msgstr "Stock Total"
 
+#: retail_tools/templates/print_formats/pos_closing.html:22
+#: retail_tools/templates/print_formats/pos_closing.html:74
+msgid "Transactions"
+msgstr ""
+
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:314
 #: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:246
 msgid "UoM"
 msgstr "UdM"
+
+#: retail_tools/templates/print_formats/pos_closing.html:8
+msgid "User"
+msgstr ""
 
 #: retail_tools/retail_tools/page/catalog_generator/catalog_generator.js:138
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:461

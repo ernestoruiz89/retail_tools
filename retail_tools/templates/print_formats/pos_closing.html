@@ -1,0 +1,100 @@
+{% set currency_symbol = frappe.db.get_value('Currency', frappe.db.get_value('Company', doc.company, 'default_currency'), 'symbol') or '$' %}<div class="pos-closing-report">
+  <div class="pcr-header">
+    <div class="pcr-company">{{ doc.company }}</div>
+    <div class="pcr-title">{{ _('POS CLOSING') }}</div>
+    <div class="pcr-meta">
+      <div><strong>{{ doc.name }}</strong></div>
+      <div>{{ _('POS') }}: {{ doc.pos_profile }}</div>
+      <div>{{ _('User') }}: {{ doc.user }}</div>
+      <div style="margin-top: 4px;">
+        {{ frappe.format(doc.period_start_date, {'fieldtype': 'Datetime'}) }}
+      </div>
+      <div>↓</div>
+      <div>
+        {{ frappe.format(doc.period_end_date, {'fieldtype': 'Datetime'}) }}
+      </div>
+    </div>
+  </div>
+
+  <div class="pcr-section">
+    <div class="pcr-section-title">{{ _('Sales Summary') }}</div>
+    <div class="pcr-summary-row">
+      <span>{{ _('Transactions') }}:</span>
+      <span>{{ doc.pos_transactions | length }}</span>
+    </div>
+    <div class="pcr-summary-row">
+      <span>{{ _('Item Quantity') }}:</span>
+      <span>{{ doc.total_quantity | int }}</span>
+    </div>
+    <div class="pcr-summary-row">
+      <span>{{ _('Net') }}:</span>
+      <span>{{ frappe.format(doc.net_total, {'fieldtype': 'Currency'}) }}</span>
+    </div>
+    <div class="pcr-summary-row total">
+      <span>{{ _('TOTAL') }}:</span>
+      <span>{{ frappe.format(doc.grand_total, {'fieldtype': 'Currency'}) }}</span>
+    </div>
+  </div>
+
+  <div class="pcr-section">
+    <div class="pcr-section-title">{{ _('Payment Methods') }}</div>
+    <table class="pcr-payment-table">
+      <thead>
+        <tr>
+          <th>{{ _('Method / Opening') }} {{ currency_symbol }}</th>
+          <th class="amount">{{ _('Expect.') }}</th>
+          <th class="amount">{{ _('Closing') }}</th>
+          <th class="amount">{{ _('Diff.') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for payment in doc.payment_reconciliation %}
+        <tr>
+          <td>{{ payment.mode_of_payment }}<br><small>{{ "{:,.2f}".format(payment.opening_amount) }}</small></td>
+          <td class="amount">{{ "{:,.2f}".format(payment.expected_amount) }}</td>
+          <td class="amount">{{ "{:,.2f}".format(payment.closing_amount) }}</td>
+          <td class="amount {% if payment.difference > 0 %}diff-positive{% elif payment.difference < 0 %}diff-negative{% endif %}">
+            {{ "{:,.2f}".format(payment.difference) }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr style="font-weight: bold; border-top: 1px solid #000;">
+          <td>{{ _('TOTAL') }}<br><small>{{ "{:,.2f}".format(doc.payment_reconciliation | sum(attribute='opening_amount')) }}</small></td>
+          <td class="amount">{{ "{:,.2f}".format(doc.payment_reconciliation | sum(attribute='expected_amount')) }}</td>
+          <td class="amount">{{ "{:,.2f}".format(doc.payment_reconciliation | sum(attribute='closing_amount')) }}</td>
+          <td class="amount">{{ "{:,.2f}".format(doc.payment_reconciliation | sum(attribute='difference')) }}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <div class="pcr-section">
+    <div class="pcr-section-title">{{ _('Transactions') }} ({{ doc.pos_transactions | length }})</div>
+    {% for txn in doc.pos_transactions %}
+    <div class="pcr-transaction">
+      <div>
+        <span class="invoice">{{ txn.pos_invoice }}</span>
+        {% if txn.is_return %}
+        <span class="return-badge">{{ _('RET') }}</span>
+        {% endif %}
+        <br>
+        <small>{{ txn.customer }} · {{ frappe.format(txn.posting_date, {'fieldtype': 'Date'}) }}</small>
+      </div>
+      <div class="amount">
+        {{ frappe.format(txn.grand_total, {'fieldtype': 'Currency'}) }}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="pcr-footer">
+    <div class="pcr-signature">
+      {{ _('Cashier Signature') }}
+    </div>
+    <div class="pcr-printed-at">
+      {{ _('Printed') }}: {{ frappe.format(frappe.utils.now(), {'fieldtype': 'Datetime'}) }}
+    </div>
+  </div>
+</div>
