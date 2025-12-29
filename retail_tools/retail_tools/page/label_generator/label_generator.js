@@ -347,6 +347,11 @@ retail_tools.LabelGenerator = class LabelGenerator {
     }
 
     render_barcodes() {
+        const format = this.format_field.get_value();
+        let height = 30;
+        if (format === "large") height = 55;
+        if (format === "small") height = 25;
+
         this.$body.find(".barcode-svg").each(function () {
             const barcode = $(this).data("barcode");
             if (barcode) {
@@ -354,7 +359,7 @@ retail_tools.LabelGenerator = class LabelGenerator {
                     JsBarcode(this, String(barcode), {
                         format: "CODE128",
                         width: 1.2,
-                        height: 30,
+                        height: height,
                         displayValue: true,
                         fontSize: 10,
                         margin: 2,

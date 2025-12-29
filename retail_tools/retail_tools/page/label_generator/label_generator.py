@@ -181,17 +181,20 @@ def _build_labels_html(labels: list, format_config: dict, show_price: int = 1) -
     name_size = "11px"
     price_size = "12px"
     code_size = "9px"
+    barcode_height = "35px"
     char_limit = 30
     
     if columns == 2:  # Large labels
         name_size = "14px"
         price_size = "16px"
         code_size = "11px"
+        barcode_height = "55px"
         char_limit = 40
     elif columns == 4:  # Small labels
         name_size = "10px"
         price_size = "11px"
         code_size = "8px"
+        barcode_height = "25px"
         char_limit = 25
 
     labels_html = ""
@@ -244,7 +247,7 @@ def _build_labels_html(labels: list, format_config: dict, show_price: int = 1) -
         }}
         .label-barcode svg {{
             max-width: 100%;
-            height: 35px;
+            height: {barcode_height};
         }}
         .label-no-barcode {{
             color: #999;
