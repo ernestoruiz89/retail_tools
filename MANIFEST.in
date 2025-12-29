@@ -1,0 +1,3 @@
+# Include all module files and static assets for packaging
+recursive-include retail_tools *
+global-exclude *.pyc

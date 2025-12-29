@@ -1,6 +1,6 @@
 /**
  * Retail Tools - Main JS Bundle
- * 
+ *
  * Provides utilities and shared functionality for Retail Tools pages
  */
 

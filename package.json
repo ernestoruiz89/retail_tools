@@ -1,0 +1,9 @@
+{
+  "name": "retail_tools",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Static assets and build manifest for the Retail Tools app.",
+  "scripts": {
+    "build": "echo \"No additional frontend build steps required for retail_tools\""
+  }
+}
