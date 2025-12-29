@@ -193,6 +193,12 @@ retail_tools.CatalogGenerator = class CatalogGenerator {
         if (r.message && r.message.ok) {
           this.$body.find(".cg-empty-state").hide();
           this.$body.find(".cg-preview").html(r.message.html).show();
+
+          // Initialize barcodes if show_barcode_image is enabled
+          if (options.show_barcode_image) {
+            this.init_barcodes();
+          }
+
           frappe.show_alert({
             message: __("{0} products in catalog", [r.message.count]),
             indicator: "green",
@@ -246,5 +252,37 @@ retail_tools.CatalogGenerator = class CatalogGenerator {
       </html>
     `);
     printWindow.document.close();
+  }
+
+  init_barcodes() {
+    // Load JsBarcode library if not already loaded
+    if (typeof JsBarcode === "undefined") {
+      const script = document.createElement("script");
+      script.src = "https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js";
+      script.onload = () => this.render_barcodes();
+      document.head.appendChild(script);
+    } else {
+      this.render_barcodes();
+    }
+  }
+
+  render_barcodes() {
+    this.$body.find(".barcode-svg").each(function () {
+      const barcode = $(this).data("barcode");
+      if (barcode) {
+        try {
+          JsBarcode(this, String(barcode), {
+            format: "CODE128",
+            width: 1.5,
+            height: 40,
+            displayValue: true,
+            fontSize: 10,
+            margin: 5,
+          });
+        } catch (e) {
+          console.log("Barcode error:", e);
+        }
+      }
+    });
   }
 };

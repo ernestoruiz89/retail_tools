@@ -285,30 +285,7 @@ def _build_catalog_html(
         content_html += _build_items_html(items, width_percent, show_barcode, show_barcode_image, show_price, show_description)
         content_html += '</div>'
 
-    # Include JsBarcode library for barcode images
-    barcode_script = ""
-    if show_barcode_image:
-        barcode_script = """
-        <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                document.querySelectorAll('.barcode-svg').forEach(function(el) {
-                    try {
-                        JsBarcode(el, el.dataset.barcode, {
-                            format: "CODE128",
-                            width: 1.5,
-                            height: 40,
-                            displayValue: true,
-                            fontSize: 10,
-                            margin: 5
-                        });
-                    } catch (e) {
-                        console.log('Barcode error:', e);
-                    }
-                });
-            });
-        </script>
-        """
+    # JsBarcode is now loaded and executed from the frontend JS
 
     return f"""
     <style>
@@ -410,7 +387,6 @@ def _build_catalog_html(
             .catalog-group {{ break-inside: avoid; }}
         }}
     </style>
-    {barcode_script}
     <div class="catalog-container">
         {header}
         {content_html}
