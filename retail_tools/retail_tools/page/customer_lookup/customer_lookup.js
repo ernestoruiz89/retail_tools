@@ -42,7 +42,6 @@ retail_tools.CustomerLookup = class CustomerLookup {
     constructor(page, wrapper) {
         this.page = page;
         this.wrapper = wrapper;
-        this.$container = $(wrapper).find(".layout-main-section");
         this.current_customer = null;
 
         this.make_filters();
@@ -57,24 +56,30 @@ retail_tools.CustomerLookup = class CustomerLookup {
     }
 
     make_filters() {
+        // Add primary action button
+        this.page.set_primary_action(__("Search"), () => this.load_selected_customer());
+
         // Create Link field for Customer
         this.customer_field = this.page.add_field({
             label: __("Customer"),
             fieldtype: "Link",
             fieldname: "customer",
             options: "Customer",
-            placeholder: __("Search customer..."),
-            change: () => {
-                const value = this.customer_field.get_value();
-                if (value) {
-                    this.load_snapshot(value);
-                }
-            },
+            change: () => this.load_selected_customer(),
         });
     }
 
+    load_selected_customer() {
+        const customer = this.customer_field.get_value();
+        if (customer) {
+            this.load_snapshot(customer);
+        }
+    }
+
     make_layout() {
-        this.$container.html(`
+        const $body = $(this.page.body);
+
+        $body.html(`
       <div class="cl-wrapper">
         <div class="cl-empty-state">
           <div class="cl-empty-icon">
@@ -84,7 +89,7 @@ retail_tools.CustomerLookup = class CustomerLookup {
             </svg>
           </div>
           <h3>${__("Search for a Customer")}</h3>
-          <p class="text-muted">${__("Use the search field above to find a customer")}</p>
+          <p class="text-muted">${__("Use the customer field above to search")}</p>
         </div>
         <div class="cl-content" style="display: none;">
           <div class="cl-header"></div>
@@ -96,6 +101,8 @@ retail_tools.CustomerLookup = class CustomerLookup {
         </div>
       </div>
     `);
+
+        this.$body = $body;
     }
 
     search_customer(query) {
@@ -186,8 +193,8 @@ retail_tools.CustomerLookup = class CustomerLookup {
     }
 
     render(data) {
-        this.$container.find(".cl-empty-state").hide();
-        this.$container.find(".cl-content").show();
+        this.$body.find(".cl-empty-state").hide();
+        this.$body.find(".cl-content").show();
 
         this._render_header(data.customer);
         this._render_kpis(data.outstanding, data.lifetime_value, data.last_purchase);
@@ -199,7 +206,7 @@ retail_tools.CustomerLookup = class CustomerLookup {
         const address = customer.address_display || "";
         const contact = customer.mobile_no || customer.email_id || "";
 
-        this.$container.find(".cl-header").html(`
+        this.$body.find(".cl-header").html(`
       <div class="cl-customer-card">
         <div class="cl-customer-avatar">
           ${customer.customer_name.charAt(0).toUpperCase()}
@@ -232,7 +239,7 @@ retail_tools.CustomerLookup = class CustomerLookup {
 
         const outstandingClass = outstanding.amount > 0 ? "cl-kpi-warning" : "cl-kpi-success";
 
-        this.$container.find(".cl-kpis").html(`
+        this.$body.find(".cl-kpis").html(`
       <div class="cl-kpi-grid">
         <div class="cl-kpi ${outstandingClass}">
           <div class="cl-kpi-value">${formatCurrency(outstanding.amount, outstanding.currency)}</div>
@@ -252,7 +259,7 @@ retail_tools.CustomerLookup = class CustomerLookup {
 
     _render_invoices(invoices) {
         if (!invoices || invoices.length === 0) {
-            this.$container.find(".cl-invoices").html(`
+            this.$body.find(".cl-invoices").html(`
         <div class="cl-section">
           <h4 class="cl-section-title">${__("Recent Purchases")}</h4>
           <p class="text-muted">${__("No purchase history found")}</p>
@@ -278,7 +285,7 @@ retail_tools.CustomerLookup = class CustomerLookup {
       `;
         }).join("");
 
-        this.$container.find(".cl-invoices").html(`
+        this.$body.find(".cl-invoices").html(`
       <div class="cl-section">
         <h4 class="cl-section-title">${__("Recent Purchases")}</h4>
         <div class="cl-table-wrapper">
@@ -300,7 +307,7 @@ retail_tools.CustomerLookup = class CustomerLookup {
 
     _render_loyalty(loyalty) {
         if (!loyalty) {
-            this.$container.find(".cl-loyalty").html("");
+            this.$body.find(".cl-loyalty").html("");
             return;
         }
 
@@ -308,7 +315,7 @@ retail_tools.CustomerLookup = class CustomerLookup {
             ? `<div class="cl-loyalty-warning"><i class="fa fa-exclamation-triangle"></i> ${loyalty.expiring_soon} ${__("points expiring in 30 days")}</div>`
             : "";
 
-        this.$container.find(".cl-loyalty").html(`
+        this.$body.find(".cl-loyalty").html(`
       <div class="cl-section cl-loyalty-section">
         <h4 class="cl-section-title">${__("Loyalty Points")}</h4>
         <div class="cl-loyalty-card">
