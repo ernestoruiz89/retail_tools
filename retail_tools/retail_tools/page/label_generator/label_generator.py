@@ -266,9 +266,11 @@ def _build_labels_html(labels: list, format_config: dict, show_price: int = 1) -
 
         if is_small:
             # Small labels: barcode on top, info row below (name/code left, price right)
+            # If no price, center the info
             price_html = f'<div class="label-price-side">{formatted_price}</div>' if formatted_price else ""
+            centered_class = "" if formatted_price else " label-centered"
             labels_html += f"""
-            <div class="label-item label-small">
+            <div class="label-item label-small{centered_class}">
                 <div class="label-barcode">{barcode_html}</div>
                 <div class="label-info-row">
                     <div class="label-left">
@@ -352,6 +354,13 @@ def _build_labels_html(labels: list, format_config: dict, show_price: int = 1) -
             text-align: right;
             white-space: nowrap;
             padding-left: 8px;
+        }}
+        /* Centered layout when no price */
+        .label-centered .label-info-row {{
+            justify-content: center;
+        }}
+        .label-centered .label-left {{
+            text-align: center;
         }}
         /* Vertical layout (medium/large) */
         .label-barcode {{
