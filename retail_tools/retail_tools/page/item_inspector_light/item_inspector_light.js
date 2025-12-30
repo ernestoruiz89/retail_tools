@@ -419,6 +419,16 @@ retail_tools.ItemInspectorLight = class ItemInspectorLight {
             return frappe.format(flt(val) || 0, { fieldtype: "Currency" });
         }
 
+        if (col === "modified" && val) {
+            const str = String(val);
+            // Extract date and time (HH:MM), remove seconds and milliseconds
+            // Supports "2025-01-13 10:54:15.626504" and "2025-01-13T10:54:15..."
+            const match = str.match(/^(\d{4}-\d{2}-\d{2})[T\s](\d{2}:\d{2})/);
+            if (match) {
+                return `${match[1]} ${match[2]}`;
+            }
+        }
+
         return frappe.utils.escape_html(String(val));
     }
 };
