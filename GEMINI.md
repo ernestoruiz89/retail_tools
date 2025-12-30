@@ -72,6 +72,15 @@ Dashboard page for quick product lookup.
 - Mobile-first responsive design
 - Support both light and dark modes
 
+### Language & Internationalization
+
+- **All code must be in English**: Variable names, function names, comments, and documentation
+- **All user-facing text must be translatable**: Use Frappe's `__()` function for all strings
+  - Python: `_("Your message")`
+  - JavaScript: `__("Your message")`
+- Avoid hardcoded Spanish or other languages in the UI
+- Keep translation keys simple and descriptive
+
 ## Common Tasks
 
 ### Adding a new API endpoint
