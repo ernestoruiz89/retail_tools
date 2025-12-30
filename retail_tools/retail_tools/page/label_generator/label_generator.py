@@ -245,9 +245,9 @@ def _build_labels_html(labels: list, format_config: dict, show_price: int = 1) -
         char_limit = 40
     elif is_small:  # Small labels - horizontal layout
         name_size = "10px"
-        price_size = "14px"
+        price_size = "11px"
         code_size = "8px"
-        barcode_height = "30px"
+        barcode_height = "40px"
         char_limit = 18
 
     labels_html = ""
