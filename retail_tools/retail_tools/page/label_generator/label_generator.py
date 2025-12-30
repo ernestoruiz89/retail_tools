@@ -227,6 +227,9 @@ def _build_labels_html(labels: list, format_config: dict, show_price: int = 1) -
     label_width = format_config["width"]
     label_height = format_config["height"]
 
+    # Check if small format (horizontal layout)
+    is_small = columns == 4
+
     # Adjust sizes based on format (fewer columns = larger labels)
     name_size = "11px"
     price_size = "12px"
@@ -240,21 +243,20 @@ def _build_labels_html(labels: list, format_config: dict, show_price: int = 1) -
         code_size = "11px"
         barcode_height = "55px"
         char_limit = 40
-    elif columns == 4:  # Small labels
+    elif is_small:  # Small labels - horizontal layout
         name_size = "10px"
-        price_size = "11px"
+        price_size = "14px"
         code_size = "8px"
-        barcode_height = "25px"
-        char_limit = 25
+        barcode_height = "30px"
+        char_limit = 18
 
     labels_html = ""
     for label in labels:
-        price_html = ""
+        formatted_price = ""
         if show_price and label.get("price"):
             formatted_price = frappe.format_value(
                 label["price"], {"fieldtype": "Currency"}
             )
-            price_html = f'<div class="label-price">{formatted_price}</div>'
 
         barcode_html = ""
         if label.get("barcode"):
@@ -262,14 +264,32 @@ def _build_labels_html(labels: list, format_config: dict, show_price: int = 1) -
         else:
             barcode_html = f'<div class="label-no-barcode">{_("No barcode")}</div>'
 
-        labels_html += f"""
-        <div class="label-item">
-            <div class="label-barcode">{barcode_html}</div>
-            <div class="label-name">{label["item_name"][:char_limit]}</div>
-            <div class="label-code">{label["item_code"]}</div>
-            {price_html}
-        </div>
-        """
+        if is_small:
+            # Small labels: barcode on top, info row below (name/code left, price right)
+            price_html = f'<div class="label-price-side">{formatted_price}</div>' if formatted_price else ""
+            labels_html += f"""
+            <div class="label-item label-small">
+                <div class="label-barcode">{barcode_html}</div>
+                <div class="label-info-row">
+                    <div class="label-left">
+                        <div class="label-name">{label["item_name"][:char_limit]}</div>
+                        <div class="label-code">{label["item_code"]}</div>
+                    </div>
+                    {price_html}
+                </div>
+            </div>
+            """
+        else:
+            # Vertical layout for medium/large labels
+            price_html = f'<div class="label-price">{formatted_price}</div>' if formatted_price else ""
+            labels_html += f"""
+            <div class="label-item">
+                <div class="label-barcode">{barcode_html}</div>
+                <div class="label-name">{label["item_name"][:char_limit]}</div>
+                <div class="label-code">{label["item_code"]}</div>
+                {price_html}
+            </div>
+            """
 
     return f"""
     <style>
@@ -292,6 +312,48 @@ def _build_labels_html(labels: list, format_config: dict, show_price: int = 1) -
             flex-direction: column;
             justify-content: center;
         }}
+        /* Small label layout: barcode top, info row below */
+        .label-small {{
+            padding: 4px 8px;
+        }}
+        .label-small .label-barcode {{
+            margin-bottom: 4px;
+            text-align: center;
+        }}
+        .label-small .label-barcode svg {{
+            height: {barcode_height};
+            max-width: 100%;
+        }}
+        .label-info-row {{
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }}
+        .label-small .label-left {{
+            flex: 1;
+            min-width: 0;
+            text-align: left;
+        }}
+        .label-small .label-name {{
+            font-size: {name_size};
+            font-weight: 600;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }}
+        .label-small .label-code {{
+            font-size: {code_size};
+            color: #666;
+        }}
+        .label-price-side {{
+            font-weight: 700;
+            font-size: {price_size};
+            color: #333;
+            text-align: right;
+            white-space: nowrap;
+            padding-left: 8px;
+        }}
+        /* Vertical layout (medium/large) */
         .label-barcode {{
             margin-bottom: 4px;
         }}
@@ -336,3 +398,4 @@ def _build_labels_html(labels: list, format_config: dict, show_price: int = 1) -
         </div>
     </div>
     """
+
