@@ -705,8 +705,9 @@ retail_tools.ItemInspector = class ItemInspector {
     // Format modified datetime to show only date and hour:minute
     if (col === "modified" && val) {
       const str = String(val);
-      // Extract date and time (HH:MM), remove seconds
-      const match = str.match(/^(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2})/);
+      // Extract date and time (HH:MM), remove seconds and milliseconds
+      // Supports "2025-01-13 10:54:15.626504" and "2025-01-13T10:54:15..."
+      const match = str.match(/^(\d{4}-\d{2}-\d{2})[T\s](\d{2}:\d{2})/);
       if (match) {
         return `${match[1]} ${match[2]}`;
       }
