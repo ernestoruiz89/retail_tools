@@ -135,16 +135,16 @@ def _get_customer_data(customer: str) -> dict:
         "mobile_no",
         "email_id",
         "image",
-        "primary_address",
+        "customer_primary_address",
         "customer_primary_contact",
     ]
 
     data = frappe.get_value("Customer", customer, fields, as_dict=True)
 
     # Get formatted address if available
-    if data.get("primary_address"):
+    if data.get("customer_primary_address"):
         data["address_display"] = frappe.get_value(
-            "Address", data["primary_address"], "address_line1"
+            "Address", data["customer_primary_address"], "address_line1"
         )
 
     # Get contact name if available
