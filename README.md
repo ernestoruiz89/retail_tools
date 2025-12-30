@@ -1,77 +1,202 @@
 # Retail Tools
 
-Una aplicación Frappe/ERPNext con herramientas especializadas para operaciones de retail.
+A Frappe/ERPNext application with specialized tools for retail operations.
 
-## 📦 Características
+## 📦 Features
 
-### Item Inspector (Consulta de Producto)
+### Item Inspector
 
-Página de dashboard completa para consulta rápida de información de productos.
+Complete dashboard page for quick product information lookup.
 
-#### Búsqueda
-- **Código de barras** - Escaneo con cámara o entrada manual
-- **Item Code** - Campo Link con autocompletado
-- **Multi-match** - Selector cuando hay múltiples items con mismo código
+**Route:** `/app/item-inspector`
 
-#### Información del Producto
-- Nombre, código, grupo, marca, UoM
-- Imagen del producto
-- Descripción (texto plano sin HTML)
-- Tags de estado: DESHABILITADO, No es stock item
+#### Search
+- **Barcode** - Camera scanning or manual entry
+- **Item Code** - Link field with autocomplete
+- **Multi-match** - Selector when multiple items share the same barcode
 
-#### KPIs Principales
-| Indicador | Descripción |
+#### Product Information
+- Name, code, group, brand, UoM
+- Product image
+- Description (plain text, no HTML)
+- Status tags: DISABLED, Not a stock item
+
+#### Main KPIs
+| Indicator | Description |
 |-----------|-------------|
-| **Existencia total** | Suma de cantidades en todos los almacenes |
-| **Costo estimado (stock)** | Valor total del inventario |
-| **Precio actual** | Precio de la lista seleccionada (se actualiza dinámicamente) |
-| **Ventas 30 días** | Monto vendido con detalle de unidades y facturas |
-| **Margen de utilidad** | Porcentaje con código de color (verde ≥20%, amarillo ≥10%, rojo <10%) |
-| **Días sin movimiento** | Días desde última venta (verde <30, amarillo 30-59, rojo 60+) |
-| **Última venta** | Monto total con detalle de unidades y precio unitario |
-| **Última compra** | Monto total con detalle de unidades y costo unitario |
+| **Total Stock** | Sum of quantities across all warehouses |
+| **Estimated Cost (stock)** | Total inventory value |
+| **Current Price** | Price from selected price list (updates dynamically) |
+| **Sales 30 Days** | Sales amount with unit and invoice details |
+| **Profit Margin** | Percentage with color coding (green ≥20%, yellow ≥10%, red <10%) |
+| **Days Without Movement** | Days since last sale (green <30, yellow 30-59, red 60+) |
+| **Last Sale** | Total amount with unit and unit price details |
+| **Last Purchase** | Total amount with unit and unit cost details |
 
-#### Alertas Automáticas
-- ⚠️ **Stock bajo** - Cuando existencia < nivel de reorden
-- ⏰ **Sin ventas 60+ días** - Producto posiblemente obsoleto
+#### Automatic Alerts
+- ⚠️ **Low Stock** - When stock < reorder level
+- ⏰ **No Sales 60+ Days** - Possibly obsolete product
 
-#### Histórico de Precios
-- Selector de lista de precios
-- Gráfica interactiva de evolución de precios
-- Tabla con últimos 10 cambios de precio
-- Precio y margen se actualizan al cambiar lista
+#### Price History
+- Price list selector
+- Interactive price evolution chart
+- Table with last 10 price changes
+- Price and margin update when changing price list
 
-#### Stock por Almacén
-- Cantidad actual, reservada, proyectada
-- Costo de valuación por almacén
-- Valor estimado por ubicación
+#### Stock by Warehouse
+- Current, reserved, and projected quantities
+- Valuation cost per warehouse
+- Estimated value by location
 
-#### Transacciones Recientes
-- Últimas 10 ventas con enlace al documento
-- Últimas 10 compras con enlace al documento
+#### Recent Transactions
+- Last 10 sales with document link
+- Last 10 purchases with document link
 
-#### Acciones Rápidas
-- **Abrir Item** - Ir al formulario del producto
-- **Saldos** - Reporte Stock Balance filtrado
-- **Movimientos** - Reporte Stock Ledger filtrado
-
----
-
-### Item Inspector Light (Consulta Rápida)
-
-Versión simplificada para consultas rápidas con acceso para invitados.
-
-**Ruta:** `/app/item-inspector-light`
-
-**Características:**
-- Solo 3 KPIs: Existencia, Costo estimado, Precio actual
-- Histórico de precios (gráfico y tabla)
-- Sin botones de navegación
-- Diseño minimalista
+#### Quick Actions
+- **Open Item** - Go to product form
+- **Balances** - Filtered Stock Balance report
+- **Movements** - Filtered Stock Ledger report
 
 ---
 
-## 🚀 Instalación
+### Item Inspector Light
+
+Simplified version for quick lookups with guest access.
+
+**Route:** `/app/item-inspector-light`
+
+**Features:**
+- Only 3 KPIs: Stock, Estimated cost, Current price
+- Price history (chart and table)
+- No navigation buttons
+- Minimalist design
+- Guest role access enabled
+
+---
+
+### Customer Lookup
+
+Dashboard page for quick customer information lookup.
+
+**Route:** `/app/customer-lookup`
+
+#### Search
+- Search by customer code, name, phone, or email
+- Quick selection from search results
+
+#### Customer Information
+- Name, customer group, territory
+- Mobile phone and email (when available)
+- Primary address
+
+#### Main KPIs
+| Indicator | Description |
+|-----------|-------------|
+| **Outstanding Balance** | Total unpaid amount from Sales Invoices |
+| **Lifetime Value** | Total purchases with invoice count |
+| **Last Purchase** | Date of most recent transaction |
+| **Loyalty Points** | Current points balance (if Loyalty Program is enabled) |
+
+#### Recent Invoices
+- Last 10 sales invoices with document links
+- Invoice status, date, and amounts
+
+#### Allowed Roles
+- Sales User, Sales Manager, System Manager, Administrator, Accounts User
+
+---
+
+### Catalog Generator
+
+Generate product catalogs for printing or digital distribution.
+
+**Route:** `/app/catalog-generator`
+
+#### Filters
+- **Item Group** - Filter by group (includes child groups)
+- **Brand** - Filter by brand
+- **Warehouse** - Filter by items with stock
+- **Price List** - Price list for pricing
+- **Include Disabled** - Option to include disabled items
+
+#### Layout Options
+- Column selection (2, 3, or 4 columns)
+- Responsive grid layout
+
+#### Display Options
+| Option | Description |
+|--------|-------------|
+| **Show Barcode** | Display barcode text |
+| **Show Barcode Image** | Display barcode image |
+| **Show Price** | Display item price |
+| **Show Description** | Display item description |
+| **Group by Item Group** | Organize items by category |
+
+#### Output
+- HTML preview for printing
+- PDF-ready layout
+
+#### Allowed Roles
+- System Manager, Sales Manager, Sales User, Stock Manager, Stock User
+
+---
+
+### Label Generator
+
+Generate barcode labels for printing.
+
+**Route:** `/app/label-generator`
+
+#### Label Formats
+| Format | Size | Columns |
+|--------|------|---------|
+| **Small** | 38×25mm | 4 columns |
+| **Medium** | 50×30mm | 3 columns |
+| **Large** | 70×40mm | 2 columns |
+
+#### Features
+- Add items by barcode or item code
+- Specify quantity per item
+- Dynamic font sizing based on format
+- Dynamic barcode height per format
+- Price display toggle
+- Load items with stock (with warehouse filter)
+- Print-ready HTML output
+
+#### Allowed Roles
+- System Manager, Stock Manager, Stock User, Sales User
+
+---
+
+### POS Closing Report (Print Format)
+
+Custom print format for POS Closing Entry documents, optimized for thermal receipt printers.
+
+**DocType:** `POS Closing Entry`
+
+#### Layout
+- Optimized for thermal printers
+- Monospace font (Courier New) for alignment
+- Compact design with dashed section dividers
+
+#### Sections
+| Section | Content |
+|---------|---------|
+| **Header** | Company name, document ID, POS profile, user, period dates |
+| **Sales Summary** | Transaction count, item quantity, net total, grand total |
+| **Payment Methods** | Opening amount, expected amount, closing amount, difference (color-coded) |
+| **Transactions** | List of all POS invoices with customer, date, amount, and return badge |
+| **Footer** | Cashier signature line, print timestamp |
+
+#### Features
+- Color-coded payment differences (green for positive, red for negative)
+- Return transactions marked with "RET" badge
+- Automatic currency symbol from company settings
+- Print-ready CSS with proper margins
+
+---
+
+## 🚀 Installation
 
 ```bash
 cd $PATH_TO_YOUR_BENCH
@@ -81,63 +206,79 @@ bench build --app retail_tools
 bench restart
 ```
 
-## 📋 Requisitos
+## 📋 Requirements
 
 - Frappe Framework v15+
-- ERPNext (opcional, pero recomendado para funcionalidad completa)
+- ERPNext v15+
 - Python 3.10+
 
-## 💻 Uso
+## 💻 Usage
 
-### Acceder a Item Inspector
+### Accessing Pages
 
-1. Navega a: **Módulos > Retail Tools > Item Inspector**
-2. O busca "Consulta de Producto" en la barra de búsqueda
-3. O directamente: `/app/item-inspector`
+| Page | Navigation | Direct URL |
+|------|------------|------------|
+| Item Inspector | Modules > Retail Tools > Item Inspector | `/app/item-inspector` |
+| Item Inspector Light | - | `/app/item-inspector-light` |
+| Customer Lookup | Modules > Retail Tools > Customer Lookup | `/app/customer-lookup` |
+| Catalog Generator | Modules > Retail Tools > Catalog Generator | `/app/catalog-generator` |
+| Label Generator | Modules > Retail Tools > Label Generator | `/app/label-generator` |
 
-### Acceder a Item Inspector Light
+### Searching for a Product
 
-1. Navega a: `/app/item-inspector-light`
-2. Disponible para usuarios con rol Guest
+- **By barcode**: Enter the code and press Enter
+- **By Item Code**: Use the "Product" Link field
+- **With camera**: Click "Scan with camera" (requires HTTPS)
 
-### Buscar un producto
+### Searching for a Customer
 
-- **Por código de barras**: Ingresa el código y presiona Enter
-- **Por Item Code**: Usa el campo Link de "Producto"
-- **Con cámara**: Click en "Escanear con cámara" (requiere HTTPS)
+- Enter customer name, code, phone, or email
+- Select from search results
 
-## 🛠️ Desarrollo
+## 🛠️ Development
 
-### Configuración del entorno
+### Environment Setup
 
-Esta app usa `pre-commit` para formateo y linting:
+This app uses `pre-commit` for formatting and linting:
 
 ```bash
 cd apps/retail_tools
 pre-commit install
 ```
 
-### Herramientas de código
+### Code Tools
 
-- **ruff** - Linter y formatter de Python
-- **eslint** - Linter de JavaScript
-- **prettier** - Formatter de código
+- **ruff** - Python linter and formatter
+- **eslint** - JavaScript linter
+- **prettier** - Code formatter
 
-### Estructura del proyecto
+### Project Structure
 
 ```
 retail_tools/
 ├── retail_tools/
 │   ├── retail_tools/
 │   │   └── page/
-│   │       ├── item_inspector/          # Página completa
-│   │       │   ├── item_inspector.py    # API backend
-│   │       │   ├── item_inspector.js    # Frontend
-│   │       │   └── item_inspector.css   # Estilos
-│   │       └── item_inspector_light/    # Versión simplificada
-│   │           ├── item_inspector_light.py
-│   │           ├── item_inspector_light.js
-│   │           └── item_inspector_light.css
+│   │       ├── item_inspector/           # Full product lookup
+│   │       │   ├── item_inspector.py     # Backend API
+│   │       │   ├── item_inspector.js     # Frontend
+│   │       │   └── item_inspector.css    # Styles
+│   │       ├── item_inspector_light/     # Simplified version
+│   │       │   ├── item_inspector_light.py
+│   │       │   ├── item_inspector_light.js
+│   │       │   └── item_inspector_light.css
+│   │       ├── customer_lookup/          # Customer lookup
+│   │       │   ├── customer_lookup.py
+│   │       │   ├── customer_lookup.js
+│   │       │   └── customer_lookup.css
+│   │       ├── catalog_generator/        # Product catalog
+│   │       │   ├── catalog_generator.py
+│   │       │   ├── catalog_generator.js
+│   │       │   └── catalog_generator.css
+│   │       └── label_generator/          # Barcode labels
+│   │           ├── label_generator.py
+│   │           ├── label_generator.js
+│   │           └── label_generator.css
 │   ├── hooks.py
 │   └── patches.txt
 ├── pyproject.toml
@@ -146,11 +287,32 @@ retail_tools/
 
 ### API Endpoints
 
-| Endpoint | Descripción |
+#### Item Inspector
+| Endpoint | Description |
 |----------|-------------|
-| `resolve_item_from_barcode(barcode)` | Resuelve código de barras a Item |
-| `get_item_snapshot(item_code)` | Retorna snapshot completo del producto |
+| `resolve_item_from_barcode(barcode)` | Resolves barcode to Item |
+| `get_item_snapshot(item_code)` | Returns complete product snapshot |
 
-## 📄 Licencia
+#### Customer Lookup
+| Endpoint | Description |
+|----------|-------------|
+| `search_customer(query)` | Search customers by code, name, phone, email |
+| `get_customer_snapshot(customer)` | Returns complete customer snapshot |
+
+#### Catalog Generator
+| Endpoint | Description |
+|----------|-------------|
+| `get_items_for_catalog(...)` | Get filtered items for catalog |
+| `generate_catalog_html(...)` | Generate catalog HTML for preview/print |
+
+#### Label Generator
+| Endpoint | Description |
+|----------|-------------|
+| `get_label_formats()` | Get available label formats |
+| `get_item_for_label(item_code)` | Get item data for label |
+| `get_items_with_stock(warehouse)` | Get items with stock |
+| `generate_labels_html(items, format)` | Generate labels HTML for printing |
+
+## 📄 License
 
 MIT
