@@ -249,19 +249,19 @@ def _build_labels_html(labels: list, format_config: dict, show_price: int = 1) -
         price_size = "14px"
         code_size = "11px"
         barcode_height = "65px"
-        char_limit = 40
+        char_limit = 50
     elif columns == 3:  # Medium labels
         name_size = "12px"
         price_size = "12px"
         code_size = "10px"
         barcode_height = "50px"
-        char_limit = 30
+        char_limit = 35
     elif is_small:  # Small labels
         name_size = "11px"
         price_size = "11px"
         code_size = "9px"
         barcode_height = "40px"
-        char_limit = 18
+        char_limit = 25
 
     labels_html = ""
     for label in labels:
