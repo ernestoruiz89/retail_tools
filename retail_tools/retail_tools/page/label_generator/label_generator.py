@@ -71,6 +71,56 @@ def get_items_with_stock(warehouse: str = None) -> dict:
 
 
 @frappe.whitelist()
+def get_items_from_receipt_document(doctype: str, docname: str) -> dict:
+    """
+    Get items from a Purchase Invoice or Purchase Receipt for label generation.
+
+    Args:
+        doctype: Document type (Purchase Invoice or Purchase Receipt)
+        docname: Document name
+
+    Returns:
+        dict with items array (item_code, item_name, barcode, price, qty)
+    """
+    # Validate doctype
+    allowed_doctypes = ["Purchase Invoice", "Purchase Receipt"]
+    if doctype not in allowed_doctypes:
+        return {"ok": False, "message": _("Invalid document type")}
+
+    # Validate document exists
+    if not frappe.db.exists(doctype, docname):
+        return {"ok": False, "message": _("Document not found")}
+
+    # Get child table name
+    child_doctype = f"{doctype} Item"
+
+    # Get items from child table
+    items_data = frappe.get_all(
+        child_doctype,
+        filters={"parent": docname},
+        fields=["item_code", "qty"],
+        order_by="idx",
+    )
+
+    if not items_data:
+        return {"ok": False, "message": _("No items found in document")}
+
+    # Get item details for each item
+    items = []
+    for row in items_data:
+        result = get_item_for_label(row.item_code)
+        if result.get("ok"):
+            item = result["item"]
+            item["qty"] = int(row.qty)
+            items.append(item)
+
+    if not items:
+        return {"ok": False, "message": _("No valid items found")}
+
+    return {"ok": True, "items": items, "count": len(items)}
+
+
+@frappe.whitelist()
 def get_item_for_label(item_code: str) -> dict:
     """
     Get item data for label generation.

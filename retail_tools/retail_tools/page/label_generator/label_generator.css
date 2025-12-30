@@ -47,7 +47,12 @@
     flex: 0 0 200px;
 }
 
-.lg-load-stock-btn {
+.lg-bulk-row .lg-field-narrow {
+    flex: 0 0 170px;
+}
+
+.lg-load-stock-btn,
+.lg-load-receipt-btn {
     height: 36px;
     white-space: nowrap;
     margin-top: 29px;

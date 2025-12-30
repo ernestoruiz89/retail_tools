@@ -58,6 +58,13 @@ retail_tools.LabelGenerator = class LabelGenerator {
               <i class="fa fa-download"></i> ${__("Load Items with Stock")}
             </button>
           </div>
+          <div class="lg-bulk-row">
+            <div class="lg-field lg-field-narrow" id="lg-receipt-doctype-field"></div>
+            <div class="lg-field" id="lg-receipt-document-field"></div>
+            <button class="btn btn-default lg-load-receipt-btn">
+              <i class="fa fa-file-text-o"></i> ${__("Load from Document")}
+            </button>
+          </div>
           <div class="lg-format-row">
             <label>${__("Label Format")}:</label>
             <div class="lg-field" id="lg-format-field"></div>
@@ -146,11 +153,54 @@ retail_tools.LabelGenerator = class LabelGenerator {
         });
         this.warehouse_field.refresh();
 
+        // Create Receipt Document Type field
+        this.receipt_doctype_field = frappe.ui.form.make_control({
+            df: {
+                fieldtype: "Select",
+                fieldname: "receipt_doctype",
+                label: __("Document Type"),
+                options: [
+                    { value: "Purchase Invoice", label: __("Purchase Invoice") },
+                    { value: "Purchase Receipt", label: __("Purchase Receipt") },
+                ],
+                default: "Purchase Invoice",
+            },
+            parent: this.$body.find("#lg-receipt-doctype-field"),
+            render_input: true,
+        });
+        this.receipt_doctype_field.set_value("Purchase Invoice");
+        this.receipt_doctype_field.refresh();
+
+        // Create Receipt Document field (Dynamic Link)
+        this.receipt_document_field = frappe.ui.form.make_control({
+            df: {
+                fieldtype: "Link",
+                fieldname: "receipt_document",
+                label: __("Document"),
+                options: "Purchase Invoice",
+                placeholder: __("Select document..."),
+            },
+            parent: this.$body.find("#lg-receipt-document-field"),
+            render_input: true,
+        });
+        this.receipt_document_field.refresh();
+
+        // Bind doctype change to update document link options
+        this.receipt_doctype_field.$input.on("change", () => {
+            const doctype = this.receipt_doctype_field.get_value();
+            this.receipt_document_field.df.options = doctype;
+            this.receipt_document_field.set_value("");
+            this.receipt_document_field.refresh();
+        });
+
         // Bind add button
         this.$body.find(".lg-add-btn").on("click", () => this.add_item());
 
         // Bind load stock button
         this.$body.find(".lg-load-stock-btn").on("click", () => this.load_items_with_stock());
+
+        // Bind load from receipt document button
+        this.$body.find(".lg-load-receipt-btn").on("click", () => this.load_items_from_receipt_document());
 
         // Bind enter key on item field
         this.$body.find("#lg-item-field input").on("keypress", (e) => {
@@ -266,6 +316,52 @@ retail_tools.LabelGenerator = class LabelGenerator {
             args: { warehouse: warehouse || "" },
             freeze: true,
             freeze_message: __("Loading items with stock..."),
+            callback: (r) => {
+                if (r.message && r.message.ok) {
+                    // Merge with existing items
+                    r.message.items.forEach((item) => {
+                        const existing = this.items.find(
+                            (i) => i.item_code === item.item_code
+                        );
+                        if (existing) {
+                            existing.qty += item.qty;
+                        } else {
+                            this.items.push(item);
+                        }
+                    });
+                    this.render_items_list();
+                    frappe.show_alert({
+                        message: __("{0} items loaded", [r.message.count]),
+                        indicator: "green",
+                    });
+                } else {
+                    frappe.show_alert({
+                        message: r.message?.message || __("No items found"),
+                        indicator: "orange",
+                    });
+                }
+            },
+        });
+    }
+
+    load_items_from_receipt_document() {
+        const doctype = this.receipt_doctype_field.get_value();
+        const docname = this.receipt_document_field.get_value();
+
+        if (!docname) {
+            frappe.show_alert({
+                message: __("Please select a document"),
+                indicator: "orange",
+            });
+            return;
+        }
+
+        frappe.call({
+            method:
+                "retail_tools.retail_tools.page.label_generator.label_generator.get_items_from_receipt_document",
+            args: { doctype: doctype, docname: docname },
+            freeze: true,
+            freeze_message: __("Loading items from document..."),
             callback: (r) => {
                 if (r.message && r.message.ok) {
                     // Merge with existing items
