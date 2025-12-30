@@ -246,11 +246,17 @@ def _build_labels_html(labels: list, format_config: dict, show_price: int = 1) -
     
     if columns == 2:  # Large labels
         name_size = "14px"
-        price_size = "16px"
+        price_size = "14px"
         code_size = "11px"
-        barcode_height = "55px"
+        barcode_height = "65px"
         char_limit = 40
-    elif is_small:  # Small labels - horizontal layout
+    elif columns == 3:  # Medium labels
+        name_size = "12px"
+        price_size = "12px"
+        code_size = "10px"
+        barcode_height = "50px"
+        char_limit = 30
+    elif is_small:  # Small labels
         name_size = "11px"
         price_size = "11px"
         code_size = "9px"
