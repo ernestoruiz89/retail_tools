@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Retail Tools VERSION\n"
 "Report-Msgid-Bugs-To: eruiz@wbapps.com\n"
-"POT-Creation-Date: 2025-12-29 15:40+0000\n"
+"POT-Creation-Date: 2025-12-30 15:48+0000\n"
 "PO-Revision-Date: 2025-12-29 14:52+0000\n"
 "Last-Translator: eruiz@wbapps.com\n"
 "Language: es_ES\n"
@@ -31,15 +31,15 @@ msgstr "Agregar"
 msgid "Add items to generate labels"
 msgstr "Agregar artículos para generar etiquetas"
 
-#: retail_tools/retail_tools/page/label_generator/label_generator.js:142
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:167
 msgid "All warehouses"
 msgstr "Todos los almacenes"
 
-#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:304
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:306
 msgid "Amount"
 msgstr "Monto"
 
-#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:334
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:336
 msgid "Available Points"
 msgstr "Puntos Disponibles"
 
@@ -49,7 +49,7 @@ msgstr "Puntos Disponibles"
 msgid "Barcode"
 msgstr "Código de barras"
 
-#: retail_tools/retail_tools/page/label_generator/label_generator.js:386
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:502
 msgid "Barcode Labels"
 msgstr "Etiquetas de Código de Barras"
 
@@ -127,7 +127,7 @@ msgstr "Cliente no encontrado"
 msgid "DISABLED"
 msgstr "DESHABILITADO"
 
-#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:304
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:306
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:511
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:526
 msgid "Date"
@@ -137,14 +137,27 @@ msgstr "Fecha"
 msgid "Days Without Sales"
 msgstr "Días sin Ventas"
 
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:150
+msgid "Default"
+msgstr "Predeterminado"
+
 #: retail_tools/templates/print_formats/pos_closing.html:47
 msgid "Diff."
 msgstr "Dif."
 
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:516
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:531
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:197
 msgid "Document"
 msgstr "Documento"
+
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:179
+msgid "Document Type"
+msgstr "Tipo de Documento"
+
+#: retail_tools/retail_tools/page/label_generator/label_generator.py:92
+msgid "Document not found"
+msgstr "Documento no encontrado"
 
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.py:74
 msgid "Empty barcode"
@@ -159,7 +172,7 @@ msgstr "Error"
 msgid "Error generating catalog"
 msgstr "Error al generar catálogo"
 
-#: retail_tools/retail_tools/page/label_generator/label_generator.js:329
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:445
 msgid "Error generating labels"
 msgstr "Error al generar etiquetas"
 
@@ -196,7 +209,7 @@ msgstr "Costo Estimado (Stock)"
 msgid "Expect."
 msgstr "Esper."
 
-#: retail_tools/retail_tools/page/label_generator/label_generator.js:121
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:129
 msgid "Format"
 msgstr "Formato"
 
@@ -221,7 +234,7 @@ msgstr "Generar un Catálogo"
 msgid "Generating catalog..."
 msgstr "Generando catálogo..."
 
-#: retail_tools/retail_tools/page/label_generator/label_generator.js:318
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:434
 msgid "Generating labels..."
 msgstr "Generando etiquetas..."
 
@@ -238,11 +251,15 @@ msgstr "Agrupar por Grupo de Artículos"
 msgid "History"
 msgstr "Histórico"
 
-#: retail_tools/retail_tools/page/label_generator/label_generator.py:139
+#: retail_tools/retail_tools/page/label_generator/label_generator.py:88
+msgid "Invalid document type"
+msgstr "Tipo de cocumento inválido"
+
+#: retail_tools/retail_tools/page/label_generator/label_generator.py:196
 msgid "Invalid items data"
 msgstr "Datos de artículos inválidos"
 
-#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:304
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:306
 msgid "Invoice"
 msgstr "Factura"
 
@@ -251,7 +268,7 @@ msgstr "Factura"
 #: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:70
 #: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:186
 #: retail_tools/retail_tools/page/label_generator/label_generator.js:47
-#: retail_tools/retail_tools/page/label_generator/label_generator.js:93
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:101
 msgid "Item"
 msgstr "Artículo"
 
@@ -274,12 +291,12 @@ msgstr "Consulta de Producto (Ligera)"
 msgid "Item Quantity"
 msgstr "Cantidad de Artículos"
 
-#: retail_tools/retail_tools/page/label_generator/label_generator.py:85
+#: retail_tools/retail_tools/page/label_generator/label_generator.py:136
 msgid "Item code is required"
 msgstr "El código de artículo es requerido"
 
-#: retail_tools/retail_tools/page/label_generator/label_generator.js:200
-#: retail_tools/retail_tools/page/label_generator/label_generator.py:89
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:268
+#: retail_tools/retail_tools/page/label_generator/label_generator.py:140
 msgid "Item not found"
 msgstr "Artículo no encontrado"
 
@@ -302,11 +319,11 @@ msgstr "Formato de Etiqueta"
 msgid "Label Generator"
 msgstr "Generador de Etiquetas"
 
-#: retail_tools/retail_tools/page/label_generator/label_generator.js:125
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:133
 msgid "Large (70x40mm) - 2 cols"
 msgstr "Grande (70x40mm) - 2 cols"
 
-#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:255
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:257
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:438
 msgid "Last Purchase"
 msgstr "Última Compra"
@@ -315,28 +332,40 @@ msgstr "Última Compra"
 msgid "Last Sale"
 msgstr "Última Venta"
 
-#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:255
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:257
 msgid "Lifetime Purchases"
 msgstr "Compras Totales"
 
 #: retail_tools/retail_tools/page/label_generator/label_generator.js:47
 msgid "Load Items with Stock"
-msgstr "Cargar Artículos con Stock"
+msgstr "Cargar Artículos con existencias"
 
-#: retail_tools/retail_tools/page/label_generator/label_generator.js:268
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:47
+msgid "Load from Document"
+msgstr "Cargar del Documento"
+
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:382
+msgid "Loading items from document..."
+msgstr "Cargando artículos del documento..."
+
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:336
 msgid "Loading items with stock..."
-msgstr "Cargando artículos con stock..."
+msgstr "Cargando artículos con existencias..."
+
+#: retail_tools/public/js/retail_tools.bundle.js:16
+msgid "Loading..."
+msgstr "Cargando..."
 
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:335
 #: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:262
 msgid "Low Stock"
 msgstr "Stock Bajo"
 
-#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:334
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:336
 msgid "Loyalty Points"
 msgstr "Puntos de Lealtad"
 
-#: retail_tools/retail_tools/page/label_generator/label_generator.js:124
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:132
 msgid "Medium (50x30mm) - 3 cols"
 msgstr "Mediano (50x30mm) - 3 cols"
 
@@ -353,7 +382,7 @@ msgstr "Modificado"
 msgid "Net"
 msgstr "Neto"
 
-#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:250
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:252
 msgid "Never"
 msgstr "Nunca"
 
@@ -367,6 +396,7 @@ msgstr "No hay precio para este artículo."
 msgid "No customers found"
 msgstr "No se encontraron clientes"
 
+#: retail_tools/public/js/retail_tools.bundle.js:26
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:660
 #: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:408
 msgid "No data"
@@ -387,15 +417,20 @@ msgid "No item found for barcode: {0}"
 msgstr "No se encontró artículo para el código de barras: {0}"
 
 #: retail_tools/retail_tools/page/catalog_generator/catalog_generator.js:208
-#: retail_tools/retail_tools/page/label_generator/label_generator.js:289
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:357
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:403
 msgid "No items found"
 msgstr "No se encontraron artículos"
+
+#: retail_tools/retail_tools/page/label_generator/label_generator.py:106
+msgid "No items found in document"
+msgstr "No se encontraron artículos en el documento"
 
 #: retail_tools/retail_tools/page/catalog_generator/catalog_generator.py:226
 msgid "No items found with the selected filters"
 msgstr "No se encontraron artículos con los filtros seleccionados"
 
-#: retail_tools/retail_tools/page/label_generator/label_generator.py:142
+#: retail_tools/retail_tools/page/label_generator/label_generator.py:199
 msgid "No items provided"
 msgstr "No se proporcionaron artículos"
 
@@ -403,7 +438,7 @@ msgstr "No se proporcionaron artículos"
 msgid "No items with stock found"
 msgstr "No se encontraron artículos con stock"
 
-#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:275
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:277
 msgid "No purchase history found"
 msgstr "No se encontró historial de compras"
 
@@ -411,7 +446,8 @@ msgstr "No se encontró historial de compras"
 msgid "No sales 60+ days"
 msgstr "Sin ventas 60+ días"
 
-#: retail_tools/retail_tools/page/label_generator/label_generator.py:166
+#: retail_tools/retail_tools/page/label_generator/label_generator.py:118
+#: retail_tools/retail_tools/page/label_generator/label_generator.py:223
 msgid "No valid items found"
 msgstr "No se encontraron artículos válidos"
 
@@ -433,7 +469,7 @@ msgstr "Abrir Artículo"
 msgid "Other"
 msgstr "Otros"
 
-#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:255
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:257
 msgid "Outstanding Balance"
 msgstr "Saldo Pendiente"
 
@@ -449,7 +485,7 @@ msgstr "CIERRE DE CAJA"
 msgid "Payment Methods"
 msgstr "Métodos de Pago"
 
-#: retail_tools/retail_tools/page/label_generator/label_generator.js:300
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:414
 msgid "Please add items first"
 msgstr "Por favor agregue artículos primero"
 
@@ -461,11 +497,15 @@ msgstr "Por favor ingrese al menos 2 caracteres"
 msgid "Please generate a preview first"
 msgstr "Por favor genere una vista previa primero"
 
-#: retail_tools/retail_tools/page/label_generator/label_generator.js:378
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:494
 msgid "Please generate labels first"
 msgstr "Por favor genere etiquetas primero"
 
-#: retail_tools/retail_tools/page/label_generator/label_generator.js:169
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:371
+msgid "Please select a document"
+msgstr "Por favor seleccione un documento"
+
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:237
 msgid "Please select an item"
 msgstr "Por favor seleccione un artículo"
 
@@ -483,6 +523,7 @@ msgstr "Histórico de Precios por Lista"
 #: retail_tools/retail_tools/page/catalog_generator/catalog_generator.js:150
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:481
 #: retail_tools/retail_tools/page/item_inspector_light/item_inspector_light.js:302
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:148
 msgid "Price List"
 msgstr "Lista de Precios"
 
@@ -508,11 +549,19 @@ msgstr "Margen de Utilidad"
 msgid "Projected"
 msgstr "Proyectado"
 
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:181
+msgid "Purchase Invoice"
+msgstr "Factura de compra"
+
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:182
+msgid "Purchase Receipt"
+msgstr "Recibo de compra"
+
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:462
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:513
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:528
 #: retail_tools/retail_tools/page/label_generator/label_generator.js:47
-#: retail_tools/retail_tools/page/label_generator/label_generator.js:107
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:115
 msgid "Qty"
 msgstr "Cant."
 
@@ -524,8 +573,8 @@ msgstr "Consulta Rápida"
 msgid "RET"
 msgstr "DEV"
 
-#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:275
-#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:304
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:277
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:306
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:117
 msgid "Recent Purchases"
 msgstr "Compras Recientes"
@@ -543,7 +592,7 @@ msgstr "Reservado"
 msgid "Retail Tools"
 msgstr "Herramientas de Retail"
 
-#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:289
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:291
 msgid "Return"
 msgstr "Devolución"
 
@@ -590,11 +639,15 @@ msgstr "Seleccione un cliente del campo de arriba"
 msgid "Select an Item"
 msgstr "Seleccionar un Artículo"
 
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:199
+msgid "Select document..."
+msgstr "Seleccionar documento..."
+
 #: retail_tools/retail_tools/page/catalog_generator/catalog_generator.js:49
 msgid "Select filters and click Generate Preview"
 msgstr "Seleccione filtros y haga clic en Generar Vista Previa"
 
-#: retail_tools/retail_tools/page/label_generator/label_generator.js:95
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:103
 msgid "Select or scan item..."
 msgstr "Seleccionar o escanear artículo..."
 
@@ -615,11 +668,11 @@ msgstr "Mostrar Descripción"
 msgid "Show Price"
 msgstr "Mostrar Precio"
 
-#: retail_tools/retail_tools/page/label_generator/label_generator.js:123
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:131
 msgid "Small (38x25mm) - 4 cols"
 msgstr "Pequeño (38x25mm) - 4 cols"
 
-#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:304
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:306
 msgid "Status"
 msgstr "Estado"
 
@@ -670,7 +723,7 @@ msgstr "Usuario"
 
 #: retail_tools/retail_tools/page/catalog_generator/catalog_generator.js:138
 #: retail_tools/retail_tools/page/item_inspector/item_inspector.js:461
-#: retail_tools/retail_tools/page/label_generator/label_generator.js:140
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:165
 msgid "Warehouse"
 msgstr "Almacén"
 
@@ -688,7 +741,7 @@ msgstr "facturas"
 msgid "loading item information"
 msgstr "cargando información del artículo"
 
-#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:331
+#: retail_tools/retail_tools/page/customer_lookup/customer_lookup.js:333
 msgid "points expiring in 30 days"
 msgstr "puntos expiran en 30 días"
 
@@ -703,11 +756,12 @@ msgstr "buscando código de barras"
 msgid "units"
 msgstr "unidades"
 
-#: retail_tools/retail_tools/page/label_generator/label_generator.js:284
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:352
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:398
 msgid "{0} items loaded"
 msgstr "{0} artículos cargados"
 
-#: retail_tools/retail_tools/page/label_generator/label_generator.js:324
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:440
 msgid "{0} labels generated"
 msgstr "{0} etiquetas generadas"
 
