@@ -289,14 +289,19 @@ def _build_labels_html(labels: list, format_config: dict, show_price: int = 1) -
             </div>
             """
         else:
-            # Vertical layout for medium/large labels
-            price_html = f'<div class="label-price">{formatted_price}</div>' if formatted_price else ""
+            # Medium/Large labels: same layout, larger sizes
+            price_html = f'<div class="label-price-side">{formatted_price}</div>' if formatted_price else ""
+            centered_class = "" if formatted_price else " label-centered"
             labels_html += f"""
-            <div class="label-item">
+            <div class="label-item{centered_class}">
                 <div class="label-barcode">{barcode_html}</div>
-                <div class="label-name">{label["item_name"][:char_limit]}</div>
-                <div class="label-code">{label["item_code"]}</div>
-                {price_html}
+                <div class="label-info-row">
+                    <div class="label-left">
+                        <div class="label-name">{label["item_name"][:char_limit]}</div>
+                        <div class="label-code">{label["item_code"]}</div>
+                    </div>
+                    {price_html}
+                </div>
             </div>
             """
 
@@ -325,11 +330,12 @@ def _build_labels_html(labels: list, format_config: dict, show_price: int = 1) -
         .label-small {{
             padding: 4px 8px;
         }}
-        .label-small .label-barcode {{
+        /* Common layout for all sizes */
+        .label-barcode {{
             margin-bottom: 4px;
             text-align: center;
         }}
-        .label-small .label-barcode svg {{
+        .label-barcode svg {{
             height: {barcode_height};
             max-width: 100%;
         }}
@@ -338,19 +344,20 @@ def _build_labels_html(labels: list, format_config: dict, show_price: int = 1) -
             align-items: center;
             justify-content: space-between;
         }}
-        .label-small .label-left {{
+        .label-left {{
             flex: 1;
             min-width: 0;
             text-align: left;
         }}
-        .label-small .label-name {{
-            font-size: {name_size};
+        .label-name {{
             font-weight: 600;
+            font-size: {name_size};
+            line-height: 1.2;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
         }}
-        .label-small .label-code {{
+        .label-code {{
             font-size: {code_size};
             color: #666;
         }}
@@ -369,38 +376,10 @@ def _build_labels_html(labels: list, format_config: dict, show_price: int = 1) -
         .label-centered .label-left {{
             text-align: center;
         }}
-        /* Vertical layout (medium/large) */
-        .label-barcode {{
-            margin-bottom: 4px;
-        }}
-        .label-barcode svg {{
-            max-width: 100%;
-            height: {barcode_height};
-        }}
         .label-no-barcode {{
             color: #999;
             font-size: 10px;
             padding: 10px 0;
-        }}
-        .label-name {{
-            font-weight: 600;
-            font-size: {name_size};
-            line-height: 1.2;
-            margin-bottom: 2px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }}
-        .label-code {{
-            font-size: {code_size};
-            color: #666;
-            margin-bottom: 2px;
-        }}
-        .label-price {{
-            font-weight: 700;
-            font-size: {price_size};
-            color: #333;
-            margin-top: auto;
         }}
         @media print {{
             .label-item {{
