@@ -121,12 +121,13 @@ def get_items_from_receipt_document(doctype: str, docname: str) -> dict:
 
 
 @frappe.whitelist()
-def get_item_for_label(item_code: str) -> dict:
+def get_item_for_label(item_code: str, price_list: str = None) -> dict:
     """
     Get item data for label generation.
 
     Args:
         item_code: Item code to look up
+        price_list: Optional price list to use (defaults to selling settings)
 
     Returns:
         dict with item data including barcode
@@ -146,13 +147,15 @@ def get_item_for_label(item_code: str) -> dict:
     if item.barcodes:
         barcode = item.barcodes[0].barcode
 
-    # Get price from default selling price list
+    # Get price from specified or default price list
     price = 0
-    default_price_list = frappe.db.get_single_value("Selling Settings", "selling_price_list")
-    if default_price_list:
+    target_price_list = price_list or frappe.db.get_single_value(
+        "Selling Settings", "selling_price_list"
+    )
+    if target_price_list:
         price_doc = frappe.db.get_value(
             "Item Price",
-            {"item_code": item_code, "price_list": default_price_list, "selling": 1},
+            {"item_code": item_code, "price_list": target_price_list, "selling": 1},
             "price_list_rate",
         )
         if price_doc:
@@ -170,13 +173,17 @@ def get_item_for_label(item_code: str) -> dict:
 
 
 @frappe.whitelist()
-def generate_labels_html(items: str, label_format: str = "medium", show_price: int = 1) -> dict:
+def generate_labels_html(
+    items: str, label_format: str = "medium", show_price: int = 1, price_list: str = None
+) -> dict:
     """
     Generate HTML for label printing.
 
     Args:
         items: JSON string of items with quantities [{item_code, qty}, ...]
         label_format: Label format key (small, medium, large)
+        show_price: Whether to show price on labels
+        price_list: Optional price list to use for prices
 
     Returns:
         dict with HTML content
@@ -201,8 +208,8 @@ def generate_labels_html(items: str, label_format: str = "medium", show_price: i
         item_code = item_data.get("item_code")
         qty = int(item_data.get("qty", 1))
 
-        # Get item details
-        result = get_item_for_label(item_code)
+        # Get item details with specified price list
+        result = get_item_for_label(item_code, price_list)
         if not result.get("ok"):
             continue
 

@@ -68,6 +68,7 @@ retail_tools.LabelGenerator = class LabelGenerator {
           <div class="lg-format-row">
             <label>${__("Label Format")}:</label>
             <div class="lg-field" id="lg-format-field"></div>
+            <div class="lg-field" id="lg-price-list-field"></div>
             <label class="lg-checkbox">
               <input type="checkbox" id="lg-show-price" checked>
               ${__("Show Price")}
@@ -138,6 +139,23 @@ retail_tools.LabelGenerator = class LabelGenerator {
         });
         this.format_field.set_value("medium");
         this.format_field.refresh();
+
+        // Create Price List field
+        this.price_list_field = frappe.ui.form.make_control({
+            df: {
+                fieldtype: "Link",
+                fieldname: "price_list",
+                label: __("Price List"),
+                options: "Price List",
+                placeholder: __("Default"),
+                get_query: () => {
+                    return { filters: { selling: 1 } };
+                },
+            },
+            parent: this.$body.find("#lg-price-list-field"),
+            render_input: true,
+        });
+        this.price_list_field.refresh();
 
         // Create Warehouse field
         this.warehouse_field = frappe.ui.form.make_control({
@@ -401,6 +419,7 @@ retail_tools.LabelGenerator = class LabelGenerator {
 
         const label_format = this.format_field.get_value() || "medium";
         const show_price = this.$body.find("#lg-show-price").is(":checked") ? 1 : 0;
+        const price_list = this.price_list_field.get_value() || "";
 
         frappe.call({
             method:
@@ -409,6 +428,7 @@ retail_tools.LabelGenerator = class LabelGenerator {
                 items: JSON.stringify(this.items),
                 label_format: label_format,
                 show_price: show_price,
+                price_list: price_list,
             },
             freeze: true,
             freeze_message: __("Generating labels..."),
