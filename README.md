@@ -61,7 +61,7 @@ Complete dashboard page for quick product information lookup.
 
 ### Item Inspector Light
 
-Simplified version for quick lookups with guest access.
+Simplified version for quick lookups.
 
 **Route:** `/app/item-inspector-light`
 
@@ -70,7 +70,6 @@ Simplified version for quick lookups with guest access.
 - Price history (chart and table)
 - No navigation buttons
 - Minimalist design
-- Guest role access enabled
 
 ---
 
