@@ -298,7 +298,7 @@ def _get_price_history(item_code: str) -> list[dict]:
 
     return frappe.get_all(
         ip_doctype,
-        filters={"item_code": item_code},
+        filters={"item_code": item_code, "selling": 1},
         fields=ip_fields,
         order_by="COALESCE(valid_from, creation) asc",
         limit_page_length=1000,
