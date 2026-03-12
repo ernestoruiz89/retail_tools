@@ -49,6 +49,39 @@ def _has_field(doctype: str, fieldname: str) -> bool:
         return False
 
 
+def _first_existing_field(doctype: str, *fieldnames: str) -> str | None:
+    """Return the first field that exists in the DocType."""
+    for fieldname in fieldnames:
+        if _has_field(doctype, fieldname):
+            return fieldname
+    return None
+
+
+@lru_cache(maxsize=1)
+def _get_pos_closing_child_doctype() -> str | None:
+    """Get the child table used by POS Closing Entry to store POS invoices."""
+    if not _has_doctype("POS Closing Entry"):
+        return None
+
+    try:
+        meta = frappe.get_meta("POS Closing Entry")
+    except frappe.DoesNotExistError:
+        return None
+
+    if not meta:
+        return None
+
+    table_fields = [df for df in meta.fields if getattr(df, "fieldtype", None) == "Table"]
+    preferred_fields = sorted(table_fields, key=lambda df: 0 if df.fieldname == "pos_transactions" else 1)
+
+    for field in preferred_fields:
+        child_doctype = field.options if field and field.options else None
+        if child_doctype and _has_doctype(child_doctype) and _has_field(child_doctype, "pos_invoice"):
+            return child_doctype
+
+    return None
+
+
 @frappe.whitelist()
 def resolve_item_from_barcode(barcode: str) -> dict:
     """
@@ -150,6 +183,7 @@ def get_item_snapshot(item_code: str) -> dict:
     price_rows = _get_price_history(item_code)
     recent_sales = _get_recent_sales(item_code)
     recent_purchases = _get_recent_purchases(item_code)
+    recent_pos_sales_pending = _get_recent_pending_pos_sales(item_code)
     sales_last_30_days = _get_sales_last_30_days(item_code)
     selling_price = _get_default_selling_price(item_code)
     days_since_last_sale = _get_days_since_last_sale(item_code)
@@ -162,6 +196,7 @@ def get_item_snapshot(item_code: str) -> dict:
         "price_history": price_rows,
         "recent_sales": recent_sales,
         "recent_purchases": recent_purchases,
+        "recent_pos_sales_pending": recent_pos_sales_pending,
         "sales_last_30_days": sales_last_30_days,
         "selling_price": selling_price,
         "days_since_last_sale": days_since_last_sale,
@@ -358,6 +393,94 @@ def _get_recent_purchases(item_code: str, limit: int = 10) -> list[dict]:
         INNER JOIN `tabPurchase Invoice` pi ON pi.name = pii.parent
         WHERE pii.item_code = %s AND pi.docstatus = 1
         ORDER BY pi.posting_date DESC, pi.modified DESC
+        LIMIT %s
+        """,
+        (item_code, limit),
+        as_dict=True,
+    )
+
+
+def _get_recent_pending_pos_sales(item_code: str, limit: int = 10) -> list[dict]:
+    """Get recent POS Invoice rows that are still pending consolidation/closure."""
+    if not (_has_doctype("POS Invoice Item") and _has_doctype("POS Invoice")):
+        return []
+
+    qty_field = _first_existing_field("POS Invoice Item", "stock_qty", "qty")
+    rate_field = _first_existing_field("POS Invoice Item", "base_rate", "stock_uom_rate", "rate")
+    amount_field = _first_existing_field("POS Invoice Item", "base_net_amount", "base_amount", "net_amount", "amount")
+
+    qty_expr = f"pii.{qty_field}" if qty_field else "0"
+
+    if rate_field == "base_rate":
+        rate_expr = "pii.base_rate"
+    elif rate_field and _has_field("POS Invoice", "conversion_rate"):
+        rate_expr = f"(pii.{rate_field} * COALESCE(pi.conversion_rate, 1))"
+    elif rate_field:
+        rate_expr = f"pii.{rate_field}"
+    else:
+        rate_expr = "0"
+
+    if amount_field in {"base_net_amount", "base_amount"}:
+        amount_expr = f"pii.{amount_field}"
+    elif amount_field and _has_field("POS Invoice", "conversion_rate"):
+        amount_expr = f"(pii.{amount_field} * COALESCE(pi.conversion_rate, 1))"
+    elif amount_field:
+        amount_expr = f"pii.{amount_field}"
+    else:
+        amount_expr = "0"
+
+    customer_expr = "pi.customer" if _has_field("POS Invoice", "customer") else "''"
+    currency_expr = "pi.currency" if _has_field("POS Invoice", "currency") else "''"
+
+    where_clauses = [
+        "pii.item_code = %s",
+        "pi.docstatus = 1",
+    ]
+
+    if _has_field("POS Invoice", "consolidated_invoice"):
+        where_clauses.append("COALESCE(pi.consolidated_invoice, '') = ''")
+    elif _has_field("POS Invoice", "pos_closing_entry"):
+        where_clauses.append("COALESCE(pi.pos_closing_entry, '') = ''")
+    else:
+        child_doctype = _get_pos_closing_child_doctype()
+        if child_doctype:
+            child_table = child_doctype.replace("`", "")
+            where_clauses.append(
+                f"""
+                NOT EXISTS (
+                    SELECT 1
+                    FROM `tab{child_table}` pct
+                    INNER JOIN `tabPOS Closing Entry` pce ON pce.name = pct.parent
+                    WHERE pct.parenttype = 'POS Closing Entry'
+                      AND pct.pos_invoice = pi.name
+                      AND pce.docstatus = 1
+                )
+                """
+            )
+
+    if _has_field("POS Invoice", "status"):
+        where_clauses.append("COALESCE(pi.status, '') != 'Consolidated'")
+
+    order_by = "pi.posting_date DESC"
+    if _has_field("POS Invoice", "posting_time"):
+        order_by += ", pi.posting_time DESC"
+    if _has_field("POS Invoice", "modified"):
+        order_by += ", pi.modified DESC"
+
+    return frappe.db.sql(
+        f"""
+        SELECT
+            pii.parent as pos_invoice,
+            pi.posting_date,
+            {customer_expr} as customer,
+            {qty_expr} as qty,
+            {rate_expr} as rate,
+            {amount_expr} as amount,
+            {currency_expr} as currency
+        FROM `tabPOS Invoice Item` pii
+        INNER JOIN `tabPOS Invoice` pi ON pi.name = pii.parent
+        WHERE {' AND '.join(where_clauses)}
+        ORDER BY {order_by}
         LIMIT %s
         """,
         (item_code, limit),

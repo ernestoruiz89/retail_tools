@@ -151,6 +151,11 @@ retail_tools.ItemInspector = class ItemInspector {
             <div class="ii-card-title" id="purchase-table-heading">${__("Recent Purchases")}</div>
             <div class="ii-table ii-purchase-table" role="region" aria-labelledby="purchase-table-heading"></div>
           </div>
+
+          <div class="ii-card">
+            <div class="ii-card-title" id="pos-sales-table-heading">${__("Recent POS Sales Pending Closure")}</div>
+            <div class="ii-table ii-pos-sales-table" role="region" aria-labelledby="pos-sales-table-heading"></div>
+          </div>
         </div>
       </div>
     `);
@@ -168,6 +173,7 @@ retail_tools.ItemInspector = class ItemInspector {
     this.$priceTable = $body.find(".ii-price-table");
     this.$salesTable = $body.find(".ii-sales-table");
     this.$purchaseTable = $body.find(".ii-purchase-table");
+    this.$posSalesTable = $body.find(".ii-pos-sales-table");
   }
 
   open_scanner() {
@@ -286,6 +292,7 @@ retail_tools.ItemInspector = class ItemInspector {
     const prices = res.price_history || [];
     const sales = res.recent_sales || [];
     const purchases = res.recent_purchases || [];
+    const pendingPosSales = res.recent_pos_sales_pending || [];
     const salesLast30 = res.sales_last_30_days || { qty: 0, count: 0 };
     const sellingPrice = res.selling_price || { price: 0 };
     const daysSinceLastSale = res.days_since_last_sale;
@@ -294,7 +301,7 @@ retail_tools.ItemInspector = class ItemInspector {
     this._render_kpis(bins, sales, purchases, salesLast30, sellingPrice, daysSinceLastSale);
     this._render_stock_table(bins);
     this._render_price_section(prices);
-    this._render_transaction_tables(sales, purchases);
+    this._render_transaction_tables(sales, purchases, pendingPosSales);
   }
 
   /**
@@ -502,7 +509,7 @@ retail_tools.ItemInspector = class ItemInspector {
   /**
    * Render transaction tables (sales and purchases)
    */
-  _render_transaction_tables(sales, purchases) {
+  _render_transaction_tables(sales, purchases, pendingPosSales) {
     this.$salesTable.html(
       this.render_table(
         ["posting_date", "customer", "qty", "rate", "amount", "sales_invoice"],
@@ -529,6 +536,21 @@ retail_tools.ItemInspector = class ItemInspector {
           rate: __("Cost"),
           amount: __("Total"),
           purchase_invoice: __("Document"),
+        }
+      )
+    );
+
+    this.$posSalesTable.html(
+      this.render_table(
+        ["posting_date", "customer", "qty", "rate", "amount", "pos_invoice"],
+        pendingPosSales,
+        {
+          posting_date: __("Date"),
+          customer: __("Customer"),
+          qty: __("Qty"),
+          rate: __("Price"),
+          amount: __("Total"),
+          pos_invoice: __("Document"),
         }
       )
     );
@@ -688,6 +710,7 @@ retail_tools.ItemInspector = class ItemInspector {
     const docLinkCols = {
       sales_invoice: "Sales Invoice",
       purchase_invoice: "Purchase Invoice",
+      pos_invoice: "POS Invoice",
     };
 
     if (numCols.includes(col)) {
