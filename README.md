@@ -149,6 +149,7 @@ Generate barcode labels for printing.
 #### Label Formats
 | Format | Size | Columns |
 |--------|------|---------|
+| **2x1 in** | 50.8×25.4mm (2×1") | 1 column (thermal roll) |
 | **Small** | 38×25mm | 4 columns |
 | **Medium** | 50×30mm | 3 columns |
 | **Large** | 70×40mm | 2 columns |
@@ -156,11 +157,12 @@ Generate barcode labels for printing.
 #### Features
 - Add items by barcode or item code
 - Specify quantity per item
+- Primary and optional secondary Price List support
 - Dynamic font sizing based on format
-- Dynamic barcode height per format
+- Dynamic barcode height and EAN-8 / EAN-13 / CODE128 rendering
 - Price display toggle
 - Load items with stock (with warehouse filter)
-- Print-ready HTML output
+- Print-ready HTML output (including `@page { size: 2in 1in; }` for thermal label rolls)
 
 #### Allowed Roles
 - System Manager, Stock Manager, Stock User, Sales User

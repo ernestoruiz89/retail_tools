@@ -69,6 +69,7 @@ retail_tools.LabelGenerator = class LabelGenerator {
             <label>${__("Label Format")}:</label>
             <div class="lg-field" id="lg-format-field"></div>
             <div class="lg-field" id="lg-price-list-field"></div>
+            <div class="lg-field" id="lg-price-list-2-field"></div>
             <label class="lg-checkbox">
               <input type="checkbox" id="lg-show-price" checked>
               ${__("Show Price")}
@@ -128,6 +129,7 @@ retail_tools.LabelGenerator = class LabelGenerator {
                 fieldname: "label_format",
                 label: __("Format"),
                 options: [
+                    { value: "2x1", label: __("2x1 in (50.8x25.4mm) - 1 col") },
                     { value: "small", label: __("Small (38x25mm) - 4 cols") },
                     { value: "medium", label: __("Medium (50x30mm) - 3 cols") },
                     { value: "large", label: __("Large (70x40mm) - 2 cols") },
@@ -156,6 +158,23 @@ retail_tools.LabelGenerator = class LabelGenerator {
             render_input: true,
         });
         this.price_list_field.refresh();
+
+        // Create Second Price List field (optional)
+        this.price_list_2_field = frappe.ui.form.make_control({
+            df: {
+                fieldtype: "Link",
+                fieldname: "price_list_2",
+                label: __("Price List 2"),
+                options: "Price List",
+                placeholder: __("Optional"),
+                get_query: () => {
+                    return { filters: { selling: 1 } };
+                },
+            },
+            parent: this.$body.find("#lg-price-list-2-field"),
+            render_input: true,
+        });
+        this.price_list_2_field.refresh();
 
         // Create Warehouse field
         this.warehouse_field = frappe.ui.form.make_control({
@@ -420,6 +439,7 @@ retail_tools.LabelGenerator = class LabelGenerator {
         const label_format = this.format_field.get_value() || "medium";
         const show_price = this.$body.find("#lg-show-price").is(":checked") ? 1 : 0;
         const price_list = this.price_list_field.get_value() || "";
+        const price_list_2 = this.price_list_2_field.get_value() || "";
 
         frappe.call({
             method:
@@ -429,6 +449,7 @@ retail_tools.LabelGenerator = class LabelGenerator {
                 label_format: label_format,
                 show_price: show_price,
                 price_list: price_list,
+                price_list_2: price_list_2,
             },
             freeze: true,
             freeze_message: __("Generating labels..."),
@@ -464,24 +485,54 @@ retail_tools.LabelGenerator = class LabelGenerator {
 
     render_barcodes() {
         const format = this.format_field.get_value();
+        const is2x1 = format === "2x1";
         let height = 30;
-        if (format === "large") height = 55;
+        if (format === "large" || is2x1) height = 55;
         if (format === "small") height = 25;
 
         this.$body.find(".barcode-svg").each(function () {
-            const barcode = $(this).data("barcode");
+            const barcode = String($(this).data("barcode") || "").trim();
             if (barcode) {
-                try {
-                    JsBarcode(this, String(barcode), {
-                        format: "CODE128",
-                        width: 1.2,
-                        height: height,
-                        displayValue: true,
-                        fontSize: 10,
-                        margin: 2,
-                    });
-                } catch (e) {
-                    console.log("Barcode error:", e);
+                const baseOptions = is2x1
+                    ? {
+                          width: 1.6,
+                          height: height,
+                          displayValue: true,
+                          fontSize: 14,
+                          margin: 2,
+                          textMargin: 1,
+                      }
+                    : {
+                          width: 1.2,
+                          height: height,
+                          displayValue: true,
+                          fontSize: 10,
+                          margin: 2,
+                      };
+
+                let rendered = false;
+                if (/^\d{8}$/.test(barcode)) {
+                    try {
+                        JsBarcode(this, barcode, { ...baseOptions, format: "EAN8" });
+                        rendered = true;
+                    } catch (e) {
+                        rendered = false;
+                    }
+                } else if (/^\d{13}$/.test(barcode)) {
+                    try {
+                        JsBarcode(this, barcode, { ...baseOptions, format: "EAN13" });
+                        rendered = true;
+                    } catch (e) {
+                        rendered = false;
+                    }
+                }
+
+                if (!rendered) {
+                    try {
+                        JsBarcode(this, barcode, { ...baseOptions, format: "CODE128" });
+                    } catch (e) {
+                        console.log("Barcode error:", e);
+                    }
                 }
             }
         });
@@ -497,6 +548,7 @@ retail_tools.LabelGenerator = class LabelGenerator {
             return;
         }
 
+        const is2x1 = this.format_field.get_value() === "2x1";
         const printContent = $preview.html();
         const printWindow = window.open("", "_blank");
         printWindow.document.write(`
@@ -505,9 +557,10 @@ retail_tools.LabelGenerator = class LabelGenerator {
       <head>
         <title>${__("Barcode Labels")}</title>
         <style>
-          body { margin: 0; padding: 10px; }
+          ${is2x1 ? "@page { size: 2in 1in; margin: 0; }" : ""}
+          body { margin: 0; padding: ${is2x1 ? "0" : "10px"}; }
           @media print {
-            body { padding: 0; }
+            body { margin: 0; padding: 0; }
           }
         </style>
       </head>

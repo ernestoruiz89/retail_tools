@@ -767,3 +767,20 @@ msgstr ""
 msgid "{0} products in catalog"
 msgstr ""
 
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:132
+msgid "2x1 in (50.8x25.4mm) - 1 col"
+msgstr ""
+
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:166
+msgid "Price List 2"
+msgstr ""
+
+#: retail_tools/retail_tools/page/label_generator/label_generator.js:168
+msgid "Optional"
+msgstr ""
+
+#: retail_tools/retail_tools/page/label_generator/label_generator.py:345
+msgid "No barcode"
+msgstr ""
+
+

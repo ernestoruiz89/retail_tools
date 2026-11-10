@@ -13,9 +13,34 @@ from frappe import _
 
 # Label format configurations (width in mm, columns)
 LABEL_FORMATS = {
-    "small": {"name": "Small (38x25mm)", "columns": 4, "width": 38, "height": 25},
-    "medium": {"name": "Medium (50x30mm)", "columns": 3, "width": 50, "height": 30},
-    "large": {"name": "Large (70x40mm)", "columns": 2, "width": 70, "height": 40},
+    "2x1": {
+        "key": "2x1",
+        "name": "2x1 in (50.8x25.4mm)",
+        "columns": 1,
+        "width": 50.8,
+        "height": 25.4,
+    },
+    "small": {
+        "key": "small",
+        "name": "Small (38x25mm)",
+        "columns": 4,
+        "width": 38,
+        "height": 25,
+    },
+    "medium": {
+        "key": "medium",
+        "name": "Medium (50x30mm)",
+        "columns": 3,
+        "width": 50,
+        "height": 30,
+    },
+    "large": {
+        "key": "large",
+        "name": "Large (70x40mm)",
+        "columns": 2,
+        "width": 70,
+        "height": 40,
+    },
 }
 
 
@@ -121,13 +146,16 @@ def get_items_from_receipt_document(doctype: str, docname: str) -> dict:
 
 
 @frappe.whitelist()
-def get_item_for_label(item_code: str, price_list: str = None) -> dict:
+def get_item_for_label(
+    item_code: str, price_list: str = None, price_list_2: str = None
+) -> dict:
     """
     Get item data for label generation.
 
     Args:
         item_code: Item code to look up
         price_list: Optional price list to use (defaults to selling settings)
+        price_list_2: Optional second price list to use
 
     Returns:
         dict with item data including barcode
@@ -149,6 +177,7 @@ def get_item_for_label(item_code: str, price_list: str = None) -> dict:
 
     # Get price from specified or default price list
     price = 0
+    currency = None
     target_price_list = price_list or frappe.db.get_single_value(
         "Selling Settings", "selling_price_list"
     )
@@ -156,10 +185,26 @@ def get_item_for_label(item_code: str, price_list: str = None) -> dict:
         price_doc = frappe.db.get_value(
             "Item Price",
             {"item_code": item_code, "price_list": target_price_list, "selling": 1},
-            "price_list_rate",
+            ["price_list_rate", "currency"],
+            as_dict=True,
         )
         if price_doc:
-            price = price_doc
+            price = price_doc.price_list_rate or 0
+            currency = price_doc.currency
+
+    # Get optional second price
+    price_2 = 0
+    currency_2 = None
+    if price_list_2:
+        price_2_doc = frappe.db.get_value(
+            "Item Price",
+            {"item_code": item_code, "price_list": price_list_2, "selling": 1},
+            ["price_list_rate", "currency"],
+            as_dict=True,
+        )
+        if price_2_doc:
+            price_2 = price_2_doc.price_list_rate or 0
+            currency_2 = price_2_doc.currency
 
     return {
         "ok": True,
@@ -168,22 +213,30 @@ def get_item_for_label(item_code: str, price_list: str = None) -> dict:
             "item_name": item.item_name,
             "barcode": barcode,
             "price": price,
+            "currency": currency,
+            "price_2": price_2,
+            "currency_2": currency_2,
         },
     }
 
 
 @frappe.whitelist()
 def generate_labels_html(
-    items: str, label_format: str = "medium", show_price: int = 1, price_list: str = None
+    items: str,
+    label_format: str = "medium",
+    show_price: int = 1,
+    price_list: str = None,
+    price_list_2: str = None,
 ) -> dict:
     """
     Generate HTML for label printing.
 
     Args:
         items: JSON string of items with quantities [{item_code, qty}, ...]
-        label_format: Label format key (small, medium, large)
+        label_format: Label format key (2x1, small, medium, large)
         show_price: Whether to show price on labels
         price_list: Optional price list to use for prices
+        price_list_2: Optional second price list to use for prices
 
     Returns:
         dict with HTML content
@@ -200,7 +253,6 @@ def generate_labels_html(
 
     # Get format config
     format_config = LABEL_FORMATS.get(label_format, LABEL_FORMATS["medium"])
-    columns = format_config["columns"]
 
     # Collect all labels
     labels = []
@@ -208,8 +260,8 @@ def generate_labels_html(
         item_code = item_data.get("item_code")
         qty = int(item_data.get("qty", 1))
 
-        # Get item details with specified price list
-        result = get_item_for_label(item_code, price_list)
+        # Get item details with specified price lists
+        result = get_item_for_label(item_code, price_list, price_list_2)
         if not result.get("ok"):
             continue
 
@@ -228,11 +280,34 @@ def generate_labels_html(
     return {"ok": True, "html": html, "count": len(labels)}
 
 
+def _format_label_price(price: float, currency: str = None, compact: bool = False) -> str:
+    """Format price for labels, optionally stripping .00 decimals for compact 2x1 tags."""
+    import re
+
+    if not price:
+        return ""
+
+    options = {"fieldtype": "Currency"}
+    if currency:
+        options["currency"] = currency
+
+    formatted = frappe.format_value(price, options)
+    if not compact:
+        return formatted
+
+    if float(price).is_integer():
+        formatted = re.sub(r"[.,]00$", "", formatted)
+
+    # Ensure single space between currency symbol and amount (e.g. "C$ 150")
+    formatted = re.sub(r"^([^\d\s-]+)\s*(\d)", r"\1 \2", formatted.strip())
+    return formatted
+
+
 def _build_labels_html(labels: list, format_config: dict, show_price: int = 1) -> str:
     """Build labels HTML grid."""
     columns = format_config["columns"]
-    label_width = format_config["width"]
     label_height = format_config["height"]
+    is_2x1 = format_config.get("key") == "2x1"
 
     # Check if small format (horizontal layout)
     is_small = columns == 4
@@ -243,7 +318,7 @@ def _build_labels_html(labels: list, format_config: dict, show_price: int = 1) -
     code_size = "9px"
     barcode_height = "35px"
     char_limit = 30
-    
+
     if columns == 2:  # Large labels
         name_size = "14px"
         price_size = "14px"
@@ -266,10 +341,16 @@ def _build_labels_html(labels: list, format_config: dict, show_price: int = 1) -
     labels_html = ""
     for label in labels:
         formatted_price = ""
-        if show_price and label.get("price"):
-            formatted_price = frappe.format_value(
-                label["price"], {"fieldtype": "Currency"}
-            )
+        formatted_price_2 = ""
+        if show_price:
+            if label.get("price"):
+                formatted_price = _format_label_price(
+                    label["price"], label.get("currency"), compact=is_2x1
+                )
+            if label.get("price_2"):
+                formatted_price_2 = _format_label_price(
+                    label["price_2"], label.get("currency_2"), compact=is_2x1
+                )
 
         barcode_html = ""
         if label.get("barcode"):
@@ -277,11 +358,32 @@ def _build_labels_html(labels: list, format_config: dict, show_price: int = 1) -
         else:
             barcode_html = f'<div class="label-no-barcode">{_("No barcode")}</div>'
 
-        if is_small:
+        if is_2x1:
+            prices_2x1_html = ""
+            if formatted_price:
+                prices_2x1_html += f'<div class="label-2x1-price">{formatted_price}</div>'
+            if formatted_price_2:
+                prices_2x1_html += f'<div class="label-2x1-price">{formatted_price_2}</div>'
+
+            labels_html += f"""
+            <div class="label-2x1">
+                <div class="label-2x1-barcode">{barcode_html}</div>
+                <div class="label-2x1-info">
+                    <div class="label-2x1-name">{label["item_name"][:28]}</div>
+                    {prices_2x1_html}
+                </div>
+            </div>
+            """
+        elif is_small:
             # Small labels: barcode on top, info row below (name/code left, price right)
             # If no price, center the info
-            price_html = f'<div class="label-price-side">{formatted_price}</div>' if formatted_price else ""
-            centered_class = "" if formatted_price else " label-centered"
+            price_lines = [p for p in [formatted_price, formatted_price_2] if p]
+            price_html = (
+                f'<div class="label-price-side">{"<br>".join(price_lines)}</div>'
+                if price_lines
+                else ""
+            )
+            centered_class = "" if price_lines else " label-centered"
             labels_html += f"""
             <div class="label-item label-small{centered_class}">
                 <div class="label-barcode">{barcode_html}</div>
@@ -296,8 +398,13 @@ def _build_labels_html(labels: list, format_config: dict, show_price: int = 1) -
             """
         else:
             # Medium/Large labels: same layout, larger sizes
-            price_html = f'<div class="label-price-side">{formatted_price}</div>' if formatted_price else ""
-            centered_class = "" if formatted_price else " label-centered"
+            price_lines = [p for p in [formatted_price, formatted_price_2] if p]
+            price_html = (
+                f'<div class="label-price-side">{"<br>".join(price_lines)}</div>'
+                if price_lines
+                else ""
+            )
+            centered_class = "" if price_lines else " label-centered"
             labels_html += f"""
             <div class="label-item{centered_class}">
                 <div class="label-barcode">{barcode_html}</div>
@@ -311,8 +418,12 @@ def _build_labels_html(labels: list, format_config: dict, show_price: int = 1) -
             </div>
             """
 
+    page_rule = "@page { size: 2in 1in; margin: 0; }" if is_2x1 else ""
+    grid_class = "labels-grid-2x1" if is_2x1 else "labels-grid"
+
     return f"""
     <style>
+        {page_rule}
         .labels-container {{
             font-family: Arial, sans-serif;
         }}
@@ -320,6 +431,72 @@ def _build_labels_html(labels: list, format_config: dict, show_price: int = 1) -
             display: grid;
             grid-template-columns: repeat({columns}, 1fr);
             gap: 5px;
+        }}
+        .labels-grid-2x1 {{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }}
+        .label-2x1 {{
+            width: 50.8mm;
+            height: 25.4mm;
+            border: 1px dashed #ccc;
+            border-radius: 2mm;
+            padding: 1.5mm 2mm;
+            box-sizing: border-box;
+            background: #fff;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            page-break-inside: avoid;
+            break-inside: avoid;
+            overflow: hidden;
+        }}
+        .label-2x1-barcode {{
+            width: 56%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }}
+        .label-2x1-barcode svg {{
+            width: 100%;
+            height: auto;
+            max-height: 22mm;
+            display: block;
+        }}
+        .label-2x1-info {{
+            width: 44%;
+            height: 100%;
+            padding-left: 1.5mm;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            gap: 2px;
+        }}
+        .label-2x1-name {{
+            font-weight: 700;
+            font-size: 12px;
+            line-height: 1.15;
+            color: #000;
+            width: 100%;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            word-break: break-word;
+        }}
+        .label-2x1-price {{
+            font-weight: 700;
+            font-size: 13px;
+            line-height: 1.15;
+            color: #000;
+            white-space: nowrap;
         }}
         .label-item {{
             border: 1px dashed #ccc;
@@ -391,10 +568,28 @@ def _build_labels_html(labels: list, format_config: dict, show_price: int = 1) -
             .label-item {{
                 border: 1px solid #ddd;
             }}
+            .labels-grid-2x1 {{
+                display: block;
+                margin: 0;
+                padding: 0;
+            }}
+            .label-2x1 {{
+                width: 2in;
+                height: 1in;
+                border: none !important;
+                border-radius: 0 !important;
+                margin: 0 !important;
+                page-break-after: always;
+                break-after: page;
+            }}
+            .label-2x1:last-child {{
+                page-break-after: auto;
+                break-after: auto;
+            }}
         }}
     </style>
     <div class="labels-container">
-        <div class="labels-grid">
+        <div class="{grid_class}">
             {labels_html}
         </div>
     </div>
