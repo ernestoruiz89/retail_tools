@@ -39,16 +39,6 @@ class RetailStoreDashboard {
 			() => this.refreshData(),
 			"refresh"
 		);
-
-		this.page.add_inner_button(__("Inspector de Ítems"), () => {
-			frappe.set_route("item-inspector");
-		});
-		this.page.add_inner_button(__("Cargar Compras"), () => {
-			frappe.set_route("carga-compras");
-		});
-		this.page.add_inner_button(__("Generador de Etiquetas"), () => {
-			frappe.set_route("label-generator");
-		});
 	}
 
 	renderSkeleton() {
