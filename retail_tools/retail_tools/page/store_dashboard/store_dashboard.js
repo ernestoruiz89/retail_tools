@@ -993,6 +993,12 @@ class RetailStoreDashboard {
 		const self = this;
 
 		const hasChannelSplit = Array.isArray(daily.pos_sales) && Array.isArray(daily.direct_sales);
+		const salesArr = daily.sales || [];
+		const marginData = (daily.margin_pct || []).map((val, idx) => {
+			if (val === null || val === undefined) return null;
+			if (Math.abs(Number(salesArr[idx] || 0)) < 1e-9) return null;
+			return val;
+		});
 
 		chart.setOption({
 			tooltip: {
@@ -1066,10 +1072,11 @@ class RetailStoreDashboard {
 							type: "line",
 							yAxisIndex: 1,
 							smooth: true,
+							connectNulls: true,
 							symbolSize: 6,
 							itemStyle: { color: "#f59e0b" },
 							lineStyle: { width: 2.5 },
-							data: daily.margin_pct || [],
+							data: marginData,
 						},
 				  ]
 				: [
@@ -1092,10 +1099,11 @@ class RetailStoreDashboard {
 							type: "line",
 							yAxisIndex: 1,
 							smooth: true,
+							connectNulls: true,
 							symbolSize: 6,
 							itemStyle: { color: "#f59e0b" },
 							lineStyle: { width: 2.5 },
-							data: daily.margin_pct || [],
+							data: marginData,
 						},
 				  ],
 		});

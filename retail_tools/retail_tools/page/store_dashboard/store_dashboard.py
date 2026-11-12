@@ -399,7 +399,7 @@ def _compute_commercial_metrics(
 	daily_margin_pct = [
 		round((daily_map[d]["profit"] / daily_map[d]["sales"]) * 100.0, 2)
 		if abs(daily_map[d]["sales"]) > 1e-9
-		else 0.0
+		else None
 		for d in dates_list
 	]
 
