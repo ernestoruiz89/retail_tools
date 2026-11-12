@@ -42,6 +42,26 @@ class RetailStoreDashboard {
 	}
 
 	renderSkeleton() {
+		if (!document.getElementById("rt-db-kpi-v2-style")) {
+			const styleEl = document.createElement("style");
+			styleEl.id = "rt-db-kpi-v2-style";
+			styleEl.textContent = `
+				.rt-db-kpi-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 26px; }
+				@media (max-width: 1180px) { .rt-db-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+				@media (max-width: 680px) { .rt-db-kpi-grid { grid-template-columns: 1fr; } }
+				.rt-db-kpi-card { border-radius: 16px; padding: 18px 20px; box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04); }
+				.rt-db-kpi-card::before { width: 100%; height: 4px; }
+				.rt-db-kpi-head-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+				.rt-db-kpi-icon { width: 36px; height: 36px; border-radius: 10px; background: var(--kpi-soft, #eff6ff); color: var(--kpi-accent, #2563eb); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+				.rt-db-kpi-icon svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 2; fill: none; }
+				.rt-db-kpi-value { font-size: 26px; font-weight: 800; margin-bottom: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+				.rt-db-kpi-footer { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding-top: 11px; border-top: 1px solid #f1f5f9; }
+				.rt-db-kpi-metric { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+				.rt-db-kpi-metric-label { font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+				.rt-db-kpi-metric-val { font-size: 12.5px; font-weight: 700; color: #334155; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+			`;
+			document.head.appendChild(styleEl);
+		}
 		this.$container.html(`
 			<div class="rt-dashboard-wrapper">
 				<!-- Barra de Filtros -->

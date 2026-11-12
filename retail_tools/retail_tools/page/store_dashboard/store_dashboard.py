@@ -80,6 +80,10 @@ def _format_currency_compact(value: float, currency: str = "USD") -> str:
 def get_dashboard_defaults(company: str | None = None) -> dict:
 	"""Return initial filter options (companies, warehouses, currency, default date range)."""
 	_ensure_dashboard_access()
+	try:
+		frappe.cache().hdel("page", "store-dashboard")
+	except Exception:
+		pass
 
 	resolved_company = _resolve_company(company)
 	currency = (
