@@ -571,22 +571,27 @@ class RetailStoreDashboard {
 			this.currency = (data.filters && data.filters.currency) || this.currency;
 			this.currencySymbol = (data.filters && data.filters.currency_symbol) || this.currencySymbol;
 
-			this.renderPeriodNote(data.filters);
-			this.renderKpiCards(data.kpis);
-			this.renderBalanceSheetChart(data.financials.balance_sheet);
-			this.renderPnlChart(data.financials.income_statement);
-			this.renderDailyTrendChart(data.charts.daily_trend);
-			this.renderCategoryChart(data.charts.by_category);
-			this.renderTopItemsChart(data.charts.top_items);
-			this.renderPaymentsChart(data.charts.payment_methods);
-			this.renderCalendarHeatmapChart(data.charts.calendar_heatmap);
-			this.renderHeatmapChart(data.charts.hourly_heatmap);
-			this.renderStockVsSalesChart(data.charts.by_category);
-			this.renderAlertTables(data.alerts);
-			this.renderIndicatorsTable(data.indicators_table);
+			this.renderAll(data);
 		} catch (e) {
 			console.error("Error cargando datos del dashboard:", e);
 		}
+	}
+
+	renderAll(data) {
+		if (!data) return;
+		this.renderPeriodNote(data.filters);
+		this.renderKpiCards(data.kpis);
+		this.renderBalanceSheetChart(data.financials.balance_sheet);
+		this.renderPnlChart(data.financials.income_statement);
+		this.renderDailyTrendChart(data.charts.daily_trend);
+		this.renderCategoryChart(data.charts.by_category);
+		this.renderTopItemsChart(data.charts.top_items);
+		this.renderPaymentsChart(data.charts.payment_methods);
+		this.renderCalendarHeatmapChart(data.charts.calendar_heatmap);
+		this.renderHeatmapChart(data.charts.hourly_heatmap);
+		this.renderStockVsSalesChart(data.charts.by_category);
+		this.renderAlertTables(data.alerts);
+		this.renderIndicatorsTable(data.indicators_table);
 	}
 
 	fmtMoney(value) {
