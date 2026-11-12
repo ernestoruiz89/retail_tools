@@ -26,6 +26,7 @@ class RetailStoreDashboard {
 		this.pnlMode = "waterfall"; // "waterfall" | "expenses"
 		this.topItemsMode = "by_revenue"; // "by_revenue" | "by_profit" | "by_qty"
 		this.heatmapMode = "sales"; // "sales" | "tickets"
+		this.calendarMode = "sales"; // "sales" | "tickets"
 		this.indicatorFilter = "all";
 
 		this.setupPageActions();
@@ -60,6 +61,7 @@ class RetailStoreDashboard {
 				.rt-db-kpi-metric { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 				.rt-db-kpi-metric-label { font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 				.rt-db-kpi-metric-val { font-size: 12.5px; font-weight: 700; color: #334155; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+				.rt-db-chart-box.calendar-box { height: 245px; min-height: 225px; }
 				@media (max-width: 680px) {
 					.rt-dashboard-wrapper { padding: 10px 10px 32px; }
 					.rt-db-card { padding: 14px 12px; }
@@ -67,6 +69,7 @@ class RetailStoreDashboard {
 					.rt-db-seg-btn { flex: 1; text-align: center; white-space: nowrap; padding: 5px 8px; font-size: 11px; }
 					.rt-db-chart-box { height: 320px; min-height: 290px; }
 					.rt-db-chart-box.tall { height: 340px; }
+					.rt-db-chart-box.calendar-box { height: 210px; min-height: 195px; }
 				}
 			`;
 			document.head.appendChild(styleEl);
@@ -209,6 +212,19 @@ class RetailStoreDashboard {
 					<h3 class="rt-db-section-title">${__("3. Inteligencia Operativa y Salud de Inventario")}</h3>
 					<span class="rt-db-section-subtitle">${__("Horarios pico en tienda y relación entre capital inmovilizado en bodega vs. ventas")}</span>
 				</div>
+				<div class="rt-db-card" style="margin-bottom: 18px;">
+					<div class="rt-db-card-header">
+						<div>
+							<h4 class="rt-db-card-title">${__("Calendario Anual de Ventas (Mapa de Calor Diario)")}</h4>
+							<div class="rt-db-card-subtitle" id="rt-db-calendar-subtitle">${__("Intensidad diaria de actividad comercial durante el año")}</div>
+						</div>
+						<div class="rt-db-segmented" id="rt-db-calendar-toggle">
+							<button type="button" class="rt-db-seg-btn active" data-mode="sales">${__("Por Monto")}</button>
+							<button type="button" class="rt-db-seg-btn" data-mode="tickets">${__("Por Tickets")}</button>
+						</div>
+					</div>
+					<div id="rt-chart-calendar" class="rt-db-chart-box calendar-box"></div>
+				</div>
 				<div class="rt-db-grid-2">
 					<div class="rt-db-card">
 						<div class="rt-db-card-header">
@@ -341,6 +357,16 @@ class RetailStoreDashboard {
 			self.topItemsMode = $btn.data("mode");
 			if (self.payload) {
 				self.renderTopItemsChart(self.payload.charts.top_items);
+			}
+		});
+
+		this.$container.on("click", "#rt-db-calendar-toggle .rt-db-seg-btn", function () {
+			const $btn = $(this);
+			self.$container.find("#rt-db-calendar-toggle .rt-db-seg-btn").removeClass("active");
+			$btn.addClass("active");
+			self.calendarMode = $btn.data("mode");
+			if (self.payload && self.payload.charts) {
+				self.renderCalendarHeatmapChart(self.payload.charts.calendar_heatmap);
 			}
 		});
 
@@ -553,6 +579,7 @@ class RetailStoreDashboard {
 			this.renderCategoryChart(data.charts.by_category);
 			this.renderTopItemsChart(data.charts.top_items);
 			this.renderPaymentsChart(data.charts.payment_methods);
+			this.renderCalendarHeatmapChart(data.charts.calendar_heatmap);
 			this.renderHeatmapChart(data.charts.hourly_heatmap);
 			this.renderStockVsSalesChart(data.charts.by_category);
 			this.renderAlertTables(data.alerts);
@@ -1539,6 +1566,102 @@ class RetailStoreDashboard {
 				},
 			],
 		});
+	}
+
+	/**
+	 * 6b. Calendar Heatmap (full-year daily sales / tickets)
+	 */
+	renderCalendarHeatmapChart(cal) {
+		const chart = this.getOrCreateChart("rt-chart-calendar");
+		if (!chart || !cal) return;
+		const self = this;
+		const isMobile = this.isMobileViewport();
+		const isTickets = this.calendarMode === "tickets";
+
+		const rows = cal.data || [];
+		const seriesData = rows.map((r) => {
+			const metric = isTickets ? Number(r[2] || 0) : Number(r[1] || 0);
+			return metric > 0
+				? { value: [r[0], metric], rawSales: Number(r[1] || 0), tickets: Number(r[2] || 0) }
+				: {
+						value: [r[0], "-"],
+						rawSales: Number(r[1] || 0),
+						tickets: Number(r[2] || 0),
+						itemStyle: { color: "#ffffff", borderColor: "#e2e8f0", borderWidth: 1 },
+				  };
+		});
+
+		const maxVal = Math.max(1, isTickets ? Number(cal.max_tickets || 1) : Number(cal.max_sales || 1));
+		const range = cal.range || [`${cal.year}-01-01`, `${cal.year}-12-31`];
+
+		this.$container
+			.find("#rt-db-calendar-subtitle")
+			.text(
+				`${__("Año")} ${cal.year} · ${cal.active_days || 0} ${__("días con actividad")}`
+			);
+
+		chart.setOption({
+			tooltip: {
+				confine: true,
+				formatter: (p) => {
+					const d = p.data || {};
+					const day = (p.value && p.value[0]) || "";
+					return `<strong>${day}</strong><br/>${__("Ventas")}: <strong>${self.fmtMoney(
+						d.rawSales || 0
+					)}</strong><br/>${__("Tickets")}: <strong>${d.tickets || 0}</strong>`;
+				},
+			},
+			visualMap: {
+				min: 0,
+				max: maxVal,
+				calculable: true,
+				orient: "horizontal",
+				left: "center",
+				bottom: 0,
+				itemWidth: isMobile ? 12 : 14,
+				itemHeight: isMobile ? 90 : 160,
+				textStyle: { fontSize: isMobile ? 10 : 11 },
+				inRange: {
+					color: isTickets
+						? ["#ccfbf1", "#5eead4", "#14b8a6", "#0d9488", "#0f766e", "#134e4a"]
+						: ["#dbeafe", "#93c5fd", "#60a5fa", "#2563eb", "#1d4ed8", "#1e3a8a"],
+				},
+				outOfRange: { color: ["#ffffff"] },
+				formatter: (v) => (isTickets ? `${Math.round(v)}` : self.fmtCompact(v)),
+			},
+			calendar: {
+				top: isMobile ? 26 : 30,
+				left: isMobile ? 28 : 36,
+				right: isMobile ? 6 : 16,
+				bottom: 40,
+				cellSize: ["auto", isMobile ? 12 : 18],
+				range,
+				orient: "horizontal",
+				itemStyle: { borderWidth: 2, borderColor: "#ffffff", color: "#ffffff" },
+				splitLine: { show: true, lineStyle: { color: "#cbd5e1", width: 1 } },
+				yearLabel: { show: false },
+				dayLabel: {
+					firstDay: 1,
+					nameMap: ["D", "L", "M", "M", "J", "V", "S"],
+					fontSize: isMobile ? 9 : 11,
+				},
+				monthLabel: {
+					nameMap: ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"],
+					fontSize: isMobile ? 9.5 : 11,
+				},
+			},
+			series: [
+				{
+					name: isTickets ? __("Tickets por Día") : __("Ventas por Día"),
+					type: "heatmap",
+					coordinateSystem: "calendar",
+					data: seriesData,
+					emphasis: {
+						itemStyle: { shadowBlur: 6, shadowColor: "rgba(15, 23, 42, 0.35)" },
+					},
+				},
+			],
+		}, true);
 	}
 
 	/**

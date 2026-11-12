@@ -612,6 +612,124 @@ def _get_payment_methods_breakdown(
 	return result
 
 
+def _get_calendar_heatmap_data(
+	company: str,
+	to_date: str,
+	warehouse: str | None = None,
+	include_pending_pos: bool = True,
+) -> dict:
+	"""Return full-year daily sales and ticket counts for the ECharts calendar-heatmap."""
+	ref = getdate(to_date)
+	year = ref.year
+	year_start = f"{year}-01-01"
+	year_end = f"{year}-12-31"
+
+	params: dict = {
+		"company": company,
+		"year_start": year_start,
+		"year_end": year_end,
+	}
+	if warehouse:
+		params["warehouse"] = warehouse
+
+	wh_filter_si = "AND sii.warehouse = %(warehouse)s" if warehouse else ""
+	has_pos_table = frappe.db.table_exists("POS Invoice") and frappe.db.table_exists("POS Invoice Item")
+	exclude_consolidated_clause = ""
+	if has_pos_table:
+		exclude_consolidated_clause = """
+		  AND IFNULL(si.is_consolidated, 0) = 0
+		  AND NOT EXISTS (
+		      SELECT 1 FROM `tabPOS Invoice` pi_c
+		      WHERE pi_c.consolidated_invoice = si.name
+		        AND pi_c.docstatus = 1
+		  )
+		"""
+
+	si_daily = frappe.db.sql(
+		f"""
+		SELECT
+			si.posting_date AS sale_date,
+			SUM(IFNULL(sii.base_net_amount, 0)) AS net_sales,
+			COUNT(DISTINCT CASE WHEN IFNULL(si.is_return, 0) = 0 THEN si.name ELSE NULL END) AS tickets
+		FROM `tabSales Invoice` si
+		INNER JOIN `tabSales Invoice Item` sii ON sii.parent = si.name
+		WHERE si.docstatus = 1
+		  AND si.company = %(company)s
+		  AND si.posting_date BETWEEN %(year_start)s AND %(year_end)s
+		  {exclude_consolidated_clause}
+		  {wh_filter_si}
+		GROUP BY si.posting_date
+		""",
+		params,
+		as_dict=True,
+	)
+
+	daily_sales: dict[str, float] = {}
+	daily_tickets: dict[str, int] = {}
+
+	for r in si_daily:
+		d_str = str(r.sale_date)
+		daily_sales[d_str] = daily_sales.get(d_str, 0.0) + flt(r.net_sales)
+		daily_tickets[d_str] = daily_tickets.get(d_str, 0) + cint(r.tickets)
+
+	if has_pos_table:
+		wh_filter_pos = "AND pii.warehouse = %(warehouse)s" if warehouse else ""
+		pos_status_clause = (
+			""
+			if include_pending_pos
+			else "AND IFNULL(pi.consolidated_invoice, '') != ''"
+		)
+		pos_daily = frappe.db.sql(
+			f"""
+			SELECT
+				pi.posting_date AS sale_date,
+				SUM(IFNULL(pii.base_net_amount, 0)) AS net_sales,
+				COUNT(DISTINCT CASE WHEN IFNULL(pi.is_return, 0) = 0 THEN pi.name ELSE NULL END) AS tickets
+			FROM `tabPOS Invoice` pi
+			INNER JOIN `tabPOS Invoice Item` pii ON pii.parent = pi.name
+			WHERE pi.docstatus = 1
+			  AND pi.company = %(company)s
+			  AND pi.posting_date BETWEEN %(year_start)s AND %(year_end)s
+			  {pos_status_clause}
+			  {wh_filter_pos}
+			GROUP BY pi.posting_date
+			""",
+			params,
+			as_dict=True,
+		)
+		for r in pos_daily:
+			d_str = str(r.sale_date)
+			daily_sales[d_str] = daily_sales.get(d_str, 0.0) + flt(r.net_sales)
+			daily_tickets[d_str] = daily_tickets.get(d_str, 0) + cint(r.tickets)
+
+	total_days = date_diff(getdate(year_end), getdate(year_start)) + 1
+	data_rows: list[list] = []
+	max_sales = 0.0
+	max_tickets = 0
+	active_days = 0
+
+	for offset in range(total_days):
+		d_str = str(add_days(year_start, offset))
+		s_val = round(daily_sales.get(d_str, 0.0), 2)
+		t_val = int(daily_tickets.get(d_str, 0))
+		if s_val > 0 or t_val > 0:
+			active_days += 1
+		if s_val > max_sales:
+			max_sales = s_val
+		if t_val > max_tickets:
+			max_tickets = t_val
+		data_rows.append([d_str, s_val, t_val])
+
+	return {
+		"year": str(year),
+		"range": [year_start, year_end],
+		"max_sales": round(max_sales, 2),
+		"max_tickets": int(max_tickets),
+		"active_days": active_days,
+		"data": data_rows,
+	}
+
+
 def _get_inventory_and_alerts(
 	company: str,
 	warehouse: str | None,
@@ -1295,6 +1413,10 @@ def get_store_dashboard_data(
 		resolved_company, start_date, end_date, clean_warehouse, include_pos_bool
 	)
 
+	calendar_heatmap = _get_calendar_heatmap_data(
+		resolved_company, end_date, clean_warehouse, include_pos_bool
+	)
+
 	indicators_table = _build_indicators_table(
 		currency=currency,
 		period_days=period_days,
@@ -1359,6 +1481,7 @@ def get_store_dashboard_data(
 			"by_category": inventory_data["by_category"],
 			"top_items": curr_comm["top_items"],
 			"payment_methods": payment_methods,
+			"calendar_heatmap": calendar_heatmap,
 			"hourly_heatmap": curr_comm["hourly_heatmap"],
 		},
 		"alerts": {
