@@ -640,4 +640,43 @@ class TestCargaCompras(FrappeTestCase):
 		if sample_path:
 			self.assertEqual(len(pi_doc.items), 123)
 
+	def test_10_item_inspector_v16_compatibility(self):
+		from retail_tools.retail_tools.page.item_inspector.item_inspector import (
+			get_item_snapshot,
+			resolve_item_from_barcode,
+		)
+
+		code = "RT-II-V16-001"
+		headers = [
+			"Codigo Producto",
+			"Producto",
+			"Codigo de Barra",
+			"Cantidad",
+			"Costo",
+			"Precio Venta 1",
+			"Precio Venta 2",
+		]
+		rows = [[code, "Producto Inspector V16", f"BC-{code}", 4, 25.0, 50.0, 60.0]]
+		b64 = _make_xlsx_b64(headers, rows)
+		header = self._base_header(bill_no="FAC-II-V16")
+		prev = preview_purchase_upload(file_content=b64, header=header)
+		conf = confirm_purchase_upload(
+			file_content=b64,
+			header=header,
+			preview_token=prev["preview_token"],
+			upload_id="upl-ii-v16",
+		)
+		self.assertTrue(conf["ok"])
+
+		resolved = resolve_item_from_barcode(f"BC-{code}")
+		self.assertTrue(resolved["ok"])
+		self.assertEqual(resolved["item_code"], code)
+
+		snap = get_item_snapshot(code)
+		self.assertTrue(snap["ok"])
+		self.assertEqual(snap["item"]["item_code"], code)
+		self.assertEqual(len(snap["price_history"]), 2)
+		self.assertEqual(len(snap["recent_purchases"]), 1)
+
+
 

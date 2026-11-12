@@ -326,18 +326,29 @@ def _get_price_history(item_code: str) -> list[dict]:
 
     ip_fields = ["name", "price_list", "price_list_rate", "currency", "modified", "creation"]
 
-    if _has_field(ip_doctype, "valid_from"):
+    has_valid_from = _has_field(ip_doctype, "valid_from")
+    if has_valid_from:
         ip_fields.append("valid_from")
     if _has_field(ip_doctype, "valid_upto"):
         ip_fields.append("valid_upto")
 
-    return frappe.get_all(
+    order_by = "valid_from asc, creation asc" if has_valid_from else "creation asc"
+
+    rows = frappe.get_all(
         ip_doctype,
         filters={"item_code": item_code, "selling": 1},
         fields=ip_fields,
-        order_by="COALESCE(valid_from, creation) asc",
+        order_by=order_by,
         limit_page_length=1000,
     )
+
+    rows.sort(
+        key=lambda r: (
+            str(r.get("valid_from") or r.get("creation") or ""),
+            str(r.get("creation") or ""),
+        )
+    )
+    return rows
 
 
 def _get_recent_sales(item_code: str, limit: int = 10) -> list[dict]:
