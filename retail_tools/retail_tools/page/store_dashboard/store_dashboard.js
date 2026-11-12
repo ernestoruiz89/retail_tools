@@ -1537,6 +1537,9 @@ class RetailStoreDashboard {
 						r.days_without_sale === null || r.days_without_sale === undefined
 							? __("Nunca vendido")
 							: `${r.days_without_sale} ${__("días")}`;
+					const lastSaleFormatted = frappe.utils
+						.escape_html(r.last_sale_date || "")
+						.replace(/-/g, "\u2011");
 					return `
 						<tr>
 							<td>
@@ -1547,7 +1550,7 @@ class RetailStoreDashboard {
 							</td>
 							<td style="text-align:right;white-space:nowrap;">${r.actual_qty}</td>
 							<td style="text-align:right;font-weight:700;white-space:nowrap;">${this.fmtMoney(r.stock_value)}</td>
-							<td style="white-space:nowrap;">${frappe.utils.escape_html(r.last_sale_date || "")}</td>
+							<td style="white-space:nowrap;min-width:96px;">${lastSaleFormatted}</td>
 							<td style="text-align:center;white-space:nowrap;"><span class="rt-db-badge warning">${daysLabel}</span></td>
 						</tr>
 					`;
@@ -1559,10 +1562,10 @@ class RetailStoreDashboard {
 					<thead>
 						<tr>
 							<th>${__("Producto")}</th>
-							<th style="text-align:right;">${__("Stock")}</th>
-							<th style="text-align:right;">${__("Capital en Stock")}</th>
-							<th>${__("Última Venta")}</th>
-							<th style="text-align:center;">${__("Inactividad")}</th>
+							<th style="text-align:right;white-space:nowrap;">${__("Stock")}</th>
+							<th style="text-align:right;white-space:nowrap;">${__("Capital en Stock")}</th>
+							<th style="white-space:nowrap;min-width:96px;">${__("Última Venta")}</th>
+							<th style="text-align:center;white-space:nowrap;">${__("Inactividad")}</th>
 						</tr>
 					</thead>
 					<tbody>${rowsHtml}</tbody>

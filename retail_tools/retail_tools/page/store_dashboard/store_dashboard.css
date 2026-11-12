@@ -384,6 +384,11 @@
 	vertical-align: middle;
 }
 
+.rt-db-table td:not(:first-child),
+.rt-db-table th:not(:first-child) {
+	white-space: nowrap;
+}
+
 .rt-db-table tbody tr:hover {
 	background: rgba(37, 99, 235, 0.03);
 }

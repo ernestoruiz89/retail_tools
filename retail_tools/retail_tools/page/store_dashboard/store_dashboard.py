@@ -745,7 +745,7 @@ def _get_inventory_and_alerts(
 						"item_group": cat,
 						"actual_qty": round(qty, 2),
 						"stock_value": round(stock_val, 2),
-						"last_sale_date": str(last_sale) if last_sale else _("Sin ventas"),
+						"last_sale_date": str(last_sale).replace("-", "\u2011") if last_sale else _("Sin ventas"),
 						"days_without_sale": None if not last_sale else int(days_without_sale),
 					}
 				)
