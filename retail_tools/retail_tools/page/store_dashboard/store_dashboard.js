@@ -1251,57 +1251,100 @@ class RetailStoreDashboard {
 		if (!chart || !heatmap) return;
 		const self = this;
 
+		const rawData = heatmap.data || [];
+		const positiveValues = rawData
+			.map((r) => Number(r[2] || 0))
+			.filter((v) => v > 0);
+		const minPositive = positiveValues.length ? Math.min(...positiveValues) : 1;
 		const maxVal = Math.max(1, Number(heatmap.max_value || 1));
+		const visualMin = positiveValues.length ? Math.max(0.01, minPositive * 0.85) : 1;
+
+		const seriesData = rawData.map((r) => {
+			const hourIdx = Number(r[0] || 0);
+			const dayIdx = Number(r[1] || 0);
+			const salesVal = Number(r[2] || 0);
+			const tickets = Number(r[3] || 0);
+			return {
+				value: [hourIdx, dayIdx, salesVal],
+				tickets,
+				label: {
+					color: salesVal >= maxVal * 0.35 ? "#ffffff" : "#0f172a",
+				},
+			};
+		});
 
 		chart.setOption({
 			tooltip: {
 				position: "top",
 				formatter: (p) => {
-					const val = p.value || [0, 0, 0, 0];
+					const val = p.value || [0, 0, 0];
+					const tickets = (p.data && p.data.tickets) || 0;
 					const hourLabel = (heatmap.hours && heatmap.hours[val[0]]) || `${val[0]}:00`;
 					const dayLabel = (heatmap.days && heatmap.days[val[1]]) || "";
-					return `<strong>${dayLabel} ${hourLabel}</strong><br/>${__("Ventas")}: <strong>${self.fmtMoney(
+					return `<strong>${dayLabel} · ${hourLabel}</strong><br/>${__("Ventas")}: <strong>${self.fmtMoney(
 						val[2]
-					)}</strong><br/>${__("Tickets")}: <strong>${val[3] || 0}</strong>`;
+					)}</strong><br/>${__("Tickets")}: <strong>${tickets}</strong>`;
 				},
 			},
 			grid: {
 				top: 16,
 				left: "3%",
 				right: "4%",
-				bottom: 48,
+				bottom: 52,
 				containLabel: true,
 			},
 			xAxis: {
 				type: "category",
 				data: heatmap.hours || [],
-				splitArea: { show: true },
+				splitArea: { show: false },
+				axisLabel: { fontSize: 11 },
 			},
 			yAxis: {
 				type: "category",
 				data: heatmap.days || [],
-				splitArea: { show: true },
+				splitArea: { show: false },
+				axisLabel: { fontWeight: 600, fontSize: 11.5 },
 			},
 			visualMap: {
-				min: 0,
-				max: maxVal,
+				dimension: 2,
+				min: visualMin,
+				max: Math.max(maxVal, visualMin + 1),
 				calculable: true,
 				orient: "horizontal",
 				left: "center",
 				bottom: 0,
 				inRange: {
-					color: ["#f1f5f9", "#93c5fd", "#3b82f6", "#1d4ed8", "#1e3a8a"],
+					color: ["#93c5fd", "#60a5fa", "#3b82f6", "#2563eb", "#1d4ed8", "#1e3a8a"],
 				},
+				outOfRange: {
+					color: ["#f8fafc"],
+				},
+				formatter: (value) => self.fmtCompact(value),
 			},
 			series: [
 				{
 					name: __("Ventas por Hora"),
 					type: "heatmap",
-					data: heatmap.data || [],
+					data: seriesData,
+					itemStyle: {
+						borderColor: "#ffffff",
+						borderWidth: 2,
+						borderRadius: 4,
+					},
+					label: {
+						show: true,
+						fontSize: 9.5,
+						fontWeight: 700,
+						color: "#0f172a",
+						formatter: (p) => {
+							const v = Number((p.value && p.value[2]) || 0);
+							return v > 0 ? self.fmtCompact(v) : "";
+						},
+					},
 					emphasis: {
 						itemStyle: {
 							shadowBlur: 8,
-							shadowColor: "rgba(0, 0, 0, 0.35)",
+							shadowColor: "rgba(15, 23, 42, 0.35)",
 						},
 					},
 				},
