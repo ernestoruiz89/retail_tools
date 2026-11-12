@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"_9o9pLe5W2\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Retail Tools</span>\",\"col\":12}},{\"id\":\"14j_b1zio3\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Item Inspector\",\"col\":3}},{\"id\":\"jYKgl4Q1wp\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Catalog Generator\",\"col\":3}},{\"id\":\"7fpSdgNSEy\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"QLrM1zyHgi\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Item Inspector (Light)\",\"col\":3}},{\"id\":\"dxZd0YKXv2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Label Generator\",\"col\":3}},{\"id\":\"UVn-z2UZrn\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Customer Lookup\",\"col\":3}}]",
+ "content": "[{\"id\":\"_9o9pLe5W2\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Retail Tools</span>\",\"col\":12}},{\"id\":\"14j_b1zio3\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Item Inspector\",\"col\":3}},{\"id\":\"jYKgl4Q1wp\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Catalog Generator\",\"col\":3}},{\"id\":\"pU8xK2mN9q\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Carga de Compras\",\"col\":3}},{\"id\":\"7fpSdgNSEy\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"QLrM1zyHgi\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Item Inspector (Light)\",\"col\":3}},{\"id\":\"dxZd0YKXv2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Label Generator\",\"col\":3}},{\"id\":\"UVn-z2UZrn\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Customer Lookup\",\"col\":3}}]",
  "creation": "2025-12-24 08:19:06.939869",
  "custom_blocks": [],
  "docstatus": 0,
@@ -12,8 +12,49 @@
  "indicator_color": "green",
  "is_hidden": 0,
  "label": "Retail Tools",
- "links": [],
- "modified": "2025-12-28 23:33:18.549587",
+ "links": [
+  {
+   "hidden": 0,
+   "label": "Carga de Compras",
+   "link_to": "carga-compras",
+   "link_type": "Page",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "label": "Item Inspector",
+   "link_to": "item-inspector",
+   "link_type": "Page",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "label": "Label Generator",
+   "link_to": "label-generator",
+   "link_type": "Page",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "label": "Catalog Generator",
+   "link_to": "catalog-generator",
+   "link_type": "Page",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "label": "Customer Lookup",
+   "link_to": "customer-lookup",
+   "link_type": "Page",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-11-12 11:30:00.000000",
  "modified_by": "Administrator",
  "module": "Retail Tools",
  "name": "Retail Tools",
@@ -59,6 +100,13 @@
    "doc_view": "List",
    "label": "Customer Lookup",
    "link_to": "customer-lookup",
+   "type": "Page"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Carga de Compras",
+   "link_to": "carga-compras",
    "type": "Page"
   }
  ],

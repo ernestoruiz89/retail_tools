@@ -785,4 +785,11 @@ msgstr "Opcional"
 msgid "No barcode"
 msgstr "Sin código de barras"
 
+#. Label of a shortcut in the Retail Tools Workspace
+#: retail_tools/retail_tools/page/carga_compras/carga_compras.js:15
+#: retail_tools/retail_tools/workspace/retail_tools/retail_tools.json
+msgid "Carga de Compras"
+msgstr "Carga de Compras"
+
+
 

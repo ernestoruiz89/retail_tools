@@ -169,6 +169,26 @@ Generate barcode labels for printing.
 
 ---
 
+### Carga de Compras
+
+Review an Excel purchase template, preview and edit UoM and Item Group per row, create or update Items and selling Item Prices (up to two price lists), and submit a single Purchase Invoice (`update_stock=1`, `is_paid=0`) in one atomic transaction.
+
+**Route:** `/app/carga-compras`
+
+#### Features
+- Downloadable 7-column Excel template (`Codigo Producto`, `Producto`, `Codigo de Barra`, `Cantidad`, `Costo`, `Precio Venta 1`, `Precio Venta 2`) and support for equivalent headers (including PACC templates where `Codigo de Barra` acts as `item_code` and `barcode`, `Costo +envio`, `PrecioMayorista`, `PrecioDetalle`)
+- Preserves product codes and barcodes as exact text
+- Server-side preview with dry-run ERPNext validation (`savepoint` rollback)
+- Row-level editing of `item_group` and `stock_uom` (with automatic read-only lock on `stock_uom` if an existing item has stock movements)
+- Creates/updates selling `Item Price` records with `valid_from = today()` without duplicating same-day records
+- Single atomic transaction for Items, Item Prices, submitted `Purchase Invoice` (`update_stock=1`), and attached `.xlsx` file
+- Idempotent confirmation via unique `upload_id` and stale preview protection (`preview_token`)
+
+#### Allowed Roles
+- System Manager, Purchase Manager, Purchase User, Stock Manager, Accounts Manager
+
+---
+
 ### POS Closing Report (Print Format)
 
 Custom print format for POS Closing Entry documents, optimized for thermal receipt printers.
@@ -224,6 +244,7 @@ bench restart
 | Customer Lookup | Modules > Retail Tools > Customer Lookup | `/app/customer-lookup` |
 | Catalog Generator | Modules > Retail Tools > Catalog Generator | `/app/catalog-generator` |
 | Label Generator | Modules > Retail Tools > Label Generator | `/app/label-generator` |
+| Carga de Compras | Modules > Retail Tools > Carga de Compras | `/app/carga-compras` |
 
 ### Searching for a Product
 
@@ -313,6 +334,14 @@ retail_tools/
 | `get_item_for_label(item_code)` | Get item data for label |
 | `get_items_with_stock(warehouse)` | Get items with stock |
 | `generate_labels_html(items, format)` | Generate labels HTML for printing |
+
+#### Carga de Compras
+| Endpoint | Description |
+|----------|-------------|
+| `get_initial_data(company)` | Get initial defaults, site settings, and user permissions |
+| `download_template()` | Download the 7-column `.xlsx` template |
+| `preview_purchase_upload(...)` | Parse and validate the `.xlsx` file and simulate ERPNext submission |
+| `confirm_purchase_upload(...)` | Atomically create/update Items, Item Prices, and submit the Purchase Invoice |
 
 ## 📄 License
 

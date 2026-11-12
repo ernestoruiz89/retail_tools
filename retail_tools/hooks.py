@@ -93,7 +93,8 @@ app_include_js = "/assets/retail_tools/js/retail_tools.min.js"
 # ------------
 
 # before_install = "retail_tools.install.before_install"
-# after_install = "retail_tools.install.after_install"
+after_install = "retail_tools.setup.after_install"
+after_migrate = "retail_tools.setup.after_migrate"
 
 # Uninstallation
 # ------------

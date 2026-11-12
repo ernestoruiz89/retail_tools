@@ -1,0 +1,66 @@
+{
+ "app": "retail_tools",
+ "doctype": "Sidebar",
+ "header_icon": "shopping-bag",
+ "items": [
+  {
+   "child": 0,
+   "icon": "house",
+   "is_default_module": 1,
+   "label": "Retail Tools",
+   "link_to": "Retail Tools",
+   "link_type": "Workspace",
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "icon": "upload",
+   "is_default_module": 1,
+   "label": "Carga de Compras",
+   "link_to": "carga-compras",
+   "link_type": "Page",
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "icon": "search",
+   "is_default_module": 1,
+   "label": "Item Inspector",
+   "link_to": "item-inspector",
+   "link_type": "Page",
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "icon": "tag",
+   "is_default_module": 1,
+   "label": "Label Generator",
+   "link_to": "label-generator",
+   "link_type": "Page",
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "icon": "book-open",
+   "is_default_module": 1,
+   "label": "Catalog Generator",
+   "link_to": "catalog-generator",
+   "link_type": "Page",
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "icon": "users",
+   "is_default_module": 1,
+   "label": "Customer Lookup",
+   "link_to": "customer-lookup",
+   "link_type": "Page",
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-11-12 11:30:00.000000",
+ "module": "Retail Tools",
+ "name": "Retail Tools",
+ "standard": 1,
+ "title": "Retail Tools"
+}

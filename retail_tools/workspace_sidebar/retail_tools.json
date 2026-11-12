@@ -1,0 +1,61 @@
+{
+ "app": "retail_tools",
+ "doctype": "Workspace Sidebar",
+ "for_user": "",
+ "header_icon": "shopping-bag",
+ "items": [
+  {
+   "child": 0,
+   "icon": "house",
+   "label": "Retail Tools",
+   "link_to": "Retail Tools",
+   "link_type": "Workspace",
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "icon": "upload",
+   "label": "Carga de Compras",
+   "link_to": "carga-compras",
+   "link_type": "Page",
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "icon": "search",
+   "label": "Item Inspector",
+   "link_to": "item-inspector",
+   "link_type": "Page",
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "icon": "tag",
+   "label": "Label Generator",
+   "link_to": "label-generator",
+   "link_type": "Page",
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "icon": "book-open",
+   "label": "Catalog Generator",
+   "link_to": "catalog-generator",
+   "link_type": "Page",
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "icon": "users",
+   "label": "Customer Lookup",
+   "link_to": "customer-lookup",
+   "link_type": "Page",
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-11-12 11:30:00.000000",
+ "module": "Retail Tools",
+ "name": "Retail Tools",
+ "standard": 1,
+ "title": "Retail Tools"
+}

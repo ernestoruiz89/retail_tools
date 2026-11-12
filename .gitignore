@@ -5,6 +5,7 @@
 tags
 node_modules
 __pycache__
+retail_tools/public/dist/
 
 # AI Agent configuration
 GEMINI.md

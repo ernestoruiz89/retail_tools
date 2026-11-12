@@ -1,0 +1,31 @@
+{
+ "content": null,
+ "doctype": "Page",
+ "icon": "icon-upload",
+ "idx": 0,
+ "module": "Retail Tools",
+ "name": "carga-compras",
+ "page_name": "carga-compras",
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Purchase Manager"
+  },
+  {
+   "role": "Purchase User"
+  },
+  {
+   "role": "Stock Manager"
+  },
+  {
+   "role": "Accounts Manager"
+  }
+ ],
+ "script": null,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0,
+ "title": "Carga de Compras"
+}
