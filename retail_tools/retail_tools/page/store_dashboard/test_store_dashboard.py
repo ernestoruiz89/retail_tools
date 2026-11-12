@@ -8,7 +8,7 @@ from retail_tools.retail_tools.page.store_dashboard.store_dashboard import (
 	get_dashboard_defaults,
 	get_store_dashboard_data,
 )
-from retail_tools.setup import setup_roles_and_permissions
+from retail_tools.setup import setup_roles_and_permissions, sync_pages_and_workspace
 
 
 class TestStoreDashboard(FrappeTestCase):
@@ -16,6 +16,7 @@ class TestStoreDashboard(FrappeTestCase):
 	def setUpClass(cls):
 		super().setUpClass()
 		frappe.set_user("Administrator")
+		sync_pages_and_workspace()
 		setup_roles_and_permissions()
 
 	def tearDown(self):
@@ -95,6 +96,12 @@ class TestStoreDashboard(FrappeTestCase):
 		self.assertEqual(len(heatmap["days"]), 7)
 		self.assertEqual(len(heatmap["hours"]), 24)
 		self.assertEqual(len(heatmap["data"]), 168)
+
+		# Verify Workspace 'Retail Tools' contains 'Store Dashboard' shortcut & link
+		ws = frappe.get_doc("Workspace", "Retail Tools")
+		shortcut_links = {s.link_to for s in ws.shortcuts}
+		self.assertIn("store-dashboard", shortcut_links)
+		self.assertIn("Store Dashboard", ws.content or "")
 
 	def test_sales_and_inventory_reflection_in_dashboard(self):
 		frappe.set_user("Administrator")

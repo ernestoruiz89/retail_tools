@@ -394,12 +394,28 @@ PAGE_ROLES_MAP: dict[str, list[str]] = {
 
 def after_install():
 	setup_custom_fields()
+	sync_pages_and_workspace()
 	setup_roles_and_permissions()
+	frappe.clear_cache()
 
 
 def after_migrate():
 	setup_custom_fields()
+	sync_pages_and_workspace()
 	setup_roles_and_permissions()
+	frappe.clear_cache()
+
+
+def sync_pages_and_workspace():
+	for page_module in ("carga_compras", "store_dashboard"):
+		try:
+			frappe.reload_doc("retail_tools", "page", page_module, force=True)
+		except Exception:
+			pass
+	try:
+		frappe.reload_doc("retail_tools", "workspace", "retail_tools", force=True)
+	except Exception:
+		pass
 
 
 def setup_custom_fields():
