@@ -11,8 +11,17 @@ app_license = "mit"
 fixtures = [
     {
         "doctype": "Print Format",
-        "filters": [["module", "=", "Retail Tools"]]
-    }
+        "filters": [["module", "=", "Retail Tools"]],
+    },
+    {
+        "doctype": "Role",
+        "filters": [["name", "like", "RT %"]],
+    },
+    {
+        "doctype": "Custom DocPerm",
+        "prefix": "rt",
+        "filters": [["role", "like", "RT %"]],
+    },
 ]
 
 # Apps

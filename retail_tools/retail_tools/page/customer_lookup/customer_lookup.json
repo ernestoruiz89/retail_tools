@@ -1,35 +1,50 @@
 {
-    "content": null,
-    "creation": "2025-12-28 21:25:00.000000",
-    "docstatus": 0,
-    "doctype": "Page",
-    "idx": 0,
-    "modified": "2025-12-28 21:25:00.000000",
-    "modified_by": "Administrator",
-    "module": "Retail Tools",
-    "name": "customer-lookup",
-    "owner": "Administrator",
-    "page_name": "customer-lookup",
-    "roles": [
-        {
-            "role": "Sales User"
-        },
-        {
-            "role": "Sales Manager"
-        },
-        {
-            "role": "System Manager"
-        },
-        {
-            "role": "Administrator"
-        },
-        {
-            "role": "Accounts User"
-        }
-    ],
-    "script": null,
-    "standard": "Yes",
-    "style": null,
-    "system_page": 0,
-    "title": "Customer Lookup"
+ "content": null,
+ "creation": "2025-12-28 21:25:00",
+ "docstatus": 0,
+ "doctype": "Page",
+ "idx": 0,
+ "modified": "2026-11-13 01:11:33.039604",
+ "modified_by": "Administrator",
+ "module": "Retail Tools",
+ "name": "customer-lookup",
+ "owner": "Administrator",
+ "page_name": "customer-lookup",
+ "roles": [
+  {
+   "role": "Sales User"
+  },
+  {
+   "role": "Sales Manager"
+  },
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Administrator"
+  },
+  {
+   "role": "Accounts User"
+  },
+  {
+   "role": "RT Cajero"
+  },
+  {
+   "role": "RT Responsable de Tienda"
+  },
+  {
+   "role": "RT Contador"
+  },
+  {
+   "role": "RT Socio"
+  },
+  {
+   "role": "RT Administrador de Sistema"
+  }
+ ],
+ "script": null,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0,
+ "title": "Customer Lookup"
 }

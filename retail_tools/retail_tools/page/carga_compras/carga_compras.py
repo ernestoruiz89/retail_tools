@@ -127,6 +127,9 @@ ALLOWED_PAGE_ROLES = {
 	"Stock Manager",
 	"Accounts Manager",
 	"Administrator",
+	"RT Responsable de Tienda",
+	"RT Contador",
+	"RT Administrador de Sistema",
 }
 
 

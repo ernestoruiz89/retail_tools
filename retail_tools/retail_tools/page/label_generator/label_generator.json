@@ -1,24 +1,39 @@
 {
-    "doctype": "Page",
-    "name": "label-generator",
-    "module": "Retail Tools",
-    "standard": "Yes",
-    "page_name": "label-generator",
-    "title": "Label Generator",
-    "icon": "icon-tag",
-    "system_page": 0,
-    "roles": [
-        {
-            "role": "System Manager"
-        },
-        {
-            "role": "Stock Manager"
-        },
-        {
-            "role": "Stock User"
-        },
-        {
-            "role": "Sales User"
-        }
-    ]
+ "content": null,
+ "creation": "2026-11-12 23:17:15.345150",
+ "docstatus": 0,
+ "doctype": "Page",
+ "icon": "icon-tag",
+ "idx": 0,
+ "modified": "2026-11-13 01:11:33.281260",
+ "modified_by": "Administrator",
+ "module": "Retail Tools",
+ "name": "label-generator",
+ "owner": "Administrator",
+ "page_name": "label-generator",
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Stock Manager"
+  },
+  {
+   "role": "Stock User"
+  },
+  {
+   "role": "Sales User"
+  },
+  {
+   "role": "RT Responsable de Tienda"
+  },
+  {
+   "role": "RT Administrador de Sistema"
+  }
+ ],
+ "script": null,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0,
+ "title": "Label Generator"
 }

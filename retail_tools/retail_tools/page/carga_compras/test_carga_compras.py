@@ -713,5 +713,204 @@ class TestCargaCompras(FrappeTestCase):
 		self.assertEqual(len(snap["price_history"]), 2)
 		self.assertEqual(len(snap["recent_purchases"]), 2)
 
+	def _create_single_role_user(self, email: str, first_name: str, role_name: str) -> str:
+		if not frappe.db.exists("User", email):
+			user_doc = frappe.get_doc(
+				{
+					"doctype": "User",
+					"email": email,
+					"first_name": first_name,
+					"enabled": 1,
+					"user_type": "System User",
+					"send_welcome_email": 0,
+				}
+			).insert(ignore_permissions=True)
+		else:
+			user_doc = frappe.get_doc("User", email)
+		user_doc.set("roles", [{"role": role_name}])
+		user_doc.save(ignore_permissions=True)
+		return email
+
+	def test_11_rt_roles_fixtures_and_user_permissions(self):
+		import json
+		from retail_tools.retail_tools.page.catalog_generator.catalog_generator import (
+			generate_catalog_html,
+			get_items_for_catalog,
+		)
+		from retail_tools.retail_tools.page.customer_lookup.customer_lookup import (
+			get_customer_snapshot,
+			search_customer,
+		)
+		from retail_tools.retail_tools.page.item_inspector.item_inspector import (
+			get_item_snapshot,
+			resolve_item_from_barcode,
+		)
+		from retail_tools.retail_tools.page.label_generator.label_generator import (
+			generate_labels_html,
+			get_item_for_label,
+			get_items_with_stock,
+		)
+		from retail_tools.setup import RT_ROLES, setup_roles_and_permissions
+
+		setup_roles_and_permissions()
+
+		for r_name in RT_ROLES:
+			self.assertTrue(frappe.db.exists("Role", r_name), f"Falta rol {r_name}")
+
+		# Prepare a baseline item and customer as Administrator
+		base_code = "RT-ROLE-TEST-ITEM"
+		b64_base = _make_xlsx_b64(
+			list(TEMPLATE_HEADERS),
+			[[base_code, "Producto Base Roles", "BC-ROLE-BASE", 10, 20.0, 40.0, 50.0]],
+		)
+		prev_base = preview_purchase_upload(file_content=b64_base, header=self._base_header())
+		conf_base = confirm_purchase_upload(
+			file_content=b64_base,
+			header=self._base_header(),
+			preview_token=prev_base["preview_token"],
+			upload_id="upl-role-base",
+		)
+		self.assertTrue(conf_base["ok"])
+
+		cajero_user = self._create_single_role_user("rt_cajero@example.com", "Cajero RT", "RT Cajero")
+		tienda_user = self._create_single_role_user(
+			"rt_tienda@example.com", "Tienda RT", "RT Responsable de Tienda"
+		)
+		contador_user = self._create_single_role_user(
+			"rt_contador@example.com", "Contador RT", "RT Contador"
+		)
+		socio_user = self._create_single_role_user("rt_socio@example.com", "Socio RT", "RT Socio")
+		admin_user = self._create_single_role_user(
+			"rt_admin@example.com", "Admin RT", "RT Administrador de Sistema"
+		)
+
+		try:
+			# 1. Validate RT Cajero
+			frappe.set_user(cajero_user)
+			for dt in ("POS Invoice", "Sales Invoice", "POS Opening Entry", "POS Closing Entry"):
+				for ptype in ("read", "write", "create", "submit", "print"):
+					self.assertTrue(
+						frappe.has_permission(dt, ptype),
+						f"RT Cajero debe tener permiso {ptype} en {dt}",
+					)
+			self.assertTrue(frappe.has_permission("Customer", "create"))
+			self.assertTrue(frappe.has_permission("Customer", "write"))
+			self.assertFalse(frappe.has_permission("Purchase Invoice", "submit"))
+
+			# Create and modify a Customer as RT Cajero (without ignore_permissions!)
+			cust_group = (
+				frappe.db.get_value("Customer Group", {"is_group": 0}, "name")
+				or frappe.get_all("Customer Group", pluck="name", limit=1)[0]
+			)
+			territory = (
+				frappe.db.get_value("Territory", {"is_group": 0}, "name")
+				or frappe.get_all("Territory", pluck="name", limit=1)[0]
+			)
+			cust_doc = frappe.get_doc(
+				{
+					"doctype": "Customer",
+					"customer_name": "Cliente Creado Por Cajero RT",
+					"customer_group": cust_group,
+					"territory": territory,
+				}
+			).insert()
+			cust_doc.mobile_no = "88887777"
+			cust_doc.save()
+
+			# Access item-inspector and customer-lookup as RT Cajero
+			self.assertTrue(resolve_item_from_barcode("BC-ROLE-BASE")["ok"])
+			self.assertTrue(get_item_snapshot(base_code)["ok"])
+			self.assertTrue(search_customer("Cliente Creado")["ok"])
+			self.assertTrue(get_customer_snapshot(cust_doc.name)["ok"])
+			self.assertTrue(len(frappe.get_list("Item", limit=5)) >= 1)
+			with self.assertRaises(frappe.PermissionError):
+				get_initial_data()
+
+			# 2. Validate RT Responsable de Tienda
+			frappe.set_user(tienda_user)
+			init_tienda = get_initial_data(company=self.company)
+			self.assertTrue(init_tienda["ok"])
+			self.assertTrue(len(frappe.get_list("UOM", limit=5)) >= 1)
+			self.assertTrue(len(frappe.get_list("Item Group", limit=5)) >= 1)
+
+			tienda_item = "RT-TIENDA-ITEM-01"
+			b64_tienda = _make_xlsx_b64(
+				list(TEMPLATE_HEADERS),
+				[[tienda_item, "Producto Tienda RT", "BC-TIENDA-01", 6, 30.0, 60.0, 75.0]],
+			)
+			prev_tienda = preview_purchase_upload(file_content=b64_tienda, header=self._base_header())
+			self.assertTrue(prev_tienda["can_confirm"], msg=str(prev_tienda["global_errors"]))
+			conf_tienda = confirm_purchase_upload(
+				file_content=b64_tienda,
+				header=self._base_header(),
+				preview_token=prev_tienda["preview_token"],
+				upload_id="upl-role-tienda",
+			)
+			self.assertTrue(conf_tienda["ok"], msg=str(conf_tienda))
+			self.assertTrue(get_items_for_catalog()["ok"])
+			self.assertTrue(generate_catalog_html()["ok"])
+			self.assertTrue(get_items_with_stock()["ok"])
+			self.assertTrue(get_item_for_label(tienda_item)["ok"])
+			self.assertTrue(
+				generate_labels_html(
+					items=json.dumps([{"item_code": tienda_item, "qty": 2}]), label_format="2x1"
+				)["ok"]
+			)
+
+			# 3. Validate RT Contador
+			frappe.set_user(contador_user)
+			for dt in ("Account", "Journal Entry", "Payment Entry", "Sales Invoice", "Purchase Invoice"):
+				self.assertTrue(frappe.has_permission(dt, "read"))
+				self.assertTrue(frappe.has_permission(dt, "create"))
+			self.assertTrue(get_initial_data(company=self.company)["ok"])
+			self.assertTrue(get_item_snapshot(base_code)["ok"])
+			self.assertTrue(get_customer_snapshot(cust_doc.name)["ok"])
+			self.assertTrue(len(frappe.get_list("Purchase Invoice", limit=5)) >= 1)
+			self.assertTrue(len(frappe.get_list("GL Entry", limit=5)) >= 1)
+
+			# 4. Validate RT Socio (Read-Only + Print + Report + Export)
+			frappe.set_user(socio_user)
+			for dt in (
+				"Sales Invoice",
+				"POS Invoice",
+				"Purchase Invoice",
+				"Item",
+				"Customer",
+				"GL Entry",
+				"Account",
+			):
+				self.assertTrue(frappe.has_permission(dt, "read"), f"RT Socio debe leer {dt}")
+				self.assertTrue(frappe.has_permission(dt, "print"), f"RT Socio debe imprimir {dt}")
+				self.assertTrue(frappe.has_permission(dt, "report"), f"RT Socio debe ver reportes {dt}")
+				self.assertFalse(
+					frappe.has_permission(dt, "create"), f"RT Socio NO debe crear {dt}"
+				)
+				self.assertFalse(
+					frappe.has_permission(dt, "write"), f"RT Socio NO debe escribir {dt}"
+				)
+			self.assertTrue(get_item_snapshot(base_code)["ok"])
+			self.assertTrue(get_customer_snapshot(cust_doc.name)["ok"])
+			self.assertTrue(generate_catalog_html()["ok"])
+
+			# 5. Validate RT Administrador de Sistema (Full Access)
+			frappe.set_user(admin_user)
+			self.assertTrue(get_initial_data(company=self.company)["ok"])
+			admin_item = "RT-ADMIN-ITEM-01"
+			b64_admin = _make_xlsx_b64(
+				list(TEMPLATE_HEADERS),
+				[[admin_item, "Producto Admin RT", "BC-ADMIN-01", 3, 40.0, 80.0, 95.0]],
+			)
+			prev_admin = preview_purchase_upload(file_content=b64_admin, header=self._base_header())
+			self.assertTrue(prev_admin["can_confirm"], msg=str(prev_admin["global_errors"]))
+			conf_admin = confirm_purchase_upload(
+				file_content=b64_admin,
+				header=self._base_header(),
+				preview_token=prev_admin["preview_token"],
+				upload_id="upl-role-admin",
+			)
+			self.assertTrue(conf_admin["ok"], msg=str(conf_admin))
+		finally:
+			frappe.set_user("Administrator")
+
 
 

@@ -222,11 +222,11 @@ def get_item_for_label(
 
 @frappe.whitelist()
 def generate_labels_html(
-    items: str,
+    items: str | list,
     label_format: str = "medium",
     show_price: int = 1,
-    price_list: str = None,
-    price_list_2: str = None,
+    price_list: str | None = None,
+    price_list_2: str | None = None,
 ) -> dict:
     """
     Generate HTML for label printing.

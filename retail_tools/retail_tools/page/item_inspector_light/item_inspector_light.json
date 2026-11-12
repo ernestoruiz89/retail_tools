@@ -4,7 +4,7 @@
  "docstatus": 0,
  "doctype": "Page",
  "idx": 0,
- "modified": "2025-12-30 15:33:56.494463",
+ "modified": "2026-11-13 01:11:32.933422",
  "modified_by": "Administrator",
  "module": "Retail Tools",
  "name": "item-inspector-light",
@@ -22,6 +22,21 @@
   },
   {
    "role": "Administrator"
+  },
+  {
+   "role": "RT Cajero"
+  },
+  {
+   "role": "RT Responsable de Tienda"
+  },
+  {
+   "role": "RT Contador"
+  },
+  {
+   "role": "RT Socio"
+  },
+  {
+   "role": "RT Administrador de Sistema"
   }
  ],
  "script": null,
