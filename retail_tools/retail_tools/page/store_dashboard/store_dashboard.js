@@ -1401,12 +1401,23 @@ class RetailStoreDashboard {
 			const dayIdx = Number(r[1] || 0);
 			const salesVal = Number(r[2] || 0);
 			const tickets = Number(ticketsMap[`${hourIdx}_${dayIdx}`] || r[3] || 0);
+			if (salesVal <= 0) {
+				return {
+					value: [hourIdx, dayIdx, "-"],
+					rawSales: 0,
+					tickets: 0,
+					itemStyle: {
+						color: "#ffffff",
+						borderColor: "#e2e8f0",
+						borderWidth: 1,
+						borderRadius: 4,
+					},
+				};
+			}
 			return {
 				value: [hourIdx, dayIdx, salesVal],
+				rawSales: salesVal,
 				tickets,
-				label: {
-					color: salesVal >= maxVal * 0.35 ? "#ffffff" : "#0f172a",
-				},
 			};
 		});
 
@@ -1415,11 +1426,15 @@ class RetailStoreDashboard {
 				position: "top",
 				formatter: (p) => {
 					const val = p.value || [0, 0, 0];
+					const salesAmount =
+						p.data && p.data.rawSales !== undefined
+							? Number(p.data.rawSales)
+							: Number(val[2] || 0);
 					const tickets = (p.data && p.data.tickets) || 0;
 					const hourLabel = (heatmap.hours && heatmap.hours[val[0]]) || `${val[0]}:00`;
 					const dayLabel = (heatmap.days && heatmap.days[val[1]]) || "";
 					return `<strong>${dayLabel} · ${hourLabel}</strong><br/>${__("Ventas")}: <strong>${self.fmtMoney(
-						val[2]
+						salesAmount
 					)}</strong><br/>${__("Tickets")}: <strong>${tickets}</strong>`;
 				},
 			},
@@ -1451,10 +1466,10 @@ class RetailStoreDashboard {
 				left: "center",
 				bottom: 0,
 				inRange: {
-					color: ["#93c5fd", "#60a5fa", "#3b82f6", "#2563eb", "#1d4ed8", "#1e3a8a"],
+					color: ["#bfdbfe", "#60a5fa", "#3b82f6", "#2563eb", "#1d4ed8", "#1e3a8a"],
 				},
 				outOfRange: {
-					color: ["#f8fafc"],
+					color: ["#ffffff"],
 				},
 				formatter: (value) => self.fmtCompact(value),
 			},
@@ -1469,14 +1484,7 @@ class RetailStoreDashboard {
 						borderRadius: 4,
 					},
 					label: {
-						show: true,
-						fontSize: 9.5,
-						fontWeight: 700,
-						color: "#0f172a",
-						formatter: (p) => {
-							const v = Number((p.value && p.value[2]) || 0);
-							return v > 0 ? self.fmtCompact(v) : "";
-						},
+						show: false,
 					},
 					emphasis: {
 						itemStyle: {
