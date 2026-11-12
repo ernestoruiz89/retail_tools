@@ -511,7 +511,7 @@ class RetailStoreDashboard {
 	fmtMoney(value) {
 		const num = Number(value || 0);
 		const sign = num < 0 ? "-" : "";
-		return `${sign}${this.currencySymbol} ${Math.abs(num).toLocaleString("en-US", {
+		return `${sign}${this.currencySymbol}\u00a0${Math.abs(num).toLocaleString("en-US", {
 			minimumFractionDigits: 2,
 			maximumFractionDigits: 2,
 		})}`;
@@ -1500,10 +1500,10 @@ class RetailStoreDashboard {
 								</a>
 								<div style="font-size:11px;color:#64748b;">${frappe.utils.escape_html(r.item_code)}</div>
 							</td>
-							<td style="text-align:right;font-weight:700;">${r.actual_qty}</td>
-							<td style="text-align:right;">${r.qty_sold_30d}</td>
-							<td style="text-align:right;">${this.fmtMoney(r.revenue_30d)}</td>
-							<td style="text-align:center;"><span class="rt-db-badge ${badgeCls}">${badgeText}</span></td>
+							<td style="text-align:right;font-weight:700;white-space:nowrap;">${r.actual_qty}</td>
+							<td style="text-align:right;white-space:nowrap;">${r.qty_sold_30d}</td>
+							<td style="text-align:right;white-space:nowrap;">${this.fmtMoney(r.revenue_30d)}</td>
+							<td style="text-align:center;white-space:nowrap;"><span class="rt-db-badge ${badgeCls}">${badgeText}</span></td>
 						</tr>
 					`;
 				})
@@ -1545,10 +1545,10 @@ class RetailStoreDashboard {
 								</a>
 								<div style="font-size:11px;color:#64748b;">${frappe.utils.escape_html(r.item_code)}</div>
 							</td>
-							<td style="text-align:right;">${r.actual_qty}</td>
-							<td style="text-align:right;font-weight:700;">${this.fmtMoney(r.stock_value)}</td>
-							<td>${frappe.utils.escape_html(r.last_sale_date || "")}</td>
-							<td style="text-align:center;"><span class="rt-db-badge warning">${daysLabel}</span></td>
+							<td style="text-align:right;white-space:nowrap;">${r.actual_qty}</td>
+							<td style="text-align:right;font-weight:700;white-space:nowrap;">${this.fmtMoney(r.stock_value)}</td>
+							<td style="white-space:nowrap;">${frappe.utils.escape_html(r.last_sale_date || "")}</td>
+							<td style="text-align:center;white-space:nowrap;"><span class="rt-db-badge warning">${daysLabel}</span></td>
 						</tr>
 					`;
 				})
@@ -1594,7 +1594,7 @@ class RetailStoreDashboard {
 					<td><span class="rt-db-cat-pill">${frappe.utils.escape_html(ind.category)}</span></td>
 					<td><strong>${frappe.utils.escape_html(ind.name)}</strong></td>
 					<td style="color:#64748b;font-size:12px;">${frappe.utils.escape_html(ind.formula)}</td>
-					<td style="text-align:right;font-weight:800;font-size:13.5px;">${frappe.utils.escape_html(
+					<td style="text-align:right;font-weight:800;font-size:13.5px;white-space:nowrap;">${frappe.utils.escape_html(
 						ind.value_formatted
 					)}</td>
 					<td style="color:#475569;font-size:12px;">${frappe.utils.escape_html(
