@@ -1306,11 +1306,12 @@ class RetailStoreDashboard {
 		const maxVal = Math.max(1, Number(heatmap.max_value || 1));
 		const visualMin = positiveValues.length ? Math.max(0.01, minPositive * 0.85) : 1;
 
+		const ticketsMap = heatmap.tickets_by_cell || {};
 		const seriesData = rawData.map((r) => {
 			const hourIdx = Number(r[0] || 0);
 			const dayIdx = Number(r[1] || 0);
 			const salesVal = Number(r[2] || 0);
-			const tickets = Number(r[3] || 0);
+			const tickets = Number(ticketsMap[`${hourIdx}_${dayIdx}`] || r[3] || 0);
 			return {
 				value: [hourIdx, dayIdx, salesVal],
 				tickets,

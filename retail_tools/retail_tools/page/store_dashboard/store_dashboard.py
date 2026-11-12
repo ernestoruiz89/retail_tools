@@ -419,16 +419,20 @@ def _compute_commercial_metrics(
 	top_by_profit = sorted(items_list, key=lambda x: x["profit"], reverse=True)[:10]
 	top_by_qty = sorted(items_list, key=lambda x: x["qty"], reverse=True)[:10]
 
-	# Heatmap data: [hour, day_idx, sales, tickets]
+	# Heatmap data: [hour, day_idx, sales] (3 elements so ECharts visualMap always maps index 2 = sales)
 	heatmap_data = []
+	tickets_by_cell: dict[str, int] = {}
 	max_cell_sales = 0.0
 	for d in range(7):
 		for h in range(24):
 			cell = heatmap_grid[(d, h)]
 			val = round(max(0.0, cell["sales"]), 2)
+			t_count = len(cell["invoices"])
 			if val > max_cell_sales:
 				max_cell_sales = val
-			heatmap_data.append([h, d, val, len(cell["invoices"])])
+			heatmap_data.append([h, d, val])
+			if t_count > 0:
+				tickets_by_cell[f"{h}_{d}"] = t_count
 
 	return {
 		"net_sales": round(total_sales, 2),
@@ -460,6 +464,7 @@ def _compute_commercial_metrics(
 			"days": WEEKDAY_LABELS_ES,
 			"hours": [f"{h:02d}:00" for h in range(24)],
 			"data": heatmap_data,
+			"tickets_by_cell": tickets_by_cell,
 			"max_value": round(max_cell_sales, 2),
 		},
 	}
