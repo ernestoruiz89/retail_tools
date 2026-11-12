@@ -984,11 +984,15 @@ class RetailStoreDashboard {
 
 	/**
 	 * 3. Daily Trend Chart (Mixed Line & Bar + DataZoom)
+	 * Shows POS Sales + Direct Invoice Sales (without duplicating consolidated POS invoices),
+	 * alongside Gross Profit and Gross Margin %.
 	 */
 	renderDailyTrendChart(daily) {
 		const chart = this.getOrCreateChart("rt-chart-daily");
 		if (!chart || !daily) return;
 		const self = this;
+
+		const hasChannelSplit = Array.isArray(daily.pos_sales) && Array.isArray(daily.direct_sales);
 
 		chart.setOption({
 			tooltip: {
@@ -997,7 +1001,14 @@ class RetailStoreDashboard {
 			},
 			legend: {
 				top: 0,
-				data: [__("Ventas Netas"), __("Utilidad Bruta"), __("Margen Bruto (%)")],
+				data: hasChannelSplit
+					? [
+							__("Ventas POS"),
+							__("Factura Normal"),
+							__("Utilidad Bruta"),
+							__("Margen Bruto (%)"),
+					  ]
+					: [__("Ventas Netas"), __("Utilidad Bruta"), __("Margen Bruto (%)")],
 			},
 			grid: { top: 36, left: "4%", right: "4%", bottom: 52, containLabel: true },
 			dataZoom: [
@@ -1025,32 +1036,68 @@ class RetailStoreDashboard {
 					splitLine: { show: false },
 				},
 			],
-			series: [
-				{
-					name: __("Ventas Netas"),
-					type: "bar",
-					barMaxWidth: 28,
-					itemStyle: { color: "#3b82f6", borderRadius: [4, 4, 0, 0] },
-					data: daily.sales || [],
-				},
-				{
-					name: __("Utilidad Bruta"),
-					type: "bar",
-					barMaxWidth: 28,
-					itemStyle: { color: "#10b981", borderRadius: [4, 4, 0, 0] },
-					data: daily.profit || [],
-				},
-				{
-					name: __("Margen Bruto (%)"),
-					type: "line",
-					yAxisIndex: 1,
-					smooth: true,
-					symbolSize: 6,
-					itemStyle: { color: "#f59e0b" },
-					lineStyle: { width: 2.5 },
-					data: daily.margin_pct || [],
-				},
-			],
+			series: hasChannelSplit
+				? [
+						{
+							name: __("Ventas POS"),
+							type: "bar",
+							stack: "ventas_diarias",
+							barMaxWidth: 26,
+							itemStyle: { color: "#2563eb" },
+							data: daily.pos_sales || [],
+						},
+						{
+							name: __("Factura Normal"),
+							type: "bar",
+							stack: "ventas_diarias",
+							barMaxWidth: 26,
+							itemStyle: { color: "#6366f1", borderRadius: [4, 4, 0, 0] },
+							data: daily.direct_sales || [],
+						},
+						{
+							name: __("Utilidad Bruta"),
+							type: "bar",
+							barMaxWidth: 26,
+							itemStyle: { color: "#10b981", borderRadius: [4, 4, 0, 0] },
+							data: daily.profit || [],
+						},
+						{
+							name: __("Margen Bruto (%)"),
+							type: "line",
+							yAxisIndex: 1,
+							smooth: true,
+							symbolSize: 6,
+							itemStyle: { color: "#f59e0b" },
+							lineStyle: { width: 2.5 },
+							data: daily.margin_pct || [],
+						},
+				  ]
+				: [
+						{
+							name: __("Ventas Netas"),
+							type: "bar",
+							barMaxWidth: 28,
+							itemStyle: { color: "#3b82f6", borderRadius: [4, 4, 0, 0] },
+							data: daily.sales || [],
+						},
+						{
+							name: __("Utilidad Bruta"),
+							type: "bar",
+							barMaxWidth: 28,
+							itemStyle: { color: "#10b981", borderRadius: [4, 4, 0, 0] },
+							data: daily.profit || [],
+						},
+						{
+							name: __("Margen Bruto (%)"),
+							type: "line",
+							yAxisIndex: 1,
+							smooth: true,
+							symbolSize: 6,
+							itemStyle: { color: "#f59e0b" },
+							lineStyle: { width: 2.5 },
+							data: daily.margin_pct || [],
+						},
+				  ],
 		});
 	}
 

@@ -173,7 +173,7 @@ def _fetch_sales_line_rows(
 	warehouse: str | None = None,
 	include_pending_pos: bool = True,
 ) -> list[dict]:
-	"""Fetch submitted Sales Invoice items + optional unconsolidated POS Invoice items."""
+	"""Fetch non-consolidated Sales Invoice items + individual POS Invoice items (without duplication)."""
 	wh_filter_si = "AND sii.warehouse = %(warehouse)s" if warehouse else ""
 	params = {
 		"company": company,
@@ -183,10 +183,23 @@ def _fetch_sales_line_rows(
 	if warehouse:
 		params["warehouse"] = warehouse
 
+	has_pos_table = frappe.db.table_exists("POS Invoice") and frappe.db.table_exists("POS Invoice Item")
+	exclude_consolidated_clause = ""
+	if has_pos_table:
+		exclude_consolidated_clause = """
+		  AND IFNULL(si.is_consolidated, 0) = 0
+		  AND NOT EXISTS (
+		      SELECT 1 FROM `tabPOS Invoice` pi_c
+		      WHERE pi_c.consolidated_invoice = si.name
+		        AND pi_c.docstatus = 1
+		  )
+		"""
+
 	si_rows = frappe.db.sql(
 		f"""
 		SELECT
 			'Sales Invoice' AS doctype,
+			CASE WHEN IFNULL(si.is_pos, 0) = 1 THEN 'POS' ELSE 'Direct' END AS sale_channel,
 			si.name AS invoice_name,
 			si.posting_date,
 			COALESCE(CAST(si.posting_time AS CHAR), '12:00:00') AS posting_time,
@@ -206,6 +219,7 @@ def _fetch_sales_line_rows(
 		WHERE si.docstatus = 1
 		  AND si.company = %(company)s
 		  AND si.posting_date BETWEEN %(from_date)s AND %(to_date)s
+		  {exclude_consolidated_clause}
 		  {wh_filter_si}
 		""",
 		params,
@@ -214,12 +228,18 @@ def _fetch_sales_line_rows(
 
 	rows = list(si_rows)
 
-	if include_pending_pos and frappe.db.table_exists("POS Invoice") and frappe.db.table_exists("POS Invoice Item"):
+	if has_pos_table:
 		wh_filter_pos = "AND pii.warehouse = %(warehouse)s" if warehouse else ""
+		pos_status_clause = (
+			""
+			if include_pending_pos
+			else "AND IFNULL(pi.consolidated_invoice, '') != ''"
+		)
 		pos_rows = frappe.db.sql(
 			f"""
 			SELECT
 				'POS Invoice' AS doctype,
+				'POS' AS sale_channel,
 				pi.name AS invoice_name,
 				pi.posting_date,
 				COALESCE(CAST(pi.posting_time AS CHAR), '12:00:00') AS posting_time,
@@ -238,8 +258,8 @@ def _fetch_sales_line_rows(
 			LEFT JOIN `tabItem` i ON i.name = pii.item_code
 			WHERE pi.docstatus = 1
 			  AND pi.company = %(company)s
-			  AND IFNULL(pi.consolidated_invoice, '') = ''
 			  AND pi.posting_date BETWEEN %(from_date)s AND %(to_date)s
+			  {pos_status_clause}
 			  {wh_filter_pos}
 			""",
 			params,
@@ -266,6 +286,8 @@ def _compute_commercial_metrics(
 		d_str = str(add_days(start_dt, offset))
 		daily_map[d_str] = {
 			"sales": 0.0,
+			"pos_sales": 0.0,
+			"direct_sales": 0.0,
 			"cost": 0.0,
 			"profit": 0.0,
 			"invoices": set(),
@@ -311,6 +333,10 @@ def _compute_commercial_metrics(
 		d_str = str(getdate(r.posting_date))
 		if d_str in daily_map:
 			daily_map[d_str]["sales"] += net_amount
+			if getattr(r, "sale_channel", "") == "POS" or r.doctype == "POS Invoice":
+				daily_map[d_str]["pos_sales"] += net_amount
+			else:
+				daily_map[d_str]["direct_sales"] += net_amount
 			daily_map[d_str]["cost"] += line_cost
 			daily_map[d_str]["profit"] += line_profit
 			if not cint(r.is_return):
@@ -365,6 +391,8 @@ def _compute_commercial_metrics(
 	# Daily trend arrays
 	dates_list = sorted(daily_map.keys())
 	daily_sales = [round(daily_map[d]["sales"], 2) for d in dates_list]
+	daily_pos_sales = [round(daily_map[d]["pos_sales"], 2) for d in dates_list]
+	daily_direct_sales = [round(daily_map[d]["direct_sales"], 2) for d in dates_list]
 	daily_cost = [round(daily_map[d]["cost"], 2) for d in dates_list]
 	daily_profit = [round(daily_map[d]["profit"], 2) for d in dates_list]
 	daily_tickets = [len(daily_map[d]["invoices"]) for d in dates_list]
@@ -415,6 +443,8 @@ def _compute_commercial_metrics(
 		"daily_trend": {
 			"dates": dates_list,
 			"sales": daily_sales,
+			"pos_sales": daily_pos_sales,
+			"direct_sales": daily_direct_sales,
 			"cost": daily_cost,
 			"profit": daily_profit,
 			"margin_pct": daily_margin_pct,
@@ -455,8 +485,19 @@ def _get_payment_methods_breakdown(
 		"""
 
 	mode_totals: dict[str, float] = {}
+	has_pos_table = frappe.db.table_exists("POS Invoice") and frappe.db.table_exists("POS Invoice Payment")
+	exclude_consolidated_si = ""
+	if has_pos_table:
+		exclude_consolidated_si = """
+		  AND IFNULL(si.is_consolidated, 0) = 0
+		  AND NOT EXISTS (
+		      SELECT 1 FROM `tabPOS Invoice` pi_c
+		      WHERE pi_c.consolidated_invoice = si.name
+		        AND pi_c.docstatus = 1
+		  )
+		"""
 
-	# 1. POS payments directly on Sales Invoice (`Sales Invoice Payment`)
+	# 1. POS payments directly on non-consolidated Sales Invoice (`Sales Invoice Payment`)
 	sip_rows = frappe.db.sql(
 		f"""
 		SELECT
@@ -467,6 +508,7 @@ def _get_payment_methods_breakdown(
 		WHERE si.docstatus = 1
 		  AND si.company = %(company)s
 		  AND si.posting_date BETWEEN %(from_date)s AND %(to_date)s
+		  {exclude_consolidated_si}
 		  {wh_exists_si}
 		GROUP BY COALESCE(NULLIF(sip.mode_of_payment, ''), 'Efectivo')
 		""",
@@ -477,8 +519,8 @@ def _get_payment_methods_breakdown(
 		if flt(r.total_amount) > 0:
 			mode_totals[r.mode_of_payment] = mode_totals.get(r.mode_of_payment, 0.0) + flt(r.total_amount)
 
-	# 2. Unconsolidated POS Invoices
-	if include_pending_pos and frappe.db.table_exists("POS Invoice") and frappe.db.table_exists("POS Invoice Payment"):
+	# 2. All POS Invoices (both consolidated and optionally pending unconsolidated) on their real posting_date
+	if has_pos_table:
 		wh_exists_pos = ""
 		if warehouse:
 			wh_exists_pos = """
@@ -487,6 +529,11 @@ def _get_payment_methods_breakdown(
 			      WHERE pii.parent = pi.name AND pii.warehouse = %(warehouse)s
 			  )
 			"""
+		pos_status_clause = (
+			""
+			if include_pending_pos
+			else "AND IFNULL(pi.consolidated_invoice, '') != ''"
+		)
 		pos_pay_rows = frappe.db.sql(
 			f"""
 			SELECT
@@ -496,8 +543,8 @@ def _get_payment_methods_breakdown(
 			INNER JOIN `tabPOS Invoice` pi ON pi.name = pip.parent
 			WHERE pi.docstatus = 1
 			  AND pi.company = %(company)s
-			  AND IFNULL(pi.consolidated_invoice, '') = ''
 			  AND pi.posting_date BETWEEN %(from_date)s AND %(to_date)s
+			  {pos_status_clause}
 			  {wh_exists_pos}
 			GROUP BY COALESCE(NULLIF(pip.mode_of_payment, ''), 'Efectivo')
 			""",
@@ -529,7 +576,7 @@ def _get_payment_methods_breakdown(
 			if flt(r.total_amount) > 0:
 				mode_totals[r.mode_of_payment] = mode_totals.get(r.mode_of_payment, 0.0) + flt(r.total_amount)
 
-	# 4. Credit / Pending collection on Sales Invoices in the period
+	# 4. Credit / Pending collection on non-consolidated Sales Invoices in the period
 	credit_row = frappe.db.sql(
 		f"""
 		SELECT SUM(CASE WHEN si.outstanding_amount > 0 THEN si.outstanding_amount ELSE 0 END) AS pending_credit
@@ -537,6 +584,7 @@ def _get_payment_methods_breakdown(
 		WHERE si.docstatus = 1
 		  AND si.company = %(company)s
 		  AND si.posting_date BETWEEN %(from_date)s AND %(to_date)s
+		  {exclude_consolidated_si}
 		  {wh_exists_si}
 		""",
 		params,
