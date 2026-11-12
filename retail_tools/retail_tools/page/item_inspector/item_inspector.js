@@ -25,6 +25,12 @@ frappe.pages["item-inspector"].on_page_load = function (wrapper) {
   wrapper.item_inspector = new retail_tools.ItemInspector(page, wrapper);
 };
 
+frappe.pages["item-inspector"].on_page_show = function (wrapper) {
+  if (wrapper.item_inspector && typeof wrapper.item_inspector.apply_route_options === "function") {
+    wrapper.item_inspector.apply_route_options();
+  }
+};
+
 frappe.pages["item-inspector"].on_page_hide = function (wrapper) {
   if (wrapper.item_inspector && wrapper.item_inspector.destroy) {
     wrapper.item_inspector.destroy();
@@ -48,6 +54,31 @@ retail_tools.ItemInspector = class ItemInspector {
     this.make_filters();
     this.make_layout();
     this._bind_events();
+    this.apply_route_options();
+  }
+
+  apply_route_options() {
+    if (this._destroyed) {
+      this._destroyed = false;
+      this._bind_events();
+    }
+
+    let itemCode = null;
+    if (window._rt_pending_inspector_item) {
+      itemCode = window._rt_pending_inspector_item;
+      window._rt_pending_inspector_item = null;
+    } else if (frappe.route_options && frappe.route_options.item_code) {
+      itemCode = frappe.route_options.item_code;
+      delete frappe.route_options.item_code;
+    } else if (typeof window !== "undefined" && window.location && window.location.search) {
+      const params = new URLSearchParams(window.location.search);
+      itemCode = params.get("item_code");
+    }
+
+    if (itemCode && this.item_field) {
+      this.item_field.set_value(itemCode);
+      this.load_snapshot(itemCode);
+    }
   }
 
   /**

@@ -82,6 +82,7 @@ def get_dashboard_defaults(company: str | None = None) -> dict:
 	_ensure_dashboard_access()
 	try:
 		frappe.cache().hdel("page", "store-dashboard")
+		frappe.cache().hdel("page", "item-inspector")
 	except Exception:
 		pass
 

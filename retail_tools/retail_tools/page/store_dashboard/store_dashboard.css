@@ -152,8 +152,39 @@
 }
 
 @media (max-width: 680px) {
+	.rt-dashboard-wrapper {
+		padding: 10px 10px 32px;
+	}
+
 	.rt-db-kpi-grid {
 		grid-template-columns: 1fr;
+	}
+
+	.rt-db-card {
+		padding: 14px 12px;
+	}
+
+	.rt-db-segmented {
+		width: 100%;
+		display: flex;
+		overflow-x: auto;
+	}
+
+	.rt-db-seg-btn {
+		flex: 1;
+		text-align: center;
+		white-space: nowrap;
+		padding: 5px 8px;
+		font-size: 11px;
+	}
+
+	.rt-db-chart-box {
+		height: 320px;
+		min-height: 290px;
+	}
+
+	.rt-db-chart-box.tall {
+		height: 340px;
 	}
 }
 

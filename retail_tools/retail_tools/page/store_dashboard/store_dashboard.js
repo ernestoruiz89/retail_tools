@@ -60,6 +60,14 @@ class RetailStoreDashboard {
 				.rt-db-kpi-metric { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 				.rt-db-kpi-metric-label { font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 				.rt-db-kpi-metric-val { font-size: 12.5px; font-weight: 700; color: #334155; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+				@media (max-width: 680px) {
+					.rt-dashboard-wrapper { padding: 10px 10px 32px; }
+					.rt-db-card { padding: 14px 12px; }
+					.rt-db-segmented { width: 100%; display: flex; overflow-x: auto; }
+					.rt-db-seg-btn { flex: 1; text-align: center; white-space: nowrap; padding: 5px 8px; font-size: 11px; }
+					.rt-db-chart-box { height: 320px; min-height: 290px; }
+					.rt-db-chart-box.tall { height: 340px; }
+				}
 			`;
 			document.head.appendChild(styleEl);
 		}
@@ -355,10 +363,31 @@ class RetailStoreDashboard {
 				self.renderIndicatorsTable(self.payload.indicators_table || []);
 			}
 		});
+
+		this.$container.on("click", ".rt-db-item-link", function (e) {
+			if (e.ctrlKey || e.metaKey || e.shiftKey || e.which === 2) return;
+			const itemCode = $(this).attr("data-item-code");
+			if (itemCode) {
+				e.preventDefault();
+				self.openItemInspector(itemCode);
+			}
+		});
+	}
+
+	isMobileViewport() {
+		return typeof window !== "undefined" && window.innerWidth <= 768;
 	}
 
 	bindWindowResize() {
-		this._resizeHandler = () => this.resizeAllCharts();
+		this._lastMobileState = this.isMobileViewport();
+		this._resizeHandler = () => {
+			const nowMobile = this.isMobileViewport();
+			if (nowMobile !== this._lastMobileState && this.payload) {
+				this._lastMobileState = nowMobile;
+				this.renderAll(this.payload);
+			}
+			this.resizeAllCharts();
+		};
 		window.addEventListener("resize", this._resizeHandler);
 	}
 
@@ -748,6 +777,7 @@ class RetailStoreDashboard {
 		if (!chart || !bs) return;
 
 		const self = this;
+		const isMobile = this.isMobileViewport();
 		const categories = [__("Activo"), __("Pasivo y Patrimonio")];
 
 		const cashVal = Math.max(0, Number(bs.cash_and_bank || 0));
@@ -831,7 +861,7 @@ class RetailStoreDashboard {
 				position: "inside",
 				color: "#ffffff",
 				fontWeight: 600,
-				fontSize: 11,
+				fontSize: isMobile ? 9.5 : 11,
 				formatter: (params) => {
 					const val = Number(params.value || 0);
 					return val > 0 ? self.fmtCompact(val) : "";
@@ -843,6 +873,7 @@ class RetailStoreDashboard {
 		chart.setOption({
 			tooltip: {
 				trigger: "axis",
+				confine: true,
 				axisPointer: { type: "shadow" },
 				formatter: (params) => {
 					if (!params || !params.length) return "";
@@ -868,7 +899,7 @@ class RetailStoreDashboard {
 							<strong>${self.fmtMoney(sum)}</strong>
 						</div>`
 					);
-					return `<div style="min-width:230px;"><div style="font-weight:700;margin-bottom:6px;">${frappe.utils.escape_html(
+					return `<div style="min-width:210px;"><div style="font-weight:700;margin-bottom:6px;">${frappe.utils.escape_html(
 						colTitle
 					)}</div>${lines.join("")}</div>`;
 				},
@@ -878,12 +909,12 @@ class RetailStoreDashboard {
 				type: "scroll",
 				itemWidth: 12,
 				itemHeight: 12,
-				textStyle: { fontSize: 11 },
+				textStyle: { fontSize: isMobile ? 10.5 : 11 },
 			},
 			grid: {
 				top: 24,
-				left: "4%",
-				right: "4%",
+				left: isMobile ? 4 : "4%",
+				right: isMobile ? 8 : "4%",
 				bottom: 46,
 				containLabel: true,
 			},
@@ -894,7 +925,7 @@ class RetailStoreDashboard {
 					axisTick: { alignWithLabel: true },
 					axisLabel: {
 						fontWeight: 700,
-						fontSize: 13,
+						fontSize: isMobile ? 11.5 : 13,
 						color: "#0f172a",
 					},
 				},
@@ -903,6 +934,7 @@ class RetailStoreDashboard {
 				{
 					type: "value",
 					axisLabel: {
+						fontSize: isMobile ? 10 : 11,
 						formatter: (v) => self.fmtCompact(v),
 					},
 					splitLine: { lineStyle: { type: "dashed", color: "#e2e8f0" } },
@@ -926,6 +958,7 @@ class RetailStoreDashboard {
 		if (!chart || !pnl) return;
 
 		const self = this;
+		const isMobile = this.isMobileViewport();
 
 		if (this.pnlMode === "expenses") {
 			const breakdown = pnl.expense_breakdown || [];
@@ -935,6 +968,7 @@ class RetailStoreDashboard {
 			chart.setOption({
 				tooltip: {
 					trigger: "axis",
+					confine: true,
 					axisPointer: { type: "shadow" },
 					formatter: (params) => {
 						const p = params[0];
@@ -944,16 +978,31 @@ class RetailStoreDashboard {
 						)}`;
 					},
 				},
-				grid: { top: 20, left: "4%", right: "8%", bottom: 20, containLabel: true },
+				grid: {
+					top: 16,
+					left: isMobile ? 4 : "4%",
+					right: isMobile ? 56 : 64,
+					bottom: 20,
+					containLabel: true,
+				},
 				xAxis: {
 					type: "value",
-					axisLabel: { formatter: (v) => self.fmtCompact(v) },
+					splitNumber: isMobile ? 2 : 4,
+					axisLabel: {
+						hideOverlap: true,
+						fontSize: isMobile ? 10 : 11,
+						formatter: (v) => self.fmtCompact(v),
+					},
 					splitLine: { lineStyle: { type: "dashed", color: "#e2e8f0" } },
 				},
 				yAxis: {
 					type: "category",
 					data: labels.length ? labels : [__("Sin gastos registrados")],
-					axisLabel: { width: 150, overflow: "truncate" },
+					axisLabel: {
+						width: isMobile ? 95 : 150,
+						overflow: "truncate",
+						fontSize: isMobile ? 10.5 : 11.5,
+					},
 				},
 				series: [
 					{
@@ -964,6 +1013,8 @@ class RetailStoreDashboard {
 						label: {
 							show: true,
 							position: "right",
+							fontSize: isMobile ? 10 : 11,
+							fontWeight: 600,
 							formatter: (p) => self.fmtCompact(p.value),
 						},
 						data: values.length ? values : [0],
@@ -1013,6 +1064,7 @@ class RetailStoreDashboard {
 			chart.setOption({
 				tooltip: {
 					trigger: "axis",
+					confine: true,
 					axisPointer: { type: "shadow" },
 					formatter: (params) => {
 						const valSeries = params.find((p) => p.seriesName === __("Monto"));
@@ -1025,19 +1077,27 @@ class RetailStoreDashboard {
 				},
 				grid: {
 					top: 28,
-					left: "4%",
-					right: "4%",
-					bottom: 24,
+					left: isMobile ? 4 : "4%",
+					right: isMobile ? 8 : "4%",
+					bottom: isMobile ? 32 : 24,
 					containLabel: true,
 				},
 				xAxis: {
 					type: "category",
 					data: categories,
-					axisLabel: { interval: 0, fontWeight: 600, fontSize: 11.5 },
+					axisLabel: {
+						interval: 0,
+						rotate: isMobile ? 24 : 0,
+						fontWeight: 600,
+						fontSize: isMobile ? 10 : 11.5,
+					},
 				},
 				yAxis: {
 					type: "value",
-					axisLabel: { formatter: (v) => self.fmtCompact(v) },
+					axisLabel: {
+						fontSize: isMobile ? 10 : 11,
+						formatter: (v) => self.fmtCompact(v),
+					},
 					splitLine: { lineStyle: { type: "dashed", color: "#e2e8f0" } },
 				},
 				series: [
@@ -1060,7 +1120,7 @@ class RetailStoreDashboard {
 							show: true,
 							position: "top",
 							fontWeight: 700,
-							fontSize: 11,
+							fontSize: isMobile ? 9.5 : 11,
 							formatter: (p) => self.fmtCompact(p.data.raw),
 						},
 						data: barValues,
@@ -1087,6 +1147,7 @@ class RetailStoreDashboard {
 		const chart = this.getOrCreateChart("rt-chart-daily");
 		if (!chart || !daily) return;
 		const self = this;
+		const isMobile = this.isMobileViewport();
 
 		const hasChannelSplit = Array.isArray(daily.pos_sales) && Array.isArray(daily.direct_sales);
 		const salesArr = daily.sales || [];
@@ -1099,10 +1160,13 @@ class RetailStoreDashboard {
 		chart.setOption({
 			tooltip: {
 				trigger: "axis",
+				confine: true,
 				axisPointer: { type: "cross" },
 			},
 			legend: {
 				top: 0,
+				type: isMobile ? "scroll" : "plain",
+				textStyle: { fontSize: isMobile ? 10.5 : 12 },
 				data: hasChannelSplit
 					? [
 							__("Ventas POS"),
@@ -1112,7 +1176,13 @@ class RetailStoreDashboard {
 					  ]
 					: [__("Ventas Netas"), __("Utilidad Bruta"), __("Margen Bruto (%)")],
 			},
-			grid: { top: 36, left: "4%", right: "4%", bottom: 52, containLabel: true },
+			grid: {
+				top: 38,
+				left: isMobile ? 4 : "4%",
+				right: isMobile ? 4 : "4%",
+				bottom: 52,
+				containLabel: true,
+			},
 			dataZoom: [
 				{ type: "inside", start: 0, end: 100 },
 				{ type: "slider", height: 18, bottom: 8, start: 0, end: 100 },
@@ -1122,19 +1192,29 @@ class RetailStoreDashboard {
 					type: "category",
 					data: daily.dates || [],
 					axisPointer: { type: "shadow" },
+					axisLabel: {
+						hideOverlap: true,
+						fontSize: isMobile ? 10 : 11,
+					},
 				},
 			],
 			yAxis: [
 				{
 					type: "value",
-					name: __("Monto"),
-					axisLabel: { formatter: (v) => self.fmtCompact(v) },
+					name: isMobile ? "" : __("Monto"),
+					axisLabel: {
+						fontSize: isMobile ? 10 : 11,
+						formatter: (v) => self.fmtCompact(v),
+					},
 					splitLine: { lineStyle: { type: "dashed", color: "#e2e8f0" } },
 				},
 				{
 					type: "value",
-					name: "%",
-					axisLabel: { formatter: "{value}%" },
+					name: isMobile ? "" : "%",
+					axisLabel: {
+						fontSize: isMobile ? 10 : 11,
+						formatter: "{value}%",
+					},
 					splitLine: { show: false },
 				},
 			],
@@ -1212,6 +1292,7 @@ class RetailStoreDashboard {
 		const chart = this.getOrCreateChart("rt-chart-category");
 		if (!chart) return;
 		const self = this;
+		const isMobile = this.isMobileViewport();
 
 		const pieData = (byCategory || [])
 			.filter((c) => Number(c.sales || 0) > 0)
@@ -1224,6 +1305,7 @@ class RetailStoreDashboard {
 		chart.setOption({
 			tooltip: {
 				trigger: "item",
+				confine: true,
 				formatter: (p) =>
 					`<strong>${frappe.utils.escape_html(p.name)}</strong><br/>${self.fmtMoney(
 						p.value
@@ -1232,14 +1314,21 @@ class RetailStoreDashboard {
 			legend: {
 				bottom: 0,
 				type: "scroll",
+				textStyle: { fontSize: isMobile ? 10.5 : 12 },
 			},
 			series: [
 				{
 					name: __("Categoría"),
 					type: "pie",
-					radius: ["22%", "68%"],
-					center: ["50%", "45%"],
+					radius: isMobile ? ["18%", "54%"] : ["22%", "68%"],
+					center: isMobile ? ["50%", "43%"] : ["50%", "45%"],
 					roseType: "radius",
+					avoidLabelOverlap: true,
+					label: {
+						show: true,
+						fontSize: isMobile ? 10.5 : 11.5,
+						formatter: isMobile ? "{d}%" : "{b}",
+					},
 					itemStyle: {
 						borderRadius: 6,
 						borderColor: "#fff",
@@ -1260,6 +1349,7 @@ class RetailStoreDashboard {
 		const chart = this.getOrCreateChart("rt-chart-top-items");
 		if (!chart || !topItems) return;
 		const self = this;
+		const isMobile = this.isMobileViewport();
 
 		const list = (topItems[this.topItemsMode] || []).slice(0, 10).reverse();
 		const isQty = this.topItemsMode === "by_qty";
@@ -1280,6 +1370,7 @@ class RetailStoreDashboard {
 		chart.setOption({
 			tooltip: {
 				trigger: "axis",
+				confine: true,
 				axisPointer: { type: "shadow" },
 				formatter: (params) => {
 					const p = params[0];
@@ -1298,10 +1389,19 @@ class RetailStoreDashboard {
 					`;
 				},
 			},
-			grid: { top: 14, left: "3%", right: "10%", bottom: 18, containLabel: true },
+			grid: {
+				top: 12,
+				left: isMobile ? 4 : "3%",
+				right: isMobile ? 58 : 68,
+				bottom: 20,
+				containLabel: true,
+			},
 			xAxis: {
 				type: "value",
+				splitNumber: isMobile ? 2 : 4,
 				axisLabel: {
+					hideOverlap: true,
+					fontSize: isMobile ? 10 : 11,
 					formatter: (v) => (isQty ? v : self.fmtCompact(v)),
 				},
 				splitLine: { lineStyle: { type: "dashed", color: "#e2e8f0" } },
@@ -1309,7 +1409,11 @@ class RetailStoreDashboard {
 			yAxis: {
 				type: "category",
 				data: list.length ? list.map((i) => i.item_name || i.item_code) : [__("Sin datos")],
-				axisLabel: { width: 155, overflow: "truncate" },
+				axisLabel: {
+					width: isMobile ? 100 : 155,
+					overflow: "truncate",
+					fontSize: isMobile ? 10.5 : 11.5,
+				},
 			},
 			series: [
 				{
@@ -1319,6 +1423,8 @@ class RetailStoreDashboard {
 					label: {
 						show: true,
 						position: "right",
+						fontSize: isMobile ? 10.5 : 11.5,
+						fontWeight: 600,
 						formatter: (p) => (isQty ? `${p.value} u.` : self.fmtCompact(p.value)),
 					},
 					data: list.length
@@ -1331,9 +1437,43 @@ class RetailStoreDashboard {
 		chart.off("click");
 		chart.on("click", (params) => {
 			if (params && params.data && params.data.item && params.data.item.item_code) {
-				frappe.set_route("item-inspector", { item_code: params.data.item.item_code });
+				self.openItemInspector(params.data.item.item_code);
 			}
 		});
+	}
+
+	openItemInspector(itemCode) {
+		if (!itemCode) return;
+		window._rt_pending_inspector_item = itemCode;
+		frappe.route_options = { item_code: itemCode };
+		frappe.set_route("item-inspector", { item_code: itemCode });
+
+		// Fallback in case item-inspector page script in browser cache has not yet been refreshed
+		let attempts = 0;
+		const timer = setInterval(() => {
+			attempts += 1;
+			const pageWrapper = frappe.pages && frappe.pages["item-inspector"];
+			const inspector = pageWrapper && pageWrapper.item_inspector;
+			if (inspector && inspector.item_field) {
+				clearInterval(timer);
+				if (inspector._destroyed) {
+					inspector._destroyed = false;
+					if (typeof inspector._bind_events === "function") {
+						inspector._bind_events();
+					}
+				}
+				if (inspector.state && inspector.state.item_code === itemCode) {
+					return;
+				}
+				window._rt_pending_inspector_item = null;
+				inspector.item_field.set_value(itemCode);
+				if (typeof inspector.load_snapshot === "function") {
+					inspector.load_snapshot(itemCode);
+				}
+			} else if (attempts >= 20) {
+				clearInterval(timer);
+			}
+		}, 120);
 	}
 
 	/**
@@ -1343,6 +1483,7 @@ class RetailStoreDashboard {
 		const chart = this.getOrCreateChart("rt-chart-payments");
 		if (!chart) return;
 		const self = this;
+		const isMobile = this.isMobileViewport();
 
 		const list = payments || [];
 		const total = list.reduce((acc, r) => acc + Number(r.value || 0), 0);
@@ -1350,17 +1491,22 @@ class RetailStoreDashboard {
 		chart.setOption({
 			tooltip: {
 				trigger: "item",
+				confine: true,
 				formatter: (p) =>
 					`<strong>${frappe.utils.escape_html(p.name)}</strong><br/>${self.fmtMoney(
 						p.value
 					)} (${p.percent}%)`,
 			},
-			legend: { bottom: 0, type: "scroll" },
+			legend: {
+				bottom: 0,
+				type: "scroll",
+				textStyle: { fontSize: isMobile ? 10.5 : 12 },
+			},
 			series: [
 				{
 					name: __("Método de Pago"),
 					type: "pie",
-					radius: ["45%", "70%"],
+					radius: isMobile ? ["38%", "58%"] : ["45%", "70%"],
 					center: ["50%", "44%"],
 					avoidLabelOverlap: true,
 					itemStyle: {
@@ -1370,7 +1516,8 @@ class RetailStoreDashboard {
 					},
 					label: {
 						show: true,
-						formatter: "{b}: {d}%",
+						fontSize: isMobile ? 10.5 : 11.5,
+						formatter: isMobile ? "{d}%" : "{b}: {d}%",
 					},
 					data: list.length
 						? list
@@ -1386,7 +1533,7 @@ class RetailStoreDashboard {
 						text: `${__("Total")}\n${self.fmtCompact(total)}`,
 						textAlign: "center",
 						fill: "#0f172a",
-						fontSize: 13,
+						fontSize: isMobile ? 11.5 : 13,
 						fontWeight: 700,
 					},
 				},
@@ -1401,6 +1548,7 @@ class RetailStoreDashboard {
 		const chart = this.getOrCreateChart("rt-chart-heatmap");
 		if (!chart || !heatmap) return;
 		const self = this;
+		const isMobile = this.isMobileViewport();
 
 		const isTickets = this.heatmapMode === "tickets";
 		const rawData = heatmap.data || [];
@@ -1449,6 +1597,7 @@ class RetailStoreDashboard {
 		chart.setOption({
 			tooltip: {
 				position: "top",
+				confine: true,
 				formatter: (p) => {
 					const val = p.value || [0, 0, 0];
 					const salesAmount =
@@ -1465,8 +1614,8 @@ class RetailStoreDashboard {
 			},
 			grid: {
 				top: 16,
-				left: "3%",
-				right: "4%",
+				left: isMobile ? 4 : "3%",
+				right: isMobile ? 8 : "4%",
 				bottom: 52,
 				containLabel: true,
 			},
@@ -1474,13 +1623,20 @@ class RetailStoreDashboard {
 				type: "category",
 				data: heatmap.hours || [],
 				splitArea: { show: false },
-				axisLabel: { fontSize: 11 },
+				axisLabel: {
+					fontSize: isMobile ? 9.5 : 11,
+					hideOverlap: true,
+				},
 			},
 			yAxis: {
 				type: "category",
 				data: heatmap.days || [],
 				splitArea: { show: false },
-				axisLabel: { fontWeight: 600, fontSize: 11.5 },
+				axisLabel: {
+					fontWeight: 600,
+					fontSize: isMobile ? 10 : 11.5,
+					formatter: (val) => (isMobile ? String(val || "").slice(0, 3) : val),
+				},
 			},
 			visualMap: {
 				dimension: 2,
@@ -1490,6 +1646,9 @@ class RetailStoreDashboard {
 				orient: "horizontal",
 				left: "center",
 				bottom: 0,
+				itemWidth: isMobile ? 12 : 16,
+				itemHeight: isMobile ? 95 : 140,
+				textStyle: { fontSize: isMobile ? 10 : 11 },
 				inRange: {
 					color: isTickets
 						? ["#ccfbf1", "#5eead4", "#14b8a6", "#0d9488", "#0f766e", "#134e4a"]
@@ -1510,8 +1669,8 @@ class RetailStoreDashboard {
 					data: seriesData,
 					itemStyle: {
 						borderColor: "#ffffff",
-						borderWidth: 2,
-						borderRadius: 4,
+						borderWidth: isMobile ? 1 : 2,
+						borderRadius: isMobile ? 2 : 4,
 					},
 					label: {
 						show: false,
@@ -1534,6 +1693,7 @@ class RetailStoreDashboard {
 		const chart = this.getOrCreateChart("rt-chart-stock-vs-sales");
 		if (!chart) return;
 		const self = this;
+		const isMobile = this.isMobileViewport();
 
 		const topCats = (byCategory || []).slice(0, 8);
 		const names = topCats.map((c) => c.item_group);
@@ -1544,27 +1704,39 @@ class RetailStoreDashboard {
 		chart.setOption({
 			tooltip: {
 				trigger: "axis",
+				confine: true,
 				axisPointer: { type: "shadow" },
 			},
 			legend: {
 				top: 0,
+				type: isMobile ? "scroll" : "plain",
+				textStyle: { fontSize: isMobile ? 10.5 : 12 },
 				data: [__("Capital en Stock (Costo)"), __("Ventas del Período"), __("Utilidad Bruta")],
 			},
 			grid: {
-				top: 36,
-				left: "4%",
-				right: "4%",
-				bottom: 24,
+				top: 38,
+				left: isMobile ? 4 : "4%",
+				right: isMobile ? 8 : "4%",
+				bottom: isMobile ? 34 : 24,
 				containLabel: true,
 			},
 			xAxis: {
 				type: "category",
 				data: names.length ? names : [__("Sin datos")],
-				axisLabel: { interval: 0, rotate: names.length > 4 ? 18 : 0 },
+				axisLabel: {
+					interval: 0,
+					rotate: isMobile ? 28 : names.length > 4 ? 18 : 0,
+					fontSize: isMobile ? 10 : 11,
+					width: isMobile ? 68 : 110,
+					overflow: "truncate",
+				},
 			},
 			yAxis: {
 				type: "value",
-				axisLabel: { formatter: (v) => self.fmtCompact(v) },
+				axisLabel: {
+					fontSize: isMobile ? 10 : 11,
+					formatter: (v) => self.fmtCompact(v),
+				},
 				splitLine: { lineStyle: { type: "dashed", color: "#e2e8f0" } },
 			},
 			series: [
@@ -1614,7 +1786,7 @@ class RetailStoreDashboard {
 					return `
 						<tr>
 							<td>
-								<a href="/app/item-inspector?item_code=${encodeURIComponent(r.item_code)}" style="font-weight:600;color:#2563eb;">
+								<a href="/app/item-inspector?item_code=${encodeURIComponent(r.item_code)}" class="rt-db-item-link" data-item-code="${frappe.utils.escape_html(r.item_code)}" style="font-weight:600;color:#2563eb;">
 									${frappe.utils.escape_html(r.item_name)}
 								</a>
 								<div style="font-size:11px;color:#64748b;">${frappe.utils.escape_html(r.item_code)}</div>
@@ -1662,7 +1834,7 @@ class RetailStoreDashboard {
 					return `
 						<tr>
 							<td>
-								<a href="/app/item-inspector?item_code=${encodeURIComponent(r.item_code)}" style="font-weight:600;color:#2563eb;">
+								<a href="/app/item-inspector?item_code=${encodeURIComponent(r.item_code)}" class="rt-db-item-link" data-item-code="${frappe.utils.escape_html(r.item_code)}" style="font-weight:600;color:#2563eb;">
 									${frappe.utils.escape_html(r.item_name)}
 								</a>
 								<div style="font-size:11px;color:#64748b;">${frappe.utils.escape_html(r.item_code)}</div>
