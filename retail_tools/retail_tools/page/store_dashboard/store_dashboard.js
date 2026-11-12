@@ -1578,7 +1578,14 @@ class RetailStoreDashboard {
 	 */
 	renderCalendarHeatmapChart(cal) {
 		const chart = this.getOrCreateChart("rt-chart-calendar");
-		if (!chart || !cal) return;
+		if (!chart) return;
+		if (!cal || !Array.isArray(cal.data)) {
+			this.$container
+				.find("#rt-db-calendar-subtitle")
+				.text(__("Sin datos de calendario: reinicie el servidor (bench restart) para cargar el nuevo backend."));
+			console.warn("Store Dashboard: charts.calendar_heatmap no vino en la respuesta del servidor", cal);
+			return;
+		}
 		const self = this;
 		const isMobile = this.isMobileViewport();
 		const isTickets = this.calendarMode === "tickets";
