@@ -383,6 +383,12 @@ PAGE_ROLES_MAP: dict[str, list[str]] = {
 		"RT Contador",
 		"RT Administrador de Sistema",
 	],
+	"store-dashboard": [
+		"RT Responsable de Tienda",
+		"RT Contador",
+		"RT Socio",
+		"RT Administrador de Sistema",
+	],
 }
 
 

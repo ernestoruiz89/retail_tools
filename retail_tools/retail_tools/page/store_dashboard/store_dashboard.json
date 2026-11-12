@@ -1,0 +1,46 @@
+{
+ "content": null,
+ "doctype": "Page",
+ "icon": "icon-chart",
+ "idx": 0,
+ "module": "Retail Tools",
+ "name": "store-dashboard",
+ "page_name": "store-dashboard",
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Administrator"
+  },
+  {
+   "role": "Sales Manager"
+  },
+  {
+   "role": "Stock Manager"
+  },
+  {
+   "role": "Accounts Manager"
+  },
+  {
+   "role": "Purchase Manager"
+  },
+  {
+   "role": "RT Administrador de Sistema"
+  },
+  {
+   "role": "RT Socio"
+  },
+  {
+   "role": "RT Responsable de Tienda"
+  },
+  {
+   "role": "RT Contador"
+  }
+ ],
+ "script": null,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0,
+ "title": "Store Dashboard"
+}

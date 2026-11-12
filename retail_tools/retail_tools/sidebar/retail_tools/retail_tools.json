@@ -14,6 +14,15 @@
   },
   {
    "child": 0,
+   "icon": "chart",
+   "is_default_module": 1,
+   "label": "Store Dashboard",
+   "link_to": "store-dashboard",
+   "link_type": "Page",
+   "type": "Link"
+  },
+  {
+   "child": 0,
    "icon": "upload",
    "is_default_module": 1,
    "label": "Carga de Compras",
@@ -58,7 +67,7 @@
    "type": "Link"
   }
  ],
- "modified": "2026-11-12 11:30:00.000000",
+ "modified": "2026-11-12 15:00:00.000000",
  "module": "Retail Tools",
  "name": "Retail Tools",
  "standard": 1,

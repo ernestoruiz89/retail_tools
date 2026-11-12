@@ -8,5 +8,6 @@ from retail_tools.setup import setup_custom_fields
 def execute():
 	setup_custom_fields()
 	frappe.reload_doc("retail_tools", "page", "carga_compras", force=True)
+	frappe.reload_doc("retail_tools", "page", "store_dashboard", force=True)
 	frappe.reload_doc("retail_tools", "workspace", "retail_tools", force=True)
 	frappe.clear_cache()

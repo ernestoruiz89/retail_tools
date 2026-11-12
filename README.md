@@ -4,6 +4,29 @@ A Frappe/ERPNext application with specialized tools for retail operations.
 
 ## 📦 Features
 
+### Store Dashboard (Panel de Control de Tienda)
+
+Executive business-owner dashboard powered by **Apache ECharts 5** combining financial statements, real-time sales & POS metrics, inventory health, operational alerts, and a comprehensive indicators table.
+
+**Route:** `/app/store-dashboard`
+
+#### Highlights
+- **Financial ECharts**:
+  - **Balance General (`bar-stack`)**: Left stacked bar for **Activo** (`Efectivo y Bancos`, `Cuentas por Cobrar`, `Inventario`, `Otros Activos`) and right stacked bar for **Pasivo y Patrimonio** (`Cuentas por Pagar`, `Otros Pasivos`, `Capital`, `Utilidad Acumulada y Ejercicio`) with equal bar width.
+  - **Estado de Resultados (`Waterfall` + Expense Breakdown)**: Tracks `Ingresos -> Costo de Ventas -> Utilidad Bruta -> Gastos Operativos -> Utilidad Neta` and top expense accounts.
+- **Commercial & Inventory ECharts**:
+  - Daily Sales, Gross Profit & Margin % trend (`Mixed Line & Bar` with `dataZoom`).
+  - Sales by Item Group (`Nightingale Rose`).
+  - Top 10 Products (`Horizontal Bar` switchable between Revenue, Gross Profit, and Units).
+  - Payment Methods breakdown (`Doughnut`).
+  - Sales Heatmap by Day of Week & Hour (`Heatmap`).
+  - Capital in Stock (Cost) vs. Sales by Category (`Grouped Bar`).
+- **Operational Alerts & Executive Indicators Table**:
+  - Low-stock best-sellers alert and dead stock (+60 days without sale) table.
+  - Final 13-indicator table covering Profitability, Liquidity & Solvency, and Inventory/Operations.
+
+---
+
 ### Item Inspector
 
 Complete dashboard page for quick product information lookup.
