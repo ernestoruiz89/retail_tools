@@ -327,11 +327,13 @@ def get_initial_data(company: str | None = None) -> dict:
 		"defaults": {
 			"company": default_company,
 			"posting_date": today(),
+			"due_date": today(),
 			"warehouse": default_warehouse,
 			"stock_uom": default_stock_uom,
 			"item_group": default_item_group,
 			"price_list_1": default_price_list_1,
 			"price_list_2": "",
+			"remarks": "",
 		},
 		"settings": {
 			"bill_no_mandatory": _is_bill_no_mandatory(),
@@ -850,10 +852,12 @@ def _compute_preview_token(
 			"company": header_data.get("company"),
 			"supplier": header_data.get("supplier"),
 			"posting_date": header_data.get("posting_date"),
+			"due_date": header_data.get("due_date"),
 			"warehouse": header_data.get("warehouse"),
 			"bill_no": header_data.get("bill_no"),
 			"price_list_1": header_data.get("price_list_1"),
 			"price_list_2": header_data.get("price_list_2"),
+			"remarks": header_data.get("remarks"),
 		},
 		"rows": [
 			{
@@ -984,11 +988,15 @@ def _execute_transactions(
 				created_prices += 1
 
 	# 3. Build and validate / submit Purchase Invoice
+	effective_due_date = cstr(header_data.get("due_date") or "").strip() or header_data["posting_date"]
+	user_remarks = cstr(header_data.get("remarks") or "").strip()
+
 	pi_doc = frappe.new_doc("Purchase Invoice")
 	pi_doc.company = header_data["company"]
 	pi_doc.supplier = header_data["supplier"]
 	pi_doc.posting_date = header_data["posting_date"]
 	pi_doc.bill_date = header_data["posting_date"]
+	pi_doc.due_date = effective_due_date
 	pi_doc.set_posting_time = 1
 	pi_doc.update_stock = 1
 	pi_doc.is_paid = 0
@@ -997,11 +1005,16 @@ def _execute_transactions(
 	if header_data.get("bill_no"):
 		pi_doc.bill_no = header_data["bill_no"]
 
-	if upload_id:
-		if frappe.db.has_column("Purchase Invoice", "retail_tools_upload_id"):
-			pi_doc.retail_tools_upload_id = upload_id
-		marker = f"[RT-UPLOAD:{upload_id}]"
-		pi_doc.remarks = f"{pi_doc.remarks or ''} {marker}".strip()
+	if user_remarks:
+		pi_doc.remarks = user_remarks
+	else:
+		pi_doc.remarks = None
+		# Evitar que ERPNext autogenere remarks ("Against Supplier Invoice..." o "No Remarks")
+		pi_doc.create_remarks = lambda: None
+
+	has_upload_id_col = frappe.db.has_column("Purchase Invoice", "retail_tools_upload_id")
+	if upload_id and has_upload_id_col:
+		pi_doc.retail_tools_upload_id = upload_id
 
 	for r in rows:
 		pi_doc.append(
@@ -1019,6 +1032,9 @@ def _execute_transactions(
 		)
 
 	pi_doc.set_missing_values()
+	pi_doc.due_date = effective_due_date
+	pi_doc.payment_terms_template = None
+	pi_doc.payment_schedule = []
 
 	# Ensure Excel unit cost (rate), UOM, and warehouse are preserved after set_missing_values()
 	for idx, pi_item in enumerate(pi_doc.items):
@@ -1036,10 +1052,29 @@ def _execute_transactions(
 
 	pi_doc.calculate_taxes_and_totals()
 	pi_doc.insert()
+	if not user_remarks and pi_doc.remarks:
+		pi_doc.db_set("remarks", None, update_modified=False)
+		pi_doc.remarks = None
+
 	pi_doc.check_permission("submit")
 
 	if not dry_run:
 		pi_doc.submit()
+		if not user_remarks and pi_doc.remarks:
+			pi_doc.db_set("remarks", None, update_modified=False)
+			pi_doc.remarks = None
+
+		if upload_id and not has_upload_id_col:
+			frappe.get_doc(
+				{
+					"doctype": "Comment",
+					"comment_type": "Info",
+					"reference_doctype": "Purchase Invoice",
+					"reference_name": pi_doc.name,
+					"content": f"[RT-UPLOAD:{upload_id}]",
+				}
+			).insert(ignore_permissions=True)
+
 		if file_bytes:
 			file_doc = frappe.get_doc(
 				{
@@ -1082,19 +1117,24 @@ def _analyze_upload(
 	company = cstr(header_raw.get("company") or "").strip()
 	supplier = cstr(header_raw.get("supplier") or "").strip()
 	posting_date = cstr(header_raw.get("posting_date") or "").strip()
+	raw_due_date = cstr(header_raw.get("due_date") or "").strip()
+	due_date = raw_due_date or posting_date
 	warehouse = cstr(header_raw.get("warehouse") or "").strip()
 	bill_no = cstr(header_raw.get("bill_no") or "").strip()
 	price_list_1 = cstr(header_raw.get("price_list_1") or "").strip()
 	price_list_2 = cstr(header_raw.get("price_list_2") or "").strip()
+	remarks = cstr(header_raw.get("remarks") or "").strip()
 
 	header_data = {
 		"company": company,
 		"supplier": supplier,
 		"posting_date": posting_date,
+		"due_date": due_date,
 		"warehouse": warehouse,
 		"bill_no": bill_no,
 		"price_list_1": price_list_1,
 		"price_list_2": price_list_2,
+		"remarks": remarks,
 	}
 
 	# Validate Header fields
@@ -1116,13 +1156,26 @@ def _analyze_upload(
 		elif cint(sup_info.on_hold) and sup_info.hold_type in ("All", "Invoices"):
 			global_errors.append(_("El proveedor '{0}' está retenido para facturación.").format(supplier))
 
+	parsed_posting_date = None
 	if not posting_date:
 		global_errors.append(_("La fecha de compra es obligatoria."))
 	else:
 		try:
-			getdate(posting_date)
+			parsed_posting_date = getdate(posting_date)
 		except Exception:
 			global_errors.append(_("La fecha de compra '{0}' no es válida.").format(posting_date))
+
+	if due_date:
+		try:
+			parsed_due_date = getdate(due_date)
+			if parsed_posting_date and parsed_due_date < parsed_posting_date:
+				global_errors.append(
+					_(
+						"La fecha de vencimiento ({0}) no puede ser anterior a la fecha de compra ({1})."
+					).format(due_date, posting_date)
+				)
+		except Exception:
+			global_errors.append(_("La fecha de vencimiento '{0}' no es válida.").format(due_date))
 
 	if not warehouse:
 		global_errors.append(_("El almacén es obligatorio."))
@@ -1613,13 +1666,15 @@ def _find_existing_invoice_by_upload_id(upload_id: str) -> str | None:
 		if existing:
 			return existing
 
-	marker = f"%[RT-UPLOAD:{upload_id}]%"
+	marker = f"[RT-UPLOAD:{upload_id}]"
 	rows = frappe.db.sql(
 		"""
-		SELECT name
-		FROM `tabPurchase Invoice`
-		WHERE docstatus != 2
-		  AND remarks LIKE %s
+		SELECT pi.name
+		FROM `tabComment` c
+		INNER JOIN `tabPurchase Invoice` pi ON pi.name = c.reference_name
+		WHERE c.reference_doctype = 'Purchase Invoice'
+		  AND c.content = %s
+		  AND pi.docstatus != 2
 		LIMIT 1
 		""",
 		(marker,),

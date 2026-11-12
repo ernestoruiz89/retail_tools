@@ -90,10 +90,12 @@ retail_tools.CargaCompras = class CargaCompras {
 						<div class="cc-field" id="cc-company-field"></div>
 						<div class="cc-field" id="cc-supplier-field"></div>
 						<div class="cc-field" id="cc-posting-date-field"></div>
+						<div class="cc-field" id="cc-due-date-field"></div>
 						<div class="cc-field" id="cc-warehouse-field"></div>
 						<div class="cc-field" id="cc-bill-no-field"></div>
 						<div class="cc-field" id="cc-price-list-1-field"></div>
 						<div class="cc-field" id="cc-price-list-2-field"></div>
+						<div class="cc-field cc-field-remarks" id="cc-remarks-field"></div>
 					</div>
 					<div class="cc-file-bar">
 						<div class="cc-file-input-wrap">
@@ -190,20 +192,52 @@ retail_tools.CargaCompras = class CargaCompras {
 		});
 		this.supplier_field.refresh();
 
+		const todayStr = frappe.datetime.get_today();
+		this.last_synced_posting_date = todayStr;
+
 		this.posting_date_field = frappe.ui.form.make_control({
 			df: {
 				fieldtype: "Date",
 				fieldname: "posting_date",
 				label: __("Fecha de Compra"),
 				reqd: 1,
-				default: frappe.datetime.get_today(),
-				change: () => this.mark_preview_stale(),
+				default: todayStr,
+				change: () => {
+					const newPostingDate = this.posting_date_field.get_value();
+					const currentDueDate = this.due_date_field ? this.due_date_field.get_value() : "";
+					if (
+						newPostingDate &&
+						this.due_date_field &&
+						(!currentDueDate || currentDueDate === this.last_synced_posting_date)
+					) {
+						this.last_synced_posting_date = newPostingDate;
+						this.due_date_field.set_value(newPostingDate);
+					} else if (newPostingDate) {
+						this.last_synced_posting_date = newPostingDate;
+					}
+					this.mark_preview_stale();
+				},
 			},
 			parent: this.$body.find("#cc-posting-date-field"),
 			render_input: true,
 		});
-		this.posting_date_field.set_value(frappe.datetime.get_today());
+		this.posting_date_field.set_value(todayStr);
 		this.posting_date_field.refresh();
+
+		this.due_date_field = frappe.ui.form.make_control({
+			df: {
+				fieldtype: "Date",
+				fieldname: "due_date",
+				label: __("Fecha de Vencimiento"),
+				reqd: 1,
+				default: todayStr,
+				change: () => this.mark_preview_stale(),
+			},
+			parent: this.$body.find("#cc-due-date-field"),
+			render_input: true,
+		});
+		this.due_date_field.set_value(todayStr);
+		this.due_date_field.refresh();
 
 		this.warehouse_field = frappe.ui.form.make_control({
 			df: {
@@ -267,6 +301,19 @@ retail_tools.CargaCompras = class CargaCompras {
 			render_input: true,
 		});
 		this.price_list_2_field.refresh();
+
+		this.remarks_field = frappe.ui.form.make_control({
+			df: {
+				fieldtype: "Data",
+				fieldname: "remarks",
+				label: __("Observaciones (Remarks)"),
+				placeholder: __("Opcional"),
+				change: () => this.mark_preview_stale(),
+			},
+			parent: this.$body.find("#cc-remarks-field"),
+			render_input: true,
+		});
+		this.remarks_field.refresh();
 	}
 
 	bind_events() {
@@ -311,7 +358,11 @@ retail_tools.CargaCompras = class CargaCompras {
 					this.company_field.set_value(defaults.company);
 				}
 				if (defaults.posting_date) {
+					this.last_synced_posting_date = defaults.posting_date;
 					this.posting_date_field.set_value(defaults.posting_date);
+				}
+				if (defaults.due_date || defaults.posting_date) {
+					this.due_date_field.set_value(defaults.due_date || defaults.posting_date);
 				}
 				if (defaults.warehouse) {
 					this.warehouse_field.set_value(defaults.warehouse);
@@ -388,14 +439,19 @@ retail_tools.CargaCompras = class CargaCompras {
 	}
 
 	get_header_values() {
+		const postingDate = this.posting_date_field.get_value() || "";
+		const dueDate =
+			(this.due_date_field && this.due_date_field.get_value()) || postingDate;
 		return {
 			company: this.company_field.get_value() || "",
 			supplier: this.supplier_field.get_value() || "",
-			posting_date: this.posting_date_field.get_value() || "",
+			posting_date: postingDate,
+			due_date: dueDate,
 			warehouse: this.warehouse_field.get_value() || "",
 			bill_no: this.bill_no_field.get_value() || "",
 			price_list_1: this.price_list_1_field.get_value() || "",
 			price_list_2: this.price_list_2_field.get_value() || "",
+			remarks: (this.remarks_field && this.remarks_field.get_value() || "").trim(),
 		};
 	}
 

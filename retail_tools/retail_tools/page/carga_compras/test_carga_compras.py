@@ -641,6 +641,7 @@ class TestCargaCompras(FrappeTestCase):
 			self.assertEqual(len(pi_doc.items), 123)
 
 	def test_10_item_inspector_v16_compatibility(self):
+		from frappe.utils import add_days
 		from retail_tools.retail_tools.page.item_inspector.item_inspector import (
 			get_item_snapshot,
 			resolve_item_from_barcode,
@@ -658,8 +659,20 @@ class TestCargaCompras(FrappeTestCase):
 		]
 		rows = [[code, "Producto Inspector V16", f"BC-{code}", 4, 25.0, 50.0, 60.0]]
 		b64 = _make_xlsx_b64(headers, rows)
+
+		# 1. Invalid due_date (< posting_date) must fail preview
+		bad_due = add_days(today(), -5)
+		bad_prev = preview_purchase_upload(
+			file_content=b64,
+			header=self._base_header(due_date=bad_due),
+		)
+		self.assertFalse(bad_prev["can_confirm"])
+
+		# 2. Empty remarks -> pi_doc.remarks must be empty (not [RT-UPLOAD:...] or auto-remarks),
+		#    and default due_date == posting_date
 		header = self._base_header(bill_no="FAC-II-V16")
 		prev = preview_purchase_upload(file_content=b64, header=header)
+		self.assertEqual(str(prev["header"]["due_date"]), str(today()))
 		conf = confirm_purchase_upload(
 			file_content=b64,
 			header=header,
@@ -667,6 +680,28 @@ class TestCargaCompras(FrappeTestCase):
 			upload_id="upl-ii-v16",
 		)
 		self.assertTrue(conf["ok"])
+		pi_empty_rem = frappe.get_doc("Purchase Invoice", conf["invoice_name"])
+		self.assertFalse(bool(pi_empty_rem.remarks))
+		self.assertEqual(str(pi_empty_rem.due_date), str(today()))
+
+		# 3. Custom remarks and custom due_date -> preserved on Purchase Invoice
+		custom_due = add_days(today(), 15)
+		header_custom = self._base_header(
+			bill_no="FAC-II-V16-2",
+			due_date=custom_due,
+			remarks="Compra quincenal PACC",
+		)
+		prev_custom = preview_purchase_upload(file_content=b64, header=header_custom)
+		conf_custom = confirm_purchase_upload(
+			file_content=b64,
+			header=header_custom,
+			preview_token=prev_custom["preview_token"],
+			upload_id="upl-ii-v16-custom",
+		)
+		self.assertTrue(conf_custom["ok"])
+		pi_custom = frappe.get_doc("Purchase Invoice", conf_custom["invoice_name"])
+		self.assertEqual(pi_custom.remarks, "Compra quincenal PACC")
+		self.assertEqual(str(pi_custom.due_date), str(custom_due))
 
 		resolved = resolve_item_from_barcode(f"BC-{code}")
 		self.assertTrue(resolved["ok"])
@@ -676,7 +711,7 @@ class TestCargaCompras(FrappeTestCase):
 		self.assertTrue(snap["ok"])
 		self.assertEqual(snap["item"]["item_code"], code)
 		self.assertEqual(len(snap["price_history"]), 2)
-		self.assertEqual(len(snap["recent_purchases"]), 1)
+		self.assertEqual(len(snap["recent_purchases"]), 2)
 
 
 
