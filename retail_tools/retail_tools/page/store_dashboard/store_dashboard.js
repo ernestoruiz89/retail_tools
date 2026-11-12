@@ -556,75 +556,146 @@ class RetailStoreDashboard {
 
 	renderKpiCards(kpis) {
 		if (!kpis) return;
+		const potentialProfit = Math.max(
+			0,
+			Number(kpis.potential_profit || (Number(kpis.stock_retail_value || 0) - Number(kpis.stock_cost_value || 0)))
+		);
 		const html = `
-			<div class="rt-db-kpi-card" style="--kpi-accent: #2563eb;">
+			<div class="rt-db-kpi-card" style="--kpi-accent: #2563eb; --kpi-soft: #eff6ff;">
 				<div class="rt-db-kpi-head">
-					<span class="rt-db-kpi-title">${__("Ventas Netas")}</span>
+					<div class="rt-db-kpi-head-left">
+						<span class="rt-db-kpi-icon">
+							<svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+						</span>
+						<span class="rt-db-kpi-title">${__("Ventas Netas")}</span>
+					</div>
 					${this.deltaBadgeHtml(kpis.net_sales_delta_pct)}
 				</div>
 				<div class="rt-db-kpi-value">${this.fmtMoney(kpis.net_sales)}</div>
-				<div class="rt-db-kpi-sub">
-					<span>${__("Ant.")}: ${this.fmtMoney(kpis.prev_net_sales)}</span>
-					<span><strong>${kpis.ticket_count}</strong> ${__("tickets")}</span>
+				<div class="rt-db-kpi-footer">
+					<div class="rt-db-kpi-metric">
+						<span class="rt-db-kpi-metric-label">${__("Período Anterior")}</span>
+						<span class="rt-db-kpi-metric-val">${this.fmtMoney(kpis.prev_net_sales)}</span>
+					</div>
+					<div class="rt-db-kpi-metric" style="text-align:right;">
+						<span class="rt-db-kpi-metric-label">${__("Transacciones")}</span>
+						<span class="rt-db-kpi-metric-val">${Number(kpis.ticket_count || 0).toLocaleString()} ${__("tickets")}</span>
+					</div>
 				</div>
 			</div>
 
-			<div class="rt-db-kpi-card" style="--kpi-accent: #10b981;">
+			<div class="rt-db-kpi-card" style="--kpi-accent: #10b981; --kpi-soft: #ecfdf5;">
 				<div class="rt-db-kpi-head">
-					<span class="rt-db-kpi-title">${__("Utilidad Bruta Comercial")}</span>
+					<div class="rt-db-kpi-head-left">
+						<span class="rt-db-kpi-icon">
+							<svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+						</span>
+						<span class="rt-db-kpi-title">${__("Utilidad Bruta Comercial")}</span>
+					</div>
 					${this.deltaBadgeHtml(kpis.gross_profit_delta_pct)}
 				</div>
 				<div class="rt-db-kpi-value">${this.fmtMoney(kpis.gross_profit)}</div>
-				<div class="rt-db-kpi-sub">
-					<span>${__("Margen Bruto")}: <strong>${Number(kpis.gross_margin_pct || 0).toFixed(1)}%</strong></span>
-					<span>${__("Ant.")}: ${Number(kpis.prev_gross_margin_pct || 0).toFixed(1)}%</span>
+				<div class="rt-db-kpi-footer">
+					<div class="rt-db-kpi-metric">
+						<span class="rt-db-kpi-metric-label">${__("Margen Bruto Actual")}</span>
+						<span class="rt-db-kpi-metric-val" style="color:#059669;">${Number(kpis.gross_margin_pct || 0).toFixed(1)}%</span>
+					</div>
+					<div class="rt-db-kpi-metric" style="text-align:right;">
+						<span class="rt-db-kpi-metric-label">${__("Margen Anterior")}</span>
+						<span class="rt-db-kpi-metric-val">${Number(kpis.prev_gross_margin_pct || 0).toFixed(1)}%</span>
+					</div>
 				</div>
 			</div>
 
-			<div class="rt-db-kpi-card" style="--kpi-accent: #0d9488;">
+			<div class="rt-db-kpi-card" style="--kpi-accent: #0d9488; --kpi-soft: #f0fdfa;">
 				<div class="rt-db-kpi-head">
-					<span class="rt-db-kpi-title">${__("Utilidad Neta Contable")}</span>
+					<div class="rt-db-kpi-head-left">
+						<span class="rt-db-kpi-icon">
+							<svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+						</span>
+						<span class="rt-db-kpi-title">${__("Utilidad Neta Contable")}</span>
+					</div>
 					${this.deltaBadgeHtml(kpis.net_profit_delta_pct)}
 				</div>
 				<div class="rt-db-kpi-value">${this.fmtMoney(kpis.net_profit)}</div>
-				<div class="rt-db-kpi-sub">
-					<span>${__("Margen Neto")}: <strong>${Number(kpis.net_margin_pct || 0).toFixed(1)}%</strong></span>
-					<span>${__("Gastos")}: ${this.fmtMoney(kpis.operating_expenses)}</span>
+				<div class="rt-db-kpi-footer">
+					<div class="rt-db-kpi-metric">
+						<span class="rt-db-kpi-metric-label">${__("Margen Neto")}</span>
+						<span class="rt-db-kpi-metric-val" style="color:#0d9488;">${Number(kpis.net_margin_pct || 0).toFixed(1)}%</span>
+					</div>
+					<div class="rt-db-kpi-metric" style="text-align:right;">
+						<span class="rt-db-kpi-metric-label">${__("Gastos Operativos")}</span>
+						<span class="rt-db-kpi-metric-val">${this.fmtMoney(kpis.operating_expenses)}</span>
+					</div>
 				</div>
 			</div>
 
-			<div class="rt-db-kpi-card" style="--kpi-accent: #8b5cf6;">
+			<div class="rt-db-kpi-card" style="--kpi-accent: #8b5cf6; --kpi-soft: #f5f3ff;">
 				<div class="rt-db-kpi-head">
-					<span class="rt-db-kpi-title">${__("Ticket Promedio")}</span>
+					<div class="rt-db-kpi-head-left">
+						<span class="rt-db-kpi-icon">
+							<svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+						</span>
+						<span class="rt-db-kpi-title">${__("Ticket Promedio")}</span>
+					</div>
 					${this.deltaBadgeHtml(kpis.avg_ticket_delta_pct)}
 				</div>
 				<div class="rt-db-kpi-value">${this.fmtMoney(kpis.avg_ticket)}</div>
-				<div class="rt-db-kpi-sub">
-					<span>UPT: <strong>${Number(kpis.upt || 0).toFixed(2)}</strong> ${__("unid/ticket")}</span>
-					<span>${Number(kpis.total_units || 0).toLocaleString()} ${__("unid.")}</span>
+				<div class="rt-db-kpi-footer">
+					<div class="rt-db-kpi-metric">
+						<span class="rt-db-kpi-metric-label">${__("Unid. por Ticket (UPT)")}</span>
+						<span class="rt-db-kpi-metric-val">${Number(kpis.upt || 0).toFixed(2)} ${__("u/ticket")}</span>
+					</div>
+					<div class="rt-db-kpi-metric" style="text-align:right;">
+						<span class="rt-db-kpi-metric-label">${__("Unidades Vendidas")}</span>
+						<span class="rt-db-kpi-metric-val">${Number(kpis.total_units || 0).toLocaleString()} ${__("unid.")}</span>
+					</div>
 				</div>
 			</div>
 
-			<div class="rt-db-kpi-card" style="--kpi-accent: #f59e0b;">
+			<div class="rt-db-kpi-card" style="--kpi-accent: #f59e0b; --kpi-soft: #fffbeb;">
 				<div class="rt-db-kpi-head">
-					<span class="rt-db-kpi-title">${__("Capital en Inventario (Costo)")}</span>
-					<span class="rt-db-kpi-delta neutral">${kpis.sku_with_stock} SKUs</span>
+					<div class="rt-db-kpi-head-left">
+						<span class="rt-db-kpi-icon">
+							<svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+						</span>
+						<span class="rt-db-kpi-title">${__("Capital en Inventario")}</span>
+					</div>
+					<span class="rt-db-kpi-delta neutral">${Number(kpis.sku_with_stock || 0).toLocaleString()} SKUs</span>
 				</div>
 				<div class="rt-db-kpi-value">${this.fmtMoney(kpis.stock_cost_value)}</div>
-				<div class="rt-db-kpi-sub">
-					<span>${__("Venta Potencial")}: <strong>${this.fmtMoney(kpis.stock_retail_value)}</strong></span>
+				<div class="rt-db-kpi-footer">
+					<div class="rt-db-kpi-metric">
+						<span class="rt-db-kpi-metric-label">${__("Venta Potencial")}</span>
+						<span class="rt-db-kpi-metric-val">${this.fmtMoney(kpis.stock_retail_value)}</span>
+					</div>
+					<div class="rt-db-kpi-metric" style="text-align:right;">
+						<span class="rt-db-kpi-metric-label">${__("Ganancia Potencial")}</span>
+						<span class="rt-db-kpi-metric-val" style="color:#d97706;">${this.fmtMoney(potentialProfit)}</span>
+					</div>
 				</div>
 			</div>
 
-			<div class="rt-db-kpi-card" style="--kpi-accent: #0284c7;">
+			<div class="rt-db-kpi-card" style="--kpi-accent: #0284c7; --kpi-soft: #f0f9ff;">
 				<div class="rt-db-kpi-head">
-					<span class="rt-db-kpi-title">${__("Efectivo y Bancos")}</span>
+					<div class="rt-db-kpi-head-left">
+						<span class="rt-db-kpi-icon">
+							<svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+						</span>
+						<span class="rt-db-kpi-title">${__("Efectivo y Bancos")}</span>
+					</div>
 					<span class="rt-db-kpi-delta neutral">${__("Al Corte")}</span>
 				</div>
 				<div class="rt-db-kpi-value">${this.fmtMoney(kpis.cash_and_bank)}</div>
-				<div class="rt-db-kpi-sub">
-					<span>CxC: <strong>${this.fmtMoney(kpis.accounts_receivable)}</strong></span>
-					<span>CxP: <strong>${this.fmtMoney(kpis.accounts_payable)}</strong></span>
+				<div class="rt-db-kpi-footer">
+					<div class="rt-db-kpi-metric">
+						<span class="rt-db-kpi-metric-label">${__("Por Cobrar (CxC)")}</span>
+						<span class="rt-db-kpi-metric-val">${this.fmtMoney(kpis.accounts_receivable)}</span>
+					</div>
+					<div class="rt-db-kpi-metric" style="text-align:right;">
+						<span class="rt-db-kpi-metric-label">${__("Por Pagar (CxP)")}</span>
+						<span class="rt-db-kpi-metric-val" style="color:#dc2626;">${this.fmtMoney(kpis.accounts_payable)}</span>
+					</div>
 				</div>
 			</div>
 		`;
