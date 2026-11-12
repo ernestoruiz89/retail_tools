@@ -25,6 +25,7 @@ class RetailStoreDashboard {
 		this.currencySymbol = "$";
 		this.pnlMode = "waterfall"; // "waterfall" | "expenses"
 		this.topItemsMode = "by_revenue"; // "by_revenue" | "by_profit" | "by_qty"
+		this.heatmapMode = "sales"; // "sales" | "tickets"
 		this.indicatorFilter = "all";
 
 		this.setupPageActions();
@@ -207,6 +208,10 @@ class RetailStoreDashboard {
 								<h4 class="rt-db-card-title">${__("Mapa de Calor de Ventas (Día de la Semana vs. Hora)")}</h4>
 								<div class="rt-db-card-subtitle">${__("Identifique las horas de mayor tráfico para optimizar turnos de personal y caja")}</div>
 							</div>
+							<div class="rt-db-segmented" id="rt-db-heatmap-toggle">
+								<button type="button" class="rt-db-seg-btn active" data-mode="sales">${__("Por Monto")}</button>
+								<button type="button" class="rt-db-seg-btn" data-mode="tickets">${__("Por Tickets")}</button>
+							</div>
 						</div>
 						<div id="rt-chart-heatmap" class="rt-db-chart-box"></div>
 					</div>
@@ -328,6 +333,16 @@ class RetailStoreDashboard {
 			self.topItemsMode = $btn.data("mode");
 			if (self.payload) {
 				self.renderTopItemsChart(self.payload.charts.top_items);
+			}
+		});
+
+		this.$container.on("click", "#rt-db-heatmap-toggle .rt-db-seg-btn", function () {
+			const $btn = $(this);
+			self.$container.find("#rt-db-heatmap-toggle .rt-db-seg-btn").removeClass("active");
+			$btn.addClass("active");
+			self.heatmapMode = $btn.data("mode");
+			if (self.payload && self.payload.charts) {
+				self.renderHeatmapChart(self.payload.charts.hourly_heatmap);
 			}
 		});
 
@@ -1387,25 +1402,23 @@ class RetailStoreDashboard {
 		if (!chart || !heatmap) return;
 		const self = this;
 
+		const isTickets = this.heatmapMode === "tickets";
 		const rawData = heatmap.data || [];
-		const positiveValues = rawData
-			.map((r) => Number(r[2] || 0))
-			.filter((v) => v > 0);
-		const minPositive = positiveValues.length ? Math.min(...positiveValues) : 1;
-		const maxVal = Math.max(1, Number(heatmap.max_value || 1));
-		const visualMin = positiveValues.length ? Math.max(0.01, minPositive * 0.85) : 1;
-
 		const ticketsMap = heatmap.tickets_by_cell || {};
+
+		const positiveValues = [];
 		const seriesData = rawData.map((r) => {
 			const hourIdx = Number(r[0] || 0);
 			const dayIdx = Number(r[1] || 0);
 			const salesVal = Number(r[2] || 0);
 			const tickets = Number(ticketsMap[`${hourIdx}_${dayIdx}`] || r[3] || 0);
-			if (salesVal <= 0) {
+			const metricVal = isTickets ? tickets : salesVal;
+
+			if (metricVal <= 0) {
 				return {
 					value: [hourIdx, dayIdx, "-"],
-					rawSales: 0,
-					tickets: 0,
+					rawSales: salesVal,
+					tickets,
 					itemStyle: {
 						color: "#ffffff",
 						borderColor: "#e2e8f0",
@@ -1414,12 +1427,24 @@ class RetailStoreDashboard {
 					},
 				};
 			}
+
+			positiveValues.push(metricVal);
 			return {
-				value: [hourIdx, dayIdx, salesVal],
+				value: [hourIdx, dayIdx, metricVal],
 				rawSales: salesVal,
 				tickets,
 			};
 		});
+
+		const minPositive = positiveValues.length ? Math.min(...positiveValues) : 1;
+		const maxVal = positiveValues.length
+			? Math.max(...positiveValues)
+			: Math.max(1, Number(heatmap.max_value || 1));
+		const visualMin = positiveValues.length
+			? isTickets
+				? Math.max(1, Math.floor(minPositive))
+				: Math.max(0.01, minPositive * 0.85)
+			: 1;
 
 		chart.setOption({
 			tooltip: {
@@ -1460,22 +1485,27 @@ class RetailStoreDashboard {
 			visualMap: {
 				dimension: 2,
 				min: visualMin,
-				max: Math.max(maxVal, visualMin + 1),
+				max: Math.max(maxVal, visualMin + (isTickets ? 1 : 1)),
 				calculable: true,
 				orient: "horizontal",
 				left: "center",
 				bottom: 0,
 				inRange: {
-					color: ["#bfdbfe", "#60a5fa", "#3b82f6", "#2563eb", "#1d4ed8", "#1e3a8a"],
+					color: isTickets
+						? ["#ccfbf1", "#5eead4", "#14b8a6", "#0d9488", "#0f766e", "#134e4a"]
+						: ["#bfdbfe", "#60a5fa", "#3b82f6", "#2563eb", "#1d4ed8", "#1e3a8a"],
 				},
 				outOfRange: {
 					color: ["#ffffff"],
 				},
-				formatter: (value) => self.fmtCompact(value),
+				formatter: (value) =>
+					isTickets
+						? `${Math.round(value)} ${__("tickets")}`
+						: self.fmtCompact(value),
 			},
 			series: [
 				{
-					name: __("Ventas por Hora"),
+					name: isTickets ? __("Tickets por Hora") : __("Ventas por Hora"),
 					type: "heatmap",
 					data: seriesData,
 					itemStyle: {
@@ -1494,7 +1524,7 @@ class RetailStoreDashboard {
 					},
 				},
 			],
-		});
+		}, true);
 	}
 
 	/**
