@@ -1681,7 +1681,7 @@ def export_store_dashboard_pdf(
 		range_key=range_key,
 	)
 	context = _dashboard_pdf_context(data, validated_charts, chart_modes)
-	template = Path(__file__).with_name("store_dashboard_pdf.html").read_text(encoding="utf-8")
+	template = Path(__file__).with_name("store_dashboard_pdf.jinja").read_text(encoding="utf-8")
 	html = frappe.render_template(template, context)
 	frappe.local.response.filename = f"panel-tienda-{data['filters']['from_date']}-{data['filters']['to_date']}.pdf"
 	frappe.local.response.filecontent = get_pdf(
