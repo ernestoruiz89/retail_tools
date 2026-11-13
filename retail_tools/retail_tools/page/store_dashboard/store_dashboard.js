@@ -290,7 +290,7 @@ class RetailStoreDashboard {
 							<div class="rt-db-card-subtitle" id="rt-db-dupont-subtitle">${__("ROE = Margen Neto × Rotación de Activos × Apalancamiento Financiero")}</div>
 						</div>
 					</div>
-					<div id="rt-chart-dupont" class="rt-db-chart-box" style="height: 430px;"></div>
+					<div id="rt-chart-dupont" class="rt-db-chart-box" style="height: 380px; max-width: 980px; margin: 0 auto;"></div>
 					<div class="rt-db-fin-summary" id="rt-db-dupont-footer"></div>
 				</div>
 				<div class="rt-db-card">
@@ -1716,21 +1716,28 @@ class RetailStoreDashboard {
 		const times = (v) => `${v.toFixed(2)}x`;
 
 		const W = chart.getWidth() || 600;
-		const H = chart.getHeight() || 430;
+		const H = chart.getHeight() || 380;
 		const isMobile = W < 560;
-		const nodeW = Math.max(96, Math.min(190, W * (isMobile ? 0.29 : 0.24)));
-		const pad = 8;
-		const rootX = pad + nodeW / 2;
-		const leafX = W - pad - nodeW / 2;
-		const midX = (rootX + leafX) / 2;
-		const rowH = H / 6;
-		const leafY = (i) => rowH * (i + 0.5);
-		const midY = (j) => rowH * (2 * j + 1);
+
+		// Dimensiones compactas de nodos con relación de aspecto equilibrada
+		const nodeW = Math.max(110, Math.min(185, Math.round(W * (isMobile ? 0.28 : 0.23))));
+		const availableWidth = W - (isMobile ? 24 : 60);
+		const startX = isMobile ? 12 : 30;
+		const colSpacing = (availableWidth - nodeW) / 2;
+
+		const rootX = startX + nodeW / 2;
+		const midX = startX + colSpacing + nodeW / 2;
+		const leafX = startX + colSpacing * 2 + nodeW / 2;
+
+		const rowH = (H - 20) / 6;
+		const topPad = 10;
+		const leafY = (i) => topPad + rowH * (i + 0.5);
+		const midY = (j) => topPad + rowH * (2 * j + 1);
 
 		const rich = {
-			t: { fontSize: isMobile ? 10 : 11.5, fontWeight: 600, color: "#475569", lineHeight: isMobile ? 14 : 16 },
-			v: { fontSize: isMobile ? 13 : 16, fontWeight: 800, color: "#0f172a", lineHeight: isMobile ? 18 : 22 },
-			f: { fontSize: isMobile ? 9 : 10.5, color: "#64748b", lineHeight: isMobile ? 12 : 14 },
+			t: { fontSize: isMobile ? 10 : 11, fontWeight: 600, color: "#475569", lineHeight: isMobile ? 14 : 16 },
+			v: { fontSize: isMobile ? 12.5 : 15, fontWeight: 800, color: "#0f172a", lineHeight: isMobile ? 17 : 20 },
+			f: { fontSize: isMobile ? 8.5 : 9.5, color: "#64748b", lineHeight: isMobile ? 11 : 13 },
 		};
 		const mk = (id, x, y, h, title, value, formula, color, soft) => ({
 			id,
@@ -1740,7 +1747,7 @@ class RetailStoreDashboard {
 			fixed: true,
 			symbol: "roundRect",
 			symbolSize: [nodeW, h],
-			itemStyle: { color: soft, borderColor: color, borderWidth: 2, borderRadius: 8 },
+			itemStyle: { color: soft, borderColor: color, borderWidth: 1.5, borderRadius: 10 },
 			label: {
 				show: true,
 				position: "inside",
@@ -1753,12 +1760,12 @@ class RetailStoreDashboard {
 
 		const roeColor = roe >= 0 ? "#059669" : "#dc2626";
 		const roeSoft = roe >= 0 ? "#ecfdf5" : "#fef2f2";
-		const hRoot = isMobile ? 76 : 84;
-		const hMid = isMobile ? 70 : 78;
-		const hLeaf = isMobile ? 46 : 52;
+		const hRoot = isMobile ? 70 : 76;
+		const hMid = isMobile ? 64 : 70;
+		const hLeaf = isMobile ? 42 : 46;
 
 		const nodes = [
-			mk("roe", rootX, H / 2, hRoot, __("ROE del Período"), pct(roe), __("Rentab. sobre Patrimonio"), roeColor, roeSoft),
+			mk("roe", rootX, topPad + (H - 20) / 2, hRoot, __("ROE del Período"), pct(roe), __("Rentab. sobre Patrimonio"), roeColor, roeSoft),
 			mk("margin", midX, midY(0), hMid, __("Margen Neto"), pct(margin), `${__("Util. Neta")} ÷ ${__("Ventas")}`, "#2563eb", "#eff6ff"),
 			mk("turnover", midX, midY(1), hMid, __("Rotación de Activos"), times(turnover), `${__("Ventas")} ÷ ${__("Activo")}`, "#8b5cf6", "#f5f3ff"),
 			mk("leverage", midX, midY(2), hMid, __("Apalancamiento"), times(multiplier), `${__("Activo")} ÷ ${__("Patrimonio")}`, "#f59e0b", "#fffbeb"),
@@ -1773,9 +1780,9 @@ class RetailStoreDashboard {
 		const edge = (source, target, color, label) => ({
 			source,
 			target,
-			lineStyle: { color, width: 2, curveness: 0 },
+			lineStyle: { color, width: 1.8, curveness: 0.08 },
 			label: label
-				? { show: true, formatter: label, fontSize: 14, fontWeight: 800, color, backgroundColor: "#ffffff", padding: [0, 3] }
+				? { show: true, formatter: label, fontSize: 13, fontWeight: 700, color, backgroundColor: "#ffffff", padding: [2, 4], borderRadius: 4 }
 				: { show: false },
 		});
 		const links = [
