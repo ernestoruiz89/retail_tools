@@ -447,7 +447,7 @@ class RetailStoreDashboard {
 	}
 
 	async init() {
-		console.info("Store Dashboard build 20261112_17");
+		console.info("Store Dashboard build 20261112_18");
 		try {
 			await this.ensureECharts();
 			const res = await frappe.call({
@@ -1081,9 +1081,9 @@ class RetailStoreDashboard {
 
 			const barValues = [
 				{ value: income, itemStyle: { color: "#2563eb", borderRadius: [6, 6, 0, 0] }, raw: income },
-				{ value: cogs, itemStyle: { color: "#f59e0b", borderRadius: [6, 6, 0, 0] }, raw: -cogs },
+				{ value: cogs, itemStyle: { color: "#f59e0b", borderRadius: 6 }, raw: -cogs },
 				{ value: gross, itemStyle: { color: "#0ea5e9", borderRadius: [6, 6, 0, 0] }, raw: gross },
-				{ value: opex, itemStyle: { color: "#f97316", borderRadius: [6, 6, 0, 0] }, raw: -opex },
+				{ value: opex, itemStyle: { color: "#f97316", borderRadius: 6 }, raw: -opex },
 				{
 					value: net,
 					itemStyle: {
