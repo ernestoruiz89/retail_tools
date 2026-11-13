@@ -1599,7 +1599,7 @@ class RetailStoreDashboard {
 						value: [r[0], "-"],
 						rawSales: Number(r[1] || 0),
 						tickets: Number(r[2] || 0),
-						itemStyle: { color: "#ffffff", borderColor: "#e2e8f0", borderWidth: 1 },
+						itemStyle: { color: isTickets ? "#e6faf6" : "#eaf2ff", borderColor: "#ffffff", borderWidth: 2 },
 				  };
 		});
 
@@ -1638,7 +1638,7 @@ class RetailStoreDashboard {
 						? ["#ccfbf1", "#5eead4", "#14b8a6", "#0d9488", "#0f766e", "#134e4a"]
 						: ["#dbeafe", "#93c5fd", "#60a5fa", "#2563eb", "#1d4ed8", "#1e3a8a"],
 				},
-				outOfRange: { color: ["#ffffff"] },
+				outOfRange: { color: [isTickets ? "#e6faf6" : "#eaf2ff"] },
 				formatter: (v) => (isTickets ? `${Math.round(v)}` : self.fmtCompact(v)),
 			},
 			calendar: {
@@ -1649,7 +1649,7 @@ class RetailStoreDashboard {
 				cellSize: ["auto", isMobile ? 12 : 18],
 				range,
 				orient: "horizontal",
-				itemStyle: { borderWidth: 2, borderColor: "#ffffff", color: "#ffffff" },
+				itemStyle: { borderWidth: 2, borderColor: "#ffffff", color: isTickets ? "#e6faf6" : "#eaf2ff" },
 				splitLine: { show: true, lineStyle: { color: "#cbd5e1", width: 1 } },
 				yearLabel: { show: false },
 				dayLabel: {
@@ -1703,10 +1703,10 @@ class RetailStoreDashboard {
 					rawSales: salesVal,
 					tickets,
 					itemStyle: {
-						color: "#ffffff",
-						borderColor: "#e2e8f0",
-						borderWidth: 1,
-						borderRadius: 4,
+						color: isTickets ? "#e6faf6" : "#eaf2ff",
+						borderColor: "#ffffff",
+						borderWidth: isMobile ? 1 : 2,
+						borderRadius: isMobile ? 2 : 4,
 					},
 				};
 			}
@@ -1790,7 +1790,7 @@ class RetailStoreDashboard {
 						: ["#bfdbfe", "#60a5fa", "#3b82f6", "#2563eb", "#1d4ed8", "#1e3a8a"],
 				},
 				outOfRange: {
-					color: ["#ffffff"],
+					color: [isTickets ? "#e6faf6" : "#eaf2ff"],
 				},
 				formatter: (value) =>
 					isTickets
