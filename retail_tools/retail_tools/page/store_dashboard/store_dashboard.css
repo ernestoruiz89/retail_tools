@@ -49,7 +49,7 @@
 }
 
 .rt-db-field select,
-.rt-db-field input[type="date"] {
+.rt-db-field .frappe-control .form-control {
 	height: 36px;
 	padding: 4px 10px;
 	font-size: 13px;
@@ -62,9 +62,15 @@
 }
 
 .rt-db-field select:focus,
-.rt-db-field input[type="date"]:focus {
+.rt-db-field .frappe-control .form-control:focus {
 	border-color: #2563eb;
 	box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.rt-db-field .frappe-control,
+.rt-db-field .frappe-control .form-control {
+	width: 100%;
+	max-width: none;
 }
 
 .rt-db-pos-toggle {

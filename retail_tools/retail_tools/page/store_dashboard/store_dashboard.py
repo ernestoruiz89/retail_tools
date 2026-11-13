@@ -4,6 +4,8 @@ import frappe
 from frappe import _
 from frappe.utils import add_days, cint, date_diff, flt, getdate, nowdate
 
+from retail_tools.retail_tools.page.store_dashboard.periods import previous_period
+
 DASHBOARD_ROLES = {
 	"System Manager",
 	"Administrator",
@@ -868,7 +870,7 @@ def _get_inventory_and_alerts(
 						"item_group": cat,
 						"actual_qty": round(qty, 2),
 						"stock_value": round(stock_val, 2),
-						"last_sale_date": str(last_sale).replace("-", "\u2011") if last_sale else _("Sin ventas"),
+						"last_sale_date": str(last_sale) if last_sale else _("Sin ventas"),
 						"days_without_sale": None if not last_sale else int(days_without_sale),
 					}
 				)
@@ -1349,6 +1351,7 @@ def get_store_dashboard_data(
 	to_date: str | None = None,
 	warehouse: str | None = None,
 	include_pending_pos: int | str = 1,
+	range_key: str | None = None,
 ) -> dict:
 	"""Return complete executive dashboard payload for a retail store business owner."""
 	_ensure_dashboard_access()
@@ -1367,8 +1370,9 @@ def get_store_dashboard_data(
 		start_date, end_date = end_date, start_date
 
 	period_days = max(1, date_diff(getdate(end_date), getdate(start_date)) + 1)
-	prev_to_date = str(add_days(start_date, -1))
-	prev_from_date = str(add_days(prev_to_date, -(period_days - 1)))
+	previous_from, previous_to = previous_period(getdate(start_date), getdate(end_date), range_key)
+	prev_from_date = str(previous_from)
+	prev_to_date = str(previous_to)
 
 	clean_warehouse = warehouse.strip() if isinstance(warehouse, str) and warehouse.strip() else None
 	include_pos_bool = bool(cint(include_pending_pos))

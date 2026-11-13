@@ -28,6 +28,8 @@ class RetailStoreDashboard {
 		this.heatmapMode = "sales"; // "sales" | "tickets"
 		this.calendarMode = "sales"; // "sales" | "tickets"
 		this.indicatorFilter = "all";
+		this.activeRangeKey = null;
+		this.refreshRequestId = 0;
 
 		this.setupPageActions();
 		this.renderSkeleton();
@@ -91,12 +93,12 @@ class RetailStoreDashboard {
 								</select>
 							</div>
 							<div class="rt-db-field">
-								<label for="rt-db-from-date">${__("Desde")}</label>
-								<input type="date" id="rt-db-from-date" />
+								<label>${__("Desde")}</label>
+								<div id="rt-db-from-date-wrap"></div>
 							</div>
 							<div class="rt-db-field">
-								<label for="rt-db-to-date">${__("Hasta")}</label>
-								<input type="date" id="rt-db-to-date" />
+								<label>${__("Hasta")}</label>
+								<div id="rt-db-to-date-wrap"></div>
 							</div>
 							<label class="rt-db-pos-toggle" title="${__("Incluye tickets de POS emitidos hoy aún no consolidados en cierre de caja")}">
 								<input type="checkbox" id="rt-db-include-pos" checked />
@@ -108,7 +110,7 @@ class RetailStoreDashboard {
 						<div class="rt-db-quick-ranges">
 							<button type="button" class="rt-db-quick-btn" data-range="today">${__("Hoy")}</button>
 							<button type="button" class="rt-db-quick-btn" data-range="7d">${__("Últimos 7 días")}</button>
-							<button type="button" class="rt-db-quick-btn active" data-range="30d">${__("Últimos 30 días")}</button>
+							<button type="button" class="rt-db-quick-btn" data-range="30d">${__("Últimos 30 días")}</button>
 							<button type="button" class="rt-db-quick-btn" data-range="this_month">${__("Este Mes")}</button>
 							<button type="button" class="rt-db-quick-btn" data-range="last_month">${__("Mes Anterior")}</button>
 							<button type="button" class="rt-db-quick-btn" data-range="ytd">${__("Este Año")}</button>
@@ -325,7 +327,34 @@ class RetailStoreDashboard {
 			</div>
 		`);
 
+		this.createDateControls();
 		this.bindEvents();
+	}
+
+	createDateControls() {
+		const createControl = (fieldname, parent) => frappe.ui.form.make_control({
+			parent: this.$container.find(parent),
+			df: {
+				fieldtype: "Date",
+				fieldname,
+				change: () => this.onDateControlChange(),
+			},
+			render_input: true,
+			only_input: true,
+		});
+		this.fromDateControl = createControl("from_date", "#rt-db-from-date-wrap");
+		this.toDateControl = createControl("to_date", "#rt-db-to-date-wrap");
+	}
+
+	onDateControlChange() {
+		if (this.settingDateRange) return;
+		const fromDate = this.fromDateControl.get_value();
+		const toDate = this.toDateControl.get_value();
+		if (fromDate === this.selectedFromDate && toDate === this.selectedToDate) return;
+		this.selectedFromDate = fromDate;
+		this.selectedToDate = toDate;
+		this.setActiveRange(null);
+		this.refreshData();
 	}
 
 	bindEvents() {
@@ -335,19 +364,12 @@ class RetailStoreDashboard {
 			self.onCompanyChange($(this).val());
 		});
 
-		this.$container.on(
-			"change",
-			"#rt-db-warehouse, #rt-db-from-date, #rt-db-to-date, #rt-db-include-pos",
-			function () {
-				self.refreshData();
-			}
-		);
+		this.$container.on("change", "#rt-db-warehouse, #rt-db-include-pos", function () {
+			self.refreshData();
+		});
 
 		this.$container.on("click", ".rt-db-quick-btn", function () {
-			const $btn = $(this);
-			self.$container.find(".rt-db-quick-btn").removeClass("active");
-			$btn.addClass("active");
-			self.applyQuickRange($btn.data("range"));
+			self.applyQuickRange($(this).data("range"));
 		});
 
 		this.$container.on("click", "#rt-db-pnl-toggle .rt-db-seg-btn", function () {
@@ -457,7 +479,7 @@ class RetailStoreDashboard {
 	}
 
 	async init() {
-		console.info("Store Dashboard build 20261113_01");
+		console.info("Store Dashboard build 20261113_02");
 		try {
 			await this.ensureECharts();
 			const res = await frappe.call({
@@ -492,8 +514,8 @@ class RetailStoreDashboard {
 		});
 
 		this.populateWarehouses(defaults.warehouses || []);
-		this.$container.find("#rt-db-from-date").val(defaults.default_from_date || frappe.datetime.add_days(frappe.datetime.get_today(), -29));
-		this.$container.find("#rt-db-to-date").val(defaults.default_to_date || frappe.datetime.get_today());
+		const toDate = defaults.default_to_date || frappe.datetime.get_today();
+		this.setDateRange(this.shiftDate(toDate, -29), toDate, "30d");
 	}
 
 	populateWarehouses(warehouses) {
@@ -529,37 +551,61 @@ class RetailStoreDashboard {
 		let fromDate = today;
 		let toDate = today;
 
-		if (rangeKey === "today") {
-			fromDate = today;
-			toDate = today;
-		} else if (rangeKey === "7d") {
-			fromDate = frappe.datetime.add_days(today, -6);
-			toDate = today;
+		if (rangeKey === "7d") {
+			fromDate = this.shiftDate(today, -6);
 		} else if (rangeKey === "30d") {
-			fromDate = frappe.datetime.add_days(today, -29);
-			toDate = today;
+			fromDate = this.shiftDate(today, -29);
 		} else if (rangeKey === "this_month") {
-			fromDate = frappe.datetime.month_start(today);
-			toDate = today;
+			fromDate = this.monthStart(today);
 		} else if (rangeKey === "last_month") {
-			const firstThisMonth = frappe.datetime.month_start(today);
-			toDate = frappe.datetime.add_days(firstThisMonth, -1);
-			fromDate = frappe.datetime.month_start(toDate);
+			toDate = this.shiftDate(this.monthStart(today), -1);
+			fromDate = this.monthStart(toDate);
 		} else if (rangeKey === "ytd") {
-			fromDate = frappe.datetime.year_start(today);
-			toDate = today;
+			fromDate = `${today.slice(0, 4)}-01-01`;
 		}
 
-		this.$container.find("#rt-db-from-date").val(fromDate);
-		this.$container.find("#rt-db-to-date").val(toDate);
+		this.setDateRange(fromDate, toDate, rangeKey);
 		this.refreshData();
 	}
 
+	shiftDate(isoDate, days) {
+		const [year, month, day] = isoDate.split("-").map(Number);
+		const date = new Date(Date.UTC(year, month - 1, day));
+		date.setUTCDate(date.getUTCDate() + days);
+		return date.toISOString().slice(0, 10);
+	}
+
+	monthStart(isoDate) {
+		return `${isoDate.slice(0, 7)}-01`;
+	}
+
+	setDateRange(fromDate, toDate, rangeKey) {
+		this.selectedFromDate = fromDate;
+		this.selectedToDate = toDate;
+		this.settingDateRange = true;
+		try {
+			this.fromDateControl.set_input(fromDate);
+			this.toDateControl.set_input(toDate);
+		} finally {
+			this.settingDateRange = false;
+		}
+		this.setActiveRange(rangeKey);
+	}
+
+	setActiveRange(rangeKey) {
+		this.activeRangeKey = rangeKey;
+		this.$container.find(".rt-db-quick-btn").removeClass("active");
+		if (rangeKey) {
+			this.$container.find(`.rt-db-quick-btn[data-range="${rangeKey}"]`).addClass("active");
+		}
+	}
+
 	async refreshData() {
+		const requestId = ++this.refreshRequestId;
 		const company = this.$container.find("#rt-db-company").val();
 		const warehouse = this.$container.find("#rt-db-warehouse").val();
-		const from_date = this.$container.find("#rt-db-from-date").val();
-		const to_date = this.$container.find("#rt-db-to-date").val();
+		const from_date = this.fromDateControl.get_value();
+		const to_date = this.toDateControl.get_value();
 		const include_pending_pos = this.$container.find("#rt-db-include-pos").is(":checked") ? 1 : 0;
 
 		try {
@@ -570,13 +616,18 @@ class RetailStoreDashboard {
 					warehouse,
 					from_date,
 					to_date,
+					range_key: this.activeRangeKey,
 					include_pending_pos,
 				},
 				freeze: false,
 			});
 
+			if (requestId !== this.refreshRequestId) return;
 			const data = (res && res.message) || null;
 			if (!data) return;
+			if (data.filters && (data.filters.from_date !== from_date || data.filters.to_date !== to_date)) {
+				this.setDateRange(data.filters.from_date, data.filters.to_date, null);
+			}
 
 			this.payload = data;
 			this.currency = (data.filters && data.filters.currency) || this.currency;
@@ -584,7 +635,9 @@ class RetailStoreDashboard {
 
 			this.renderAll(data);
 		} catch (e) {
-			console.error("Error cargando datos del dashboard:", e);
+			if (requestId === this.refreshRequestId) {
+				console.error("Error cargando datos del dashboard:", e);
+			}
 		}
 	}
 
@@ -628,6 +681,12 @@ class RetailStoreDashboard {
 		return `${sign}${this.currencySymbol}${abs.toFixed(0)}`;
 	}
 
+	formatDate(isoDate) {
+		return /^\d{4}-\d{2}-\d{2}$/.test(isoDate || "")
+			? frappe.datetime.str_to_user(isoDate)
+			: (isoDate || "");
+	}
+
 	deltaBadgeHtml(pct) {
 		const val = Number(pct || 0);
 		if (Math.abs(val) < 0.05) {
@@ -651,14 +710,15 @@ class RetailStoreDashboard {
 
 	renderPeriodNote(filters) {
 		if (!filters) return;
+		const fromDate = frappe.utils.escape_html(this.formatDate(filters.from_date));
+		const toDate = frappe.utils.escape_html(this.formatDate(filters.to_date));
+		const prevFromDate = frappe.utils.escape_html(this.formatDate(filters.prev_from_date));
+		const prevToDate = frappe.utils.escape_html(this.formatDate(filters.prev_to_date));
 		this.$container
 			.find("#rt-db-period-note")
 			.html(
-				`${__("Período analizado")}: <strong>${filters.from_date}</strong> ${__("al")} <strong>${
-					filters.to_date
-				}</strong> (${filters.period_days} ${__("días")}) · ${__("Comparado contra")}: ${
-					filters.prev_from_date
-				} ${__("al")} ${filters.prev_to_date}`
+				`${__("Período analizado")}: <strong>${fromDate}</strong> ${__("al")} <strong>${toDate}</strong> ` +
+				`(${filters.period_days} ${__("días")}) · ${__("Comparado contra")}: ${prevFromDate} ${__("al")} ${prevToDate}`
 			);
 	}
 
@@ -1234,7 +1294,7 @@ class RetailStoreDashboard {
 			xAxis: [
 				{
 					type: "category",
-					data: daily.dates || [],
+					data: (daily.dates || []).map((date) => this.formatDate(date)),
 					axisPointer: { type: "shadow" },
 					axisLabel: {
 						hideOverlap: true,
@@ -1641,7 +1701,7 @@ class RetailStoreDashboard {
 				formatter: (p) => {
 					const d = p.data || {};
 					const day = (p.value && p.value[0]) || "";
-					return `<strong>${day}</strong><br/>${__("Ventas")}: <strong>${self.fmtMoney(
+					return `<strong>${self.formatDate(day)}</strong><br/>${__("Ventas")}: <strong>${self.fmtMoney(
 						d.rawSales || 0
 					)}</strong><br/>${__("Tickets")}: <strong>${d.tickets || 0}</strong>`;
 				},
@@ -2160,9 +2220,7 @@ class RetailStoreDashboard {
 						r.days_without_sale === null || r.days_without_sale === undefined
 							? __("Nunca vendido")
 							: `${r.days_without_sale} ${__("días")}`;
-					const lastSaleFormatted = frappe.utils
-						.escape_html(r.last_sale_date || "")
-						.replace(/-/g, "\u2011");
+					const lastSaleFormatted = frappe.utils.escape_html(this.formatDate(r.last_sale_date));
 					return `
 						<tr>
 							<td>
