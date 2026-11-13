@@ -283,6 +283,16 @@ class RetailStoreDashboard {
 					<h3 class="rt-db-section-title">${__("5. Tabla Ejecutiva de Indicadores Financieros y Operativos")}</h3>
 					<span class="rt-db-section-subtitle">${__("Resumen integral de ratios de rentabilidad, liquidez, solvencia y rotación de tienda")}</span>
 				</div>
+				<div class="rt-db-card" style="margin-bottom: 18px;">
+					<div class="rt-db-card-header">
+						<div>
+							<h4 class="rt-db-card-title">${__("Análisis DuPont (Descomposición del ROE)")}</h4>
+							<div class="rt-db-card-subtitle" id="rt-db-dupont-subtitle">${__("ROE = Margen Neto × Rotación de Activos × Apalancamiento Financiero")}</div>
+						</div>
+					</div>
+					<div id="rt-chart-dupont" class="rt-db-chart-box" style="height: 430px;"></div>
+					<div class="rt-db-fin-summary" id="rt-db-dupont-footer"></div>
+				</div>
 				<div class="rt-db-card">
 					<div class="rt-db-card-header">
 						<div>
@@ -423,6 +433,10 @@ class RetailStoreDashboard {
 				chart.resize();
 			}
 		});
+		// DuPont uses pixel-positioned nodes, so it must be re-laid out on resize
+		if (this.payload && this.payload.financials && this.charts["rt-chart-dupont"]) {
+			this.renderDupontChart(this.payload.financials);
+		}
 	}
 
 	async ensureECharts() {
@@ -447,7 +461,7 @@ class RetailStoreDashboard {
 	}
 
 	async init() {
-		console.info("Store Dashboard build 20261112_18");
+		console.info("Store Dashboard build 20261112_19");
 		try {
 			await this.ensureECharts();
 			const res = await frappe.call({
@@ -592,6 +606,7 @@ class RetailStoreDashboard {
 		this.renderHeatmapChart(data.charts.hourly_heatmap);
 		this.renderStockVsSalesChart(data.charts.by_category);
 		this.renderAlertTables(data.alerts);
+		this.renderDupontChart(data.financials);
 		this.renderIndicatorsTable(data.indicators_table);
 	}
 
@@ -1675,6 +1690,137 @@ class RetailStoreDashboard {
 				},
 			],
 		}, true);
+	}
+
+	/**
+	 * 9. DuPont Analysis: ROE = Net Margin x Asset Turnover x Equity Multiplier
+	 */
+	renderDupontChart(financials) {
+		const chart = this.getOrCreateChart("rt-chart-dupont");
+		if (!chart || !financials) return;
+		const self = this;
+		const bs = financials.balance_sheet || {};
+		const pnl = financials.income_statement || {};
+
+		const sales = Number(pnl.total_income || 0);
+		const netProfit = Number(pnl.net_profit || 0);
+		const assets = Number(bs.total_assets || 0);
+		const equity = Number(bs.total_equity || 0);
+
+		const margin = sales ? netProfit / sales : 0;
+		const turnover = assets ? sales / assets : 0;
+		const multiplier = equity ? assets / equity : 0;
+		const roe = margin * turnover * multiplier;
+
+		const pct = (v) => `${(v * 100).toFixed(1)}%`;
+		const times = (v) => `${v.toFixed(2)}x`;
+
+		const W = chart.getWidth() || 600;
+		const H = chart.getHeight() || 430;
+		const isMobile = W < 560;
+		const nodeW = Math.max(96, Math.min(190, W * (isMobile ? 0.29 : 0.24)));
+		const pad = 8;
+		const rootX = pad + nodeW / 2;
+		const leafX = W - pad - nodeW / 2;
+		const midX = (rootX + leafX) / 2;
+		const rowH = H / 6;
+		const leafY = (i) => rowH * (i + 0.5);
+		const midY = (j) => rowH * (2 * j + 1);
+
+		const rich = {
+			t: { fontSize: isMobile ? 10 : 11.5, fontWeight: 600, color: "#475569", lineHeight: isMobile ? 14 : 16 },
+			v: { fontSize: isMobile ? 13 : 16, fontWeight: 800, color: "#0f172a", lineHeight: isMobile ? 18 : 22 },
+			f: { fontSize: isMobile ? 9 : 10.5, color: "#64748b", lineHeight: isMobile ? 12 : 14 },
+		};
+		const mk = (id, x, y, h, title, value, formula, color, soft) => ({
+			id,
+			name: id,
+			x,
+			y,
+			fixed: true,
+			symbol: "roundRect",
+			symbolSize: [nodeW, h],
+			itemStyle: { color: soft, borderColor: color, borderWidth: 2, borderRadius: 8 },
+			label: {
+				show: true,
+				position: "inside",
+				align: "center",
+				verticalAlign: "middle",
+				rich,
+				formatter: `{t|${title}}\n{v|${value}}${formula ? `\n{f|${formula}}` : ""}`,
+			},
+		});
+
+		const roeColor = roe >= 0 ? "#059669" : "#dc2626";
+		const roeSoft = roe >= 0 ? "#ecfdf5" : "#fef2f2";
+		const hRoot = isMobile ? 76 : 84;
+		const hMid = isMobile ? 70 : 78;
+		const hLeaf = isMobile ? 46 : 52;
+
+		const nodes = [
+			mk("roe", rootX, H / 2, hRoot, __("ROE del Período"), pct(roe), __("Rentab. sobre Patrimonio"), roeColor, roeSoft),
+			mk("margin", midX, midY(0), hMid, __("Margen Neto"), pct(margin), `${__("Util. Neta")} ÷ ${__("Ventas")}`, "#2563eb", "#eff6ff"),
+			mk("turnover", midX, midY(1), hMid, __("Rotación de Activos"), times(turnover), `${__("Ventas")} ÷ ${__("Activo")}`, "#8b5cf6", "#f5f3ff"),
+			mk("leverage", midX, midY(2), hMid, __("Apalancamiento"), times(multiplier), `${__("Activo")} ÷ ${__("Patrimonio")}`, "#f59e0b", "#fffbeb"),
+			mk("l_profit", leafX, leafY(0), hLeaf, __("Utilidad Neta"), self.fmtCompact(netProfit), "", "#2563eb", "#ffffff"),
+			mk("l_sales1", leafX, leafY(1), hLeaf, __("Ventas"), self.fmtCompact(sales), "", "#2563eb", "#ffffff"),
+			mk("l_sales2", leafX, leafY(2), hLeaf, __("Ventas"), self.fmtCompact(sales), "", "#8b5cf6", "#ffffff"),
+			mk("l_assets1", leafX, leafY(3), hLeaf, __("Activo Total"), self.fmtCompact(assets), "", "#8b5cf6", "#ffffff"),
+			mk("l_assets2", leafX, leafY(4), hLeaf, __("Activo Total"), self.fmtCompact(assets), "", "#f59e0b", "#ffffff"),
+			mk("l_equity", leafX, leafY(5), hLeaf, __("Patrimonio"), self.fmtCompact(equity), "", "#f59e0b", "#ffffff"),
+		];
+
+		const edge = (source, target, color, label) => ({
+			source,
+			target,
+			lineStyle: { color, width: 2, curveness: 0 },
+			label: label
+				? { show: true, formatter: label, fontSize: 14, fontWeight: 800, color, backgroundColor: "#ffffff", padding: [0, 3] }
+				: { show: false },
+		});
+		const links = [
+			edge("margin", "roe", "#2563eb", "×"),
+			edge("turnover", "roe", "#8b5cf6", "×"),
+			edge("leverage", "roe", "#f59e0b", "×"),
+			edge("l_profit", "margin", "#2563eb", "÷"),
+			edge("l_sales1", "margin", "#2563eb", ""),
+			edge("l_sales2", "turnover", "#8b5cf6", "÷"),
+			edge("l_assets1", "turnover", "#8b5cf6", ""),
+			edge("l_assets2", "leverage", "#f59e0b", "÷"),
+			edge("l_equity", "leverage", "#f59e0b", ""),
+		];
+
+		chart.setOption(
+			{
+				animation: false,
+				tooltip: {
+					confine: true,
+					formatter: (p) => (p.dataType === "node" ? `<strong>${frappe.utils.escape_html(String(p.name))}</strong>` : ""),
+				},
+				series: [
+					{
+						type: "graph",
+						layout: "none",
+						roam: false,
+						silent: false,
+						edgeSymbol: ["none", "arrow"],
+						edgeSymbolSize: [0, 7],
+						data: nodes,
+						links,
+					},
+				],
+			},
+			true
+		);
+
+		this.$container
+			.find("#rt-db-dupont-footer")
+			.html(
+				`<span><strong>${__("Margen Neto")}:</strong> ${pct(margin)}</span>
+				<span><strong>${__("Rotación de Activos")}:</strong> ${times(turnover)}</span>
+				<span><strong>${__("Apalancamiento")}:</strong> ${times(multiplier)}</span>
+				<span><strong>ROE:</strong> ${pct(roe)} (${__("del período, sin anualizar")})</span>`
+			);
 	}
 
 	/**
