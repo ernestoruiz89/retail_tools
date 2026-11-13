@@ -47,6 +47,8 @@ fixtures = [
 app_include_css = "/assets/retail_tools/css/retail_tools.min.css"
 app_include_js = "/assets/retail_tools/js/retail_tools.min.js"
 
+doctype_js = {"Purchase Invoice": "public/js/purchase_invoice.js"}
+
 # include js, css files in header of web template
 # web_include_css = "/assets/retail_tools/css/retail_tools.css"
 # web_include_js = "/assets/retail_tools/js/retail_tools.js"
