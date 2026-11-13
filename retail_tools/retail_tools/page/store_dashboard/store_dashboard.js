@@ -290,7 +290,7 @@ class RetailStoreDashboard {
 							<div class="rt-db-card-subtitle" id="rt-db-dupont-subtitle">${__("ROE = Margen Neto × Rotación de Activos × Apalancamiento Financiero")}</div>
 						</div>
 					</div>
-					<div id="rt-chart-dupont" class="rt-db-chart-box" style="height: 380px; max-width: 980px; margin: 0 auto;"></div>
+					<div id="rt-chart-dupont" class="rt-db-dupont-box"></div>
 					<div class="rt-db-fin-summary" id="rt-db-dupont-footer"></div>
 				</div>
 				<div class="rt-db-card">
@@ -433,10 +433,6 @@ class RetailStoreDashboard {
 				chart.resize();
 			}
 		});
-		// DuPont uses pixel-positioned nodes, so it must be re-laid out on resize
-		if (this.payload && this.payload.financials && this.charts["rt-chart-dupont"]) {
-			this.renderDupontChart(this.payload.financials);
-		}
 	}
 
 	async ensureECharts() {
@@ -461,7 +457,7 @@ class RetailStoreDashboard {
 	}
 
 	async init() {
-		console.info("Store Dashboard build 20261112_19");
+		console.info("Store Dashboard build 20261112_21");
 		try {
 			await this.ensureECharts();
 			const res = await frappe.call({
@@ -1696,8 +1692,15 @@ class RetailStoreDashboard {
 	 * 9. DuPont Analysis: ROE = Net Margin x Asset Turnover x Equity Multiplier
 	 */
 	renderDupontChart(financials) {
-		const chart = this.getOrCreateChart("rt-chart-dupont");
-		if (!chart || !financials) return;
+		const $box = this.$container.find("#rt-chart-dupont");
+		if (!$box.length || !financials) return;
+		if (this.charts["rt-chart-dupont"]) {
+			try {
+				this.charts["rt-chart-dupont"].dispose();
+			} catch (e) {}
+			delete this.charts["rt-chart-dupont"];
+		}
+
 		const self = this;
 		const bs = financials.balance_sheet || {};
 		const pnl = financials.income_statement || {};
@@ -1715,110 +1718,125 @@ class RetailStoreDashboard {
 		const pct = (v) => `${(v * 100).toFixed(1)}%`;
 		const times = (v) => `${v.toFixed(2)}x`;
 
-		const W = chart.getWidth() || 600;
-		const H = chart.getHeight() || 380;
-		const isMobile = W < 560;
+		const isPositiveRoe = roe >= 0;
+		const rootBorder = isPositiveRoe ? "#10b981" : "#ef4444";
+		const rootBg = isPositiveRoe
+			? "linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%)"
+			: "linear-gradient(135deg, #fef2f2 0%, #fff1f2 100%)";
+		const rootColor = isPositiveRoe ? "#065f46" : "#991b1b";
 
-		// Dimensiones compactas de nodos con relación de aspecto equilibrada
-		const nodeW = Math.max(110, Math.min(185, Math.round(W * (isMobile ? 0.28 : 0.23))));
-		const availableWidth = W - (isMobile ? 24 : 60);
-		const startX = isMobile ? 12 : 30;
-		const colSpacing = (availableWidth - nodeW) / 2;
+		const html = `
+			<div class="rt-dupont-container">
+				<!-- Master ROE Node -->
+				<div class="rt-dupont-root-card" style="border-color:${rootBorder}; background:${rootBg};">
+					<div class="rt-dupont-root-tag" style="color:${rootColor};">${__("Rentabilidad sobre el Patrimonio (ROE)")}</div>
+					<div class="rt-dupont-root-val" style="color:${rootColor};">${pct(roe)}</div>
+					<div class="rt-dupont-root-sub" style="color:${rootColor};">
+						${__("Utilidad Neta")} (<strong>${self.fmtCompact(netProfit)}</strong>) ÷ ${__("Patrimonio")} (<strong>${self.fmtCompact(equity)}</strong>)
+					</div>
+				</div>
 
-		const rootX = startX + nodeW / 2;
-		const midX = startX + colSpacing + nodeW / 2;
-		const leafX = startX + colSpacing * 2 + nodeW / 2;
+				<!-- Visual Tree SVG Connector -->
+				<svg class="rt-dupont-tree-svg" viewBox="0 0 1000 38" preserveAspectRatio="none">
+					<defs>
+						<marker id="dupont-arrow-blue" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+							<path d="M 0 0 L 10 5 L 0 10 z" fill="#2563eb" />
+						</marker>
+						<marker id="dupont-arrow-purple" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+							<path d="M 0 0 L 10 5 L 0 10 z" fill="#7c3aed" />
+						</marker>
+						<marker id="dupont-arrow-amber" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+							<path d="M 0 0 L 10 5 L 0 10 z" fill="#d97706" />
+						</marker>
+					</defs>
+					<line x1="500" y1="0" x2="500" y2="18" stroke="#cbd5e1" stroke-width="2" />
+					<line x1="166" y1="18" x2="834" y2="18" stroke="#cbd5e1" stroke-width="2" />
+					<line x1="166" y1="18" x2="166" y2="34" stroke="#2563eb" stroke-width="2" marker-end="url(#dupont-arrow-blue)" />
+					<line x1="500" y1="18" x2="500" y2="34" stroke="#7c3aed" stroke-width="2" marker-end="url(#dupont-arrow-purple)" />
+					<line x1="834" y1="18" x2="834" y2="34" stroke="#d97706" stroke-width="2" marker-end="url(#dupont-arrow-amber)" />
+				</svg>
 
-		const rowH = (H - 20) / 6;
-		const topPad = 10;
-		const leafY = (i) => topPad + rowH * (i + 0.5);
-		const midY = (j) => topPad + rowH * (2 * j + 1);
+				<!-- The 3 Pillars Decomposition -->
+				<div class="rt-dupont-pillars">
+					<!-- 1. Margen Neto -->
+					<div class="rt-dupont-pillar" style="--pillar-color: #2563eb; --pillar-soft: #eff6ff;">
+						<div class="rt-dupont-pillar-head">
+							<span class="rt-dupont-pillar-title">${__("Margen Neto")}</span>
+							<span class="rt-dupont-pillar-badge">${__("Rentabilidad")}</span>
+						</div>
+						<div class="rt-dupont-pillar-val">${pct(margin)}</div>
+						<div class="rt-dupont-formula-box">
+							<div class="rt-dupont-formula-row">
+								<span class="rt-dupont-formula-label">${__("Utilidad Neta")}</span>
+								<span class="rt-dupont-formula-num">${self.fmtMoney(netProfit)}</span>
+							</div>
+							<div class="rt-dupont-formula-divider"></div>
+							<div class="rt-dupont-formula-row">
+								<span class="rt-dupont-formula-label">${__("Ventas Netas")}</span>
+								<span class="rt-dupont-formula-num">${self.fmtMoney(sales)}</span>
+							</div>
+						</div>
+						<div class="rt-dupont-pillar-note">
+							${__("Eficiencia en precios, costos comerciales y gastos")}
+						</div>
+					</div>
 
-		const rich = {
-			t: { fontSize: isMobile ? 10 : 11, fontWeight: 600, color: "#475569", lineHeight: isMobile ? 14 : 16 },
-			v: { fontSize: isMobile ? 12.5 : 15, fontWeight: 800, color: "#0f172a", lineHeight: isMobile ? 17 : 20 },
-			f: { fontSize: isMobile ? 8.5 : 9.5, color: "#64748b", lineHeight: isMobile ? 11 : 13 },
-		};
-		const mk = (id, x, y, h, title, value, formula, color, soft) => ({
-			id,
-			name: id,
-			x,
-			y,
-			fixed: true,
-			symbol: "roundRect",
-			symbolSize: [nodeW, h],
-			itemStyle: { color: soft, borderColor: color, borderWidth: 1.5, borderRadius: 10 },
-			label: {
-				show: true,
-				position: "inside",
-				align: "center",
-				verticalAlign: "middle",
-				rich,
-				formatter: `{t|${title}}\n{v|${value}}${formula ? `\n{f|${formula}}` : ""}`,
-			},
-		});
+					<!-- Operator × -->
+					<div class="rt-dupont-op">×</div>
 
-		const roeColor = roe >= 0 ? "#059669" : "#dc2626";
-		const roeSoft = roe >= 0 ? "#ecfdf5" : "#fef2f2";
-		const hRoot = isMobile ? 70 : 76;
-		const hMid = isMobile ? 64 : 70;
-		const hLeaf = isMobile ? 42 : 46;
+					<!-- 2. Rotación de Activos -->
+					<div class="rt-dupont-pillar" style="--pillar-color: #7c3aed; --pillar-soft: #f5f3ff;">
+						<div class="rt-dupont-pillar-head">
+							<span class="rt-dupont-pillar-title">${__("Rotación de Activos")}</span>
+							<span class="rt-dupont-pillar-badge">${__("Eficiencia")}</span>
+						</div>
+						<div class="rt-dupont-pillar-val">${times(turnover)}</div>
+						<div class="rt-dupont-formula-box">
+							<div class="rt-dupont-formula-row">
+								<span class="rt-dupont-formula-label">${__("Ventas Netas")}</span>
+								<span class="rt-dupont-formula-num">${self.fmtMoney(sales)}</span>
+							</div>
+							<div class="rt-dupont-formula-divider"></div>
+							<div class="rt-dupont-formula-row">
+								<span class="rt-dupont-formula-label">${__("Activo Total")}</span>
+								<span class="rt-dupont-formula-num">${self.fmtMoney(assets)}</span>
+							</div>
+						</div>
+						<div class="rt-dupont-pillar-note">
+							${__("Ventas generadas por cada córdoba invertido en tienda")}
+						</div>
+					</div>
 
-		const nodes = [
-			mk("roe", rootX, topPad + (H - 20) / 2, hRoot, __("ROE del Período"), pct(roe), __("Rentab. sobre Patrimonio"), roeColor, roeSoft),
-			mk("margin", midX, midY(0), hMid, __("Margen Neto"), pct(margin), `${__("Util. Neta")} ÷ ${__("Ventas")}`, "#2563eb", "#eff6ff"),
-			mk("turnover", midX, midY(1), hMid, __("Rotación de Activos"), times(turnover), `${__("Ventas")} ÷ ${__("Activo")}`, "#8b5cf6", "#f5f3ff"),
-			mk("leverage", midX, midY(2), hMid, __("Apalancamiento"), times(multiplier), `${__("Activo")} ÷ ${__("Patrimonio")}`, "#f59e0b", "#fffbeb"),
-			mk("l_profit", leafX, leafY(0), hLeaf, __("Utilidad Neta"), self.fmtCompact(netProfit), "", "#2563eb", "#ffffff"),
-			mk("l_sales1", leafX, leafY(1), hLeaf, __("Ventas"), self.fmtCompact(sales), "", "#2563eb", "#ffffff"),
-			mk("l_sales2", leafX, leafY(2), hLeaf, __("Ventas"), self.fmtCompact(sales), "", "#8b5cf6", "#ffffff"),
-			mk("l_assets1", leafX, leafY(3), hLeaf, __("Activo Total"), self.fmtCompact(assets), "", "#8b5cf6", "#ffffff"),
-			mk("l_assets2", leafX, leafY(4), hLeaf, __("Activo Total"), self.fmtCompact(assets), "", "#f59e0b", "#ffffff"),
-			mk("l_equity", leafX, leafY(5), hLeaf, __("Patrimonio"), self.fmtCompact(equity), "", "#f59e0b", "#ffffff"),
-		];
+					<!-- Operator × -->
+					<div class="rt-dupont-op">×</div>
 
-		const edge = (source, target, color, label) => ({
-			source,
-			target,
-			lineStyle: { color, width: 1.8, curveness: 0.08 },
-			label: label
-				? { show: true, formatter: label, fontSize: 13, fontWeight: 700, color, backgroundColor: "#ffffff", padding: [2, 4], borderRadius: 4 }
-				: { show: false },
-		});
-		const links = [
-			edge("margin", "roe", "#2563eb", "×"),
-			edge("turnover", "roe", "#8b5cf6", "×"),
-			edge("leverage", "roe", "#f59e0b", "×"),
-			edge("l_profit", "margin", "#2563eb", "÷"),
-			edge("l_sales1", "margin", "#2563eb", ""),
-			edge("l_sales2", "turnover", "#8b5cf6", "÷"),
-			edge("l_assets1", "turnover", "#8b5cf6", ""),
-			edge("l_assets2", "leverage", "#f59e0b", "÷"),
-			edge("l_equity", "leverage", "#f59e0b", ""),
-		];
+					<!-- 3. Apalancamiento -->
+					<div class="rt-dupont-pillar" style="--pillar-color: #d97706; --pillar-soft: #fffbeb;">
+						<div class="rt-dupont-pillar-head">
+							<span class="rt-dupont-pillar-title">${__("Apalancamiento")}</span>
+							<span class="rt-dupont-pillar-badge">${__("Solvencia")}</span>
+						</div>
+						<div class="rt-dupont-pillar-val">${times(multiplier)}</div>
+						<div class="rt-dupont-formula-box">
+							<div class="rt-dupont-formula-row">
+								<span class="rt-dupont-formula-label">${__("Activo Total")}</span>
+								<span class="rt-dupont-formula-num">${self.fmtMoney(assets)}</span>
+							</div>
+							<div class="rt-dupont-formula-divider"></div>
+							<div class="rt-dupont-formula-row">
+								<span class="rt-dupont-formula-label">${__("Patrimonio Neto")}</span>
+								<span class="rt-dupont-formula-num">${self.fmtMoney(equity)}</span>
+							</div>
+						</div>
+						<div class="rt-dupont-pillar-note">
+							${__("Proporción de activos respaldados con patrimonio propio")}
+						</div>
+					</div>
+				</div>
+			</div>
+		`;
 
-		chart.setOption(
-			{
-				animation: false,
-				tooltip: {
-					confine: true,
-					formatter: (p) => (p.dataType === "node" ? `<strong>${frappe.utils.escape_html(String(p.name))}</strong>` : ""),
-				},
-				series: [
-					{
-						type: "graph",
-						layout: "none",
-						roam: false,
-						silent: false,
-						edgeSymbol: ["none", "arrow"],
-						edgeSymbolSize: [0, 7],
-						data: nodes,
-						links,
-					},
-				],
-			},
-			true
-		);
+		$box.html(html);
 
 		this.$container
 			.find("#rt-db-dupont-footer")
