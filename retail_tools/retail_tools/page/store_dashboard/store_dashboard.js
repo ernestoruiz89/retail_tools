@@ -1686,8 +1686,21 @@ class RetailStoreDashboard {
 		const isMobile = this.isMobileViewport();
 
 		const isTickets = this.heatmapMode === "tickets";
-		const rawData = heatmap.data || [];
 		const ticketsMap = heatmap.tickets_by_cell || {};
+
+		// Build the full Day x Hour grid so cells without sales also get the soft "zero" color
+		const hoursCount = (heatmap.hours || []).length || 24;
+		const daysCount = (heatmap.days || []).length || 7;
+		const cellMap = {};
+		(heatmap.data || []).forEach((r) => {
+			cellMap[`${Number(r[0] || 0)}_${Number(r[1] || 0)}`] = Number(r[2] || 0);
+		});
+		const rawData = [];
+		for (let d = 0; d < daysCount; d++) {
+			for (let h = 0; h < hoursCount; h++) {
+				rawData.push([h, d, cellMap[`${h}_${d}`] || 0]);
+			}
+		}
 
 		const positiveValues = [];
 		const seriesData = rawData.map((r) => {
