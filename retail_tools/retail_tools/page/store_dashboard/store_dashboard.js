@@ -660,7 +660,8 @@ class RetailStoreDashboard {
 		const images = {};
 		for (const key of keys) {
 			const node = document.createElement("div");
-			node.style.cssText = "position:fixed;left:-10000px;top:0;width:960px;height:420px;pointer-events:none";
+			const width = key === "rt-chart-stock-vs-sales" ? 1060 : 900;
+			node.style.cssText = `position:fixed;left:-10000px;top:0;width:${width}px;height:700px;pointer-events:none`;
 			document.body.appendChild(node);
 			let chart;
 			try {

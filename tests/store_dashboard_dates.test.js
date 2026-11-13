@@ -183,7 +183,8 @@ test("PDF chart snapshots use a fixed print size and finish animations", () => {
 	assert.deepEqual(Object.keys(snapshots), keys);
 	assert.equal(copies.length, 9);
 	assert.ok(copies.every((copy) => copy.disposed));
-	assert.ok(elements.every((node) => node.removed && node.style.cssText.includes("960px")));
+	assert.ok(elements.slice(0, -1).every((node) => node.removed && node.style.cssText.includes("width:900px;height:700px")));
+	assert.ok(elements.at(-1).removed && elements.at(-1).style.cssText.includes("width:1060px;height:700px"));
 });
 
 test("PDF export sends the visible period and downloads the returned file", async () => {

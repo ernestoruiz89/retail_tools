@@ -1574,13 +1574,56 @@ def _dashboard_pdf_context(data: dict, charts: dict[str, str], chart_modes: dict
 	calendar_mode = chart_modes.get("calendar") if chart_modes.get("calendar") in ("sales", "tickets") else "sales"
 	heatmap_mode = chart_modes.get("heatmap") if chart_modes.get("heatmap") in ("sales", "tickets") else "sales"
 
+	def delta_badge(value):
+		percent = flt(value)
+		if abs(percent) < 0.05:
+			return {"text": "0.0%", "tone": "neutral"}
+		return {
+			"text": f"{'▲' if percent > 0 else '▼'} {abs(percent):.1f}%",
+			"tone": "up" if percent > 0 else "down",
+		}
+
+	def metric(label, value, color=None):
+		return {"label": label, "value": value, "color": color}
+
+	def card(label, value, accent, soft, icon, badge, left, right):
+		return {
+			"label": label, "value": value, "accent": accent, "soft": soft,
+			"icon": icon, "badge": badge, "metrics": (left, right),
+		}
+
+	potential_profit = max(0, flt(kpis.get("potential_profit") or (flt(kpis["stock_retail_value"]) - flt(kpis["stock_cost_value"]))))
 	kpi_cards = [
-		{"label": "Ventas netas", "value": money(kpis["net_sales"]), "detail": f"Anterior: {money(kpis['prev_net_sales'])}"},
-		{"label": "Utilidad bruta comercial", "value": money(kpis["gross_profit"]), "detail": f"Margen: {flt(kpis['gross_margin_pct']):.1f}%"},
-		{"label": "Utilidad neta contable", "value": money(kpis["net_profit"]), "detail": f"Margen: {flt(kpis['net_margin_pct']):.1f}%"},
-		{"label": "Ticket promedio", "value": money(kpis["avg_ticket"]), "detail": f"{kpis['ticket_count']:,} transacciones"},
-		{"label": "Capital en inventario", "value": money(kpis["stock_cost_value"]), "detail": f"{kpis['sku_with_stock']:,} artículos con stock"},
-		{"label": "Efectivo y bancos", "value": money(kpis["cash_and_bank"]), "detail": f"CxC: {money(kpis['accounts_receivable'])}"},
+		card("Ventas netas", money(kpis["net_sales"]), "#2563eb", "#eff6ff",
+			"M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
+			delta_badge(kpis["net_sales_delta_pct"]),
+			metric("Período anterior", money(kpis["prev_net_sales"])),
+			metric("Transacciones", f"{kpis['ticket_count']:,} tickets")),
+		card("Utilidad bruta comercial", money(kpis["gross_profit"]), "#10b981", "#ecfdf5",
+			"M13 7h8m0 0v8m0-8l-8 8-4-4-6 6",
+			delta_badge(kpis["gross_profit_delta_pct"]),
+			metric("Margen bruto actual", f"{flt(kpis['gross_margin_pct']):.1f}%", "#059669"),
+			metric("Margen anterior", f"{flt(kpis['prev_gross_margin_pct']):.1f}%")),
+		card("Utilidad neta contable", money(kpis["net_profit"]), "#0d9488", "#f0fdfa",
+			"M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z",
+			delta_badge(kpis["net_profit_delta_pct"]),
+			metric("Margen neto", f"{flt(kpis['net_margin_pct']):.1f}%", "#0d9488"),
+			metric("Gastos operativos", money(kpis["operating_expenses"]))),
+		card("Ticket promedio", money(kpis["avg_ticket"]), "#8b5cf6", "#f5f3ff",
+			"M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z",
+			delta_badge(kpis["avg_ticket_delta_pct"]),
+			metric("Unid. por ticket (UPT)", f"{flt(kpis['upt']):.2f} u/ticket"),
+			metric("Unidades vendidas", f"{flt(kpis['total_units']):,.2f}".rstrip("0").rstrip(".") + " unid.")),
+		card("Capital en inventario", money(kpis["stock_cost_value"]), "#f59e0b", "#fffbeb",
+			"M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4",
+			{"text": f"{kpis['sku_with_stock']:,} SKUs", "tone": "neutral"},
+			metric("Venta potencial", money(kpis["stock_retail_value"])),
+			metric("Ganancia potencial", money(potential_profit), "#d97706")),
+		card("Efectivo y bancos", money(kpis["cash_and_bank"]), "#0284c7", "#f0f9ff",
+			"M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z",
+			{"text": "Al corte", "tone": "neutral"},
+			metric("Por cobrar (CxC)", money(kpis["accounts_receivable"])),
+			metric("Por pagar (CxP)", money(kpis["accounts_payable"]), "#dc2626")),
 	]
 	balance_rows = [
 		("Efectivo y bancos", money(bs["cash_and_bank"])),

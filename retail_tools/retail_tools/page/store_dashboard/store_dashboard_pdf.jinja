@@ -19,10 +19,25 @@
     .period { background: #eff5ff; border-left: 3px solid #2563eb; padding: 3mm 4mm; margin-bottom: 5mm; font-size: 10px; line-height: 1.5; }
     .period strong { color: #17305a; }
     .kpi-grid { width: 100%; border-spacing: 3mm; margin: -3mm -3mm 2mm; table-layout: fixed; }
-    .kpi-grid td { width: 33.333%; background: #f8faff; border: 1px solid #e1e8f3; border-top: 2px solid #3b82f6; padding: 3mm; vertical-align: top; height: 23mm; }
-    .kpi-label { color: #64748b; font-size: 8px; text-transform: uppercase; letter-spacing: .5px; font-weight: bold; }
-    .kpi-value { color: #102a53; font-size: 17px; font-weight: bold; margin: 2mm 0; white-space: nowrap; }
-    .kpi-detail { color: #64748b; font-size: 9px; }
+    .kpi-grid > tbody > tr > td { width: 50%; padding: 0; vertical-align: top; }
+    .kpi-card { height: 32mm; padding: 2.5mm 3.5mm; background: #fff; border: 1px solid #e2e8f0; border-top: 3px solid #2563eb; border-radius: 3mm; page-break-inside: avoid; }
+    .kpi-head, .kpi-footer { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    .kpi-head td { vertical-align: middle; padding: 0; }
+    .kpi-head .icon-cell { width: 8mm; }
+    .kpi-head .badge-cell { width: 25mm; text-align: right; }
+    .kpi-icon { display: block; width: 7mm; height: 7mm; border-radius: 2mm; text-align: center; line-height: 7mm; }
+    .kpi-icon svg { width: 4mm; height: 4mm; vertical-align: middle; fill: none; stroke-width: 2; }
+    .kpi-title { color: #475569; font-size: 9px; font-weight: bold; text-transform: uppercase; letter-spacing: .2px; white-space: nowrap; }
+    .kpi-badge { display: inline-block; padding: 1mm 2mm; border-radius: 8mm; font-size: 8px; font-weight: bold; white-space: nowrap; }
+    .kpi-badge.up { background: #dcfce7; color: #15803d; }
+    .kpi-badge.down { background: #fee2e2; color: #b91c1c; }
+    .kpi-badge.neutral { background: #f1f5f9; color: #475569; }
+    .kpi-value { color: #0f172a; font-size: 19px; font-weight: bold; margin: 1.5mm 0 2mm; white-space: nowrap; }
+    .kpi-footer { border-top: 1px solid #e2e8f0; }
+    .kpi-footer td { width: 50%; padding: 1.5mm 0 0; vertical-align: top; }
+    .kpi-footer td:last-child { text-align: right; }
+    .kpi-metric-label { display: block; color: #94a3b8; font-size: 7.5px; text-transform: uppercase; font-weight: bold; white-space: nowrap; }
+    .kpi-metric-value { display: block; color: #334155; font-size: 9.5px; font-weight: bold; margin-top: .7mm; white-space: nowrap; }
     .columns { font-size: 0; width: 100%; }
     .columns > .col { display: inline-block; width: 49%; vertical-align: top; font-size: 10px; }
     .columns > .col + .col { margin-left: 2%; }
@@ -35,11 +50,11 @@
     .data-table .strong td { font-weight: bold; background: #eff5ff; }
     .chart-grid { width: 100%; table-layout: fixed; border-spacing: 4mm; margin: -4mm; }
     .chart-grid td { width: 50%; vertical-align: top; }
-    .chart-card { height: 74mm; border: 1px solid #dfe7f2; padding: 2.5mm; page-break-inside: avoid; }
-    .chart-title { font-size: 10px; font-weight: bold; color: #17305a; margin-bottom: 1.5mm; }
-    .chart-card img { display: block; width: auto; max-width: 100%; height: 56mm; margin: 0 auto; }
-    .wide-chart .chart-card { height: 108mm; }
-    .wide-chart .chart-card img { height: 97mm; }
+    .chart-card { height: 100mm; border: 1px solid #e2e8f0; border-radius: 3mm; padding: 2.5mm; page-break-inside: avoid; }
+    .chart-title { font-size: 11px; font-weight: bold; color: #17305a; margin-bottom: 1.5mm; }
+    .chart-card img { display: block; width: auto; max-width: 100%; height: 88mm; margin: 0 auto; }
+    .wide-chart .chart-card { height: 190mm; }
+    .wide-chart .chart-card img { height: 170mm; }
     .chart-single { width: 50%; margin-bottom: 5mm; }
     .section-subtitle { font-size: 9px; color: #65758c; margin: 0 0 3mm; }
     .alerts-table { font-size: 9px; }
@@ -73,8 +88,16 @@
     <div class="period"><strong>Período analizado:</strong> {{ from_date | e }} al {{ to_date | e }} ({{ period_days }} días)<br><strong>Comparado contra:</strong> {{ prev_from_date | e }} al {{ prev_to_date | e }}</div>
     <h2>Resumen ejecutivo</h2>
     <table class="kpi-grid">
-      {% for row in (kpi_cards[:3], kpi_cards[3:]) %}
-      <tr>{% for card in row %}<td><div class="kpi-label">{{ card.label | e }}</div><div class="kpi-value">{{ card.value | e }}</div><div class="kpi-detail">{{ card.detail | e }}</div></td>{% endfor %}</tr>
+      {% for row in (kpi_cards[:2], kpi_cards[2:4], kpi_cards[4:]) %}
+      <tr>{% for card in row %}<td><div class="kpi-card" style="border-top-color: {{ card.accent | e }};">
+        <table class="kpi-head"><tr>
+          <td class="icon-cell"><span class="kpi-icon" style="background: {{ card.soft | e }};"><svg viewBox="0 0 24 24" stroke="{{ card.accent | e }}"><path stroke-linecap="round" stroke-linejoin="round" d="{{ card.icon | e }}"/></svg></span></td>
+          <td class="kpi-title">{{ card.label | e }}</td>
+          <td class="badge-cell"><span class="kpi-badge {{ card.badge.tone | e }}">{{ card.badge.text | e }}</span></td>
+        </tr></table>
+        <div class="kpi-value">{{ card.value | e }}</div>
+        <table class="kpi-footer"><tr>{% for metric in card.metrics %}<td><span class="kpi-metric-label">{{ metric.label | e }}</span><span class="kpi-metric-value"{% if metric.color %} style="color: {{ metric.color | e }};"{% endif %}>{{ metric.value | e }}</span></td>{% endfor %}</tr></table>
+      </div></td>{% endfor %}</tr>
       {% endfor %}
     </table>
     <div class="columns">
