@@ -447,6 +447,7 @@ class RetailStoreDashboard {
 	}
 
 	async init() {
+		console.info("Store Dashboard build 20261112_17");
 		try {
 			await this.ensureECharts();
 			const res = await frappe.call({
@@ -1599,7 +1600,7 @@ class RetailStoreDashboard {
 						value: [r[0], "-"],
 						rawSales: Number(r[1] || 0),
 						tickets: Number(r[2] || 0),
-						itemStyle: { color: isTickets ? "#e6faf6" : "#eaf2ff", borderColor: "#ffffff", borderWidth: 2 },
+						itemStyle: { color: isTickets ? "#d3f4ec" : "#dbe8fd", borderColor: "#ffffff", borderWidth: 2 },
 				  };
 		});
 
@@ -1638,7 +1639,7 @@ class RetailStoreDashboard {
 						? ["#ccfbf1", "#5eead4", "#14b8a6", "#0d9488", "#0f766e", "#134e4a"]
 						: ["#dbeafe", "#93c5fd", "#60a5fa", "#2563eb", "#1d4ed8", "#1e3a8a"],
 				},
-				outOfRange: { color: [isTickets ? "#e6faf6" : "#eaf2ff"] },
+				outOfRange: { color: [isTickets ? "#d3f4ec" : "#dbe8fd"] },
 				formatter: (v) => (isTickets ? `${Math.round(v)}` : self.fmtCompact(v)),
 			},
 			calendar: {
@@ -1649,7 +1650,7 @@ class RetailStoreDashboard {
 				cellSize: ["auto", isMobile ? 12 : 18],
 				range,
 				orient: "horizontal",
-				itemStyle: { borderWidth: 2, borderColor: "#ffffff", color: isTickets ? "#e6faf6" : "#eaf2ff" },
+				itemStyle: { borderWidth: 2, borderColor: "#ffffff", color: isTickets ? "#d3f4ec" : "#dbe8fd" },
 				splitLine: { show: true, lineStyle: { color: "#cbd5e1", width: 1 } },
 				yearLabel: { show: false },
 				dayLabel: {
@@ -1716,7 +1717,7 @@ class RetailStoreDashboard {
 					rawSales: salesVal,
 					tickets,
 					itemStyle: {
-						color: isTickets ? "#e6faf6" : "#eaf2ff",
+						color: isTickets ? "#d3f4ec" : "#dbe8fd",
 						borderColor: "#ffffff",
 						borderWidth: isMobile ? 1 : 2,
 						borderRadius: isMobile ? 2 : 4,
@@ -1803,7 +1804,7 @@ class RetailStoreDashboard {
 						: ["#bfdbfe", "#60a5fa", "#3b82f6", "#2563eb", "#1d4ed8", "#1e3a8a"],
 				},
 				outOfRange: {
-					color: [isTickets ? "#e6faf6" : "#eaf2ff"],
+					color: [isTickets ? "#d3f4ec" : "#dbe8fd"],
 				},
 				formatter: (value) =>
 					isTickets
