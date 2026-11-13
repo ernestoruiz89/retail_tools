@@ -457,7 +457,7 @@ class RetailStoreDashboard {
 	}
 
 	async init() {
-		console.info("Store Dashboard build 20261112_21");
+		console.info("Store Dashboard build 20261112_22");
 		try {
 			await this.ensureECharts();
 			const res = await frappe.call({
@@ -1603,19 +1603,29 @@ class RetailStoreDashboard {
 		const isTickets = this.calendarMode === "tickets";
 
 		const rows = cal.data || [];
+		const positiveValues = rows
+			.map((r) => (isTickets ? Number(r[2] || 0) : Number(r[1] || 0)))
+			.filter((v) => v > 0);
+		const minPositive = positiveValues.length ? Math.min(...positiveValues) : 1;
+		const maxVal = Math.max(1, isTickets ? Number(cal.max_tickets || 1) : Number(cal.max_sales || 1));
+		const visualMin = positiveValues.length
+			? isTickets
+				? Math.max(1, Math.floor(minPositive))
+				: Math.max(0.01, minPositive * 0.85)
+			: 1;
+
 		const seriesData = rows.map((r) => {
 			const metric = isTickets ? Number(r[2] || 0) : Number(r[1] || 0);
 			return metric > 0
 				? { value: [r[0], metric], rawSales: Number(r[1] || 0), tickets: Number(r[2] || 0) }
 				: {
-						value: [r[0], "-"],
+						value: [r[0], 0],
 						rawSales: Number(r[1] || 0),
 						tickets: Number(r[2] || 0),
 						itemStyle: { color: isTickets ? "#d3f4ec" : "#dbe8fd", borderColor: "#ffffff", borderWidth: 2 },
 				  };
 		});
 
-		const maxVal = Math.max(1, isTickets ? Number(cal.max_tickets || 1) : Number(cal.max_sales || 1));
 		const range = cal.range || [`${cal.year}-01-01`, `${cal.year}-12-31`];
 
 		this.$container
@@ -1636,8 +1646,8 @@ class RetailStoreDashboard {
 				},
 			},
 			visualMap: {
-				min: 0,
-				max: maxVal,
+				min: visualMin,
+				max: Math.max(maxVal, visualMin + (isTickets ? 1 : 1)),
 				calculable: true,
 				orient: "horizontal",
 				left: "center",
@@ -1884,9 +1894,9 @@ class RetailStoreDashboard {
 
 			if (metricVal <= 0) {
 				return {
-					value: [hourIdx, dayIdx, "-"],
-					rawSales: salesVal,
-					tickets,
+					value: [hourIdx, dayIdx, 0],
+					rawSales: 0,
+					tickets: 0,
 					itemStyle: {
 						color: isTickets ? "#d3f4ec" : "#dbe8fd",
 						borderColor: "#ffffff",
