@@ -6,3 +6,6 @@
 # Patches added in this section will be executed after doctypes are migrated
 retail_tools.retail_tools.patches.setup_carga_compras_v1
 retail_tools.retail_tools.patches.setup_store_dashboard_v1
+
+# Restore standard permission rows hidden by the RT Custom DocPerm fixtures.
+retail_tools.retail_tools.patches.restore_standard_docperms_v1

@@ -396,6 +396,7 @@ def after_install():
 	setup_custom_fields()
 	sync_pages_and_workspace()
 	setup_roles_and_permissions()
+	restore_standard_permissions_for_rt_doctypes()
 	frappe.clear_cache()
 
 
@@ -403,6 +404,12 @@ def after_migrate():
 	setup_custom_fields()
 	sync_pages_and_workspace()
 	setup_roles_and_permissions()
+	if getattr(frappe.flags, "retail_tools_restore_permissions_after_migrate", False):
+		frappe.flags.retail_tools_restore_permissions_after_migrate = False
+		restored, doctypes, skipped = restore_standard_permissions_for_rt_doctypes()
+		print(f"Retail Tools: restored {restored} more permissions in {len(doctypes)} DocTypes after fixture sync")
+		if skipped:
+			print("Retail Tools: review customized permissions manually for: " + ", ".join(skipped))
 	frappe.clear_cache()
 
 
@@ -532,3 +539,77 @@ def setup_roles_and_permissions():
 			page_doc.save(ignore_permissions=True)
 
 	frappe.db.commit()
+
+
+def restore_standard_permissions_for_rt_doctypes():
+	"""One-time repair for DocTypes whose RT fixtures hide standard permissions.
+
+	Frappe v15 uses Custom DocPerm instead of DocPerm once any custom row exists.
+	Only a pristine permission set or one containing exclusively RT roles is
+	safe to expand automatically. A site's other custom permission sets are
+	left to its administrator.
+	"""
+	permission_flags = {
+		field.fieldname
+		for field in frappe.get_meta("Custom DocPerm").fields
+		if field.fieldtype == "Check" and field.fieldname != "if_owner"
+	}
+	restored = 0
+	restored_doctypes = []
+	skipped_doctypes = []
+
+	rt_doctypes = {dt_name for perms in ROLE_PERMISSIONS_MATRIX.values() for dt_name in perms}
+	for dt_name in sorted(rt_doctypes):
+		if not frappe.db.exists("DocType", dt_name) or cint(frappe.get_meta(dt_name).istable):
+			continue
+		standard_perms = frappe.get_all(
+			"DocPerm", filters={"parent": dt_name}, fields=["*"], limit_page_length=0
+		)
+		if not standard_perms:
+			continue
+		custom_perms = frappe.get_all(
+			"Custom DocPerm",
+			filters={"parent": dt_name},
+			fields=["role", "permlevel", "if_owner"],
+			limit_page_length=0,
+		)
+		custom_keys = {
+			(row.role, cint(row.permlevel), cint(row.if_owner)) for row in custom_perms
+		}
+		missing = [
+			row for row in standard_perms
+			if (row.role, cint(row.permlevel), cint(row.if_owner)) not in custom_keys
+		]
+		if not missing:
+			continue
+		if any(row.role not in RT_ROLES for row in custom_perms):
+			skipped_doctypes.append(dt_name)
+			continue
+
+		for standard_perm in missing:
+			identity = {
+				"parent": dt_name,
+				"role": standard_perm.role,
+				"permlevel": cint(standard_perm.permlevel),
+				"if_owner": cint(standard_perm.if_owner),
+			}
+			data = {
+				"doctype": "Custom DocPerm",
+				"parenttype": "DocType",
+				"parentfield": "permissions",
+				**identity,
+			}
+			data.update(
+				{
+					flag: cint(standard_perm.get(flag))
+					for flag in permission_flags
+					if flag in standard_perm
+				}
+			)
+			frappe.get_doc(data).insert(ignore_permissions=True)
+			restored += 1
+
+		restored_doctypes.append(dt_name)
+		frappe.clear_cache(doctype=dt_name)
+
+	return restored, restored_doctypes, skipped_doctypes
