@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; color: #17243b; background: #fff; font: 10px Arial, DejaVu Sans, sans-serif; }
+    .page { page-break-after: always; }
+    .page.last { page-break-after: auto; }
+    .topline { height: 3mm; background: #2563eb; margin-bottom: 5mm; }
+    .header { width: 100%; margin-bottom: 5mm; border-bottom: 1px solid #dbe4f0; padding-bottom: 4mm; }
+    .header td { vertical-align: bottom; }
+    .eyebrow { color: #2563eb; font-size: 8px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; }
+    h1 { font-size: 23px; line-height: 1.15; margin: 1mm 0 1mm; color: #0f1d38; }
+    .header-right { text-align: right; color: #5c6b80; line-height: 1.5; font-size: 9px; }
+    h2 { margin: 0 0 3mm; font-size: 15px; color: #17305a; }
+    h3 { margin: 0 0 2mm; font-size: 11px; color: #17305a; }
+    .muted { color: #65758c; }
+    .period { background: #eff5ff; border-left: 3px solid #2563eb; padding: 3mm 4mm; margin-bottom: 5mm; font-size: 10px; line-height: 1.5; }
+    .period strong { color: #17305a; }
+    .kpi-grid { width: 100%; border-spacing: 3mm; margin: -3mm -3mm 2mm; table-layout: fixed; }
+    .kpi-grid td { width: 33.333%; background: #f8faff; border: 1px solid #e1e8f3; border-top: 2px solid #3b82f6; padding: 3mm; vertical-align: top; height: 23mm; }
+    .kpi-label { color: #64748b; font-size: 8px; text-transform: uppercase; letter-spacing: .5px; font-weight: bold; }
+    .kpi-value { color: #102a53; font-size: 17px; font-weight: bold; margin: 2mm 0; white-space: nowrap; }
+    .kpi-detail { color: #64748b; font-size: 9px; }
+    .columns { font-size: 0; width: 100%; }
+    .columns > .col { display: inline-block; width: 49%; vertical-align: top; font-size: 10px; }
+    .columns > .col + .col { margin-left: 2%; }
+    .panel { border: 1px solid #dfe7f2; border-radius: 3px; padding: 3mm; }
+    .data-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    .data-table th { background: #eaf1fc; color: #35517c; font-weight: bold; text-align: left; padding: 2mm 2.2mm; border-bottom: 1px solid #cbd9ec; }
+    .data-table td { padding: 1.8mm 2.2mm; border-bottom: 1px solid #e7edf5; vertical-align: top; word-wrap: break-word; }
+    .data-table tr:nth-child(even) td { background: #f9fbfe; }
+    .data-table .num { text-align: right; white-space: nowrap; }
+    .data-table .strong td { font-weight: bold; background: #eff5ff; }
+    .chart-grid { width: 100%; table-layout: fixed; border-spacing: 4mm; margin: -4mm; }
+    .chart-grid td { width: 50%; vertical-align: top; }
+    .chart-card { height: 74mm; border: 1px solid #dfe7f2; padding: 2.5mm; page-break-inside: avoid; }
+    .chart-title { font-size: 10px; font-weight: bold; color: #17305a; margin-bottom: 1.5mm; }
+    .chart-card img { display: block; width: auto; max-width: 100%; height: 56mm; margin: 0 auto; }
+    .wide-chart .chart-card { height: 108mm; }
+    .wide-chart .chart-card img { height: 97mm; }
+    .chart-single { width: 50%; margin-bottom: 5mm; }
+    .section-subtitle { font-size: 9px; color: #65758c; margin: 0 0 3mm; }
+    .alerts-table { font-size: 9px; }
+    .alerts-table td { padding-top: .6mm; padding-bottom: .6mm; }
+    .alerts-table .product { width: 34%; }
+    .code { display: block; color: #718096; font-size: 7.4px; }
+    .indicators-table { font-size: 8.5px; }
+    .indicators-table td { padding-top: 1.6mm; padding-bottom: 1.6mm; }
+    .indicators-table .cat { width: 14%; }
+    .indicators-table .indicator { width: 20%; }
+    .indicators-table .formula { width: 27%; }
+    .indicators-table .current { width: 12%; }
+    .indicators-table .reference { width: 19%; }
+    .indicators-table .status { width: 8%; }
+    .good { color: #047857; font-weight: bold; }
+    .warning { color: #ad6b00; font-weight: bold; }
+    .danger { color: #b42332; font-weight: bold; }
+    .neutral { color: #52637a; font-weight: bold; }
+    .dupont { width: 100%; table-layout: fixed; border-spacing: 3mm; margin: 1mm -3mm 4mm; }
+    .dupont td { width: 25%; padding: 3mm; background: #f1f6ff; border-top: 2px solid #5b83d7; }
+    .dupont strong { display: block; font-size: 14px; margin-top: 1mm; color: #17305a; }
+    .footnote { color: #78869a; font-size: 8px; margin-top: 3mm; }
+    thead { display: table-header-group; }
+    tr { page-break-inside: avoid; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="topline"></div>
+    <table class="header"><tr><td><div class="eyebrow">Retail Tools · Informe ejecutivo</div><h1>Panel de Control de Tienda</h1><div class="muted">{{ company | e }}</div></td><td class="header-right">Almacén: {{ warehouse | e }}<br>Moneda: {{ currency | e }}<br>POS en curso: {{ "Incluido" if include_pending_pos else "Excluido" }}</td></tr></table>
+    <div class="period"><strong>Período analizado:</strong> {{ from_date | e }} al {{ to_date | e }} ({{ period_days }} días)<br><strong>Comparado contra:</strong> {{ prev_from_date | e }} al {{ prev_to_date | e }}</div>
+    <h2>Resumen ejecutivo</h2>
+    <table class="kpi-grid">
+      {% for row in (kpi_cards[:3], kpi_cards[3:]) %}
+      <tr>{% for card in row %}<td><div class="kpi-label">{{ card.label | e }}</div><div class="kpi-value">{{ card.value | e }}</div><div class="kpi-detail">{{ card.detail | e }}</div></td>{% endfor %}</tr>
+      {% endfor %}
+    </table>
+    <div class="columns">
+      <div class="col"><div class="panel"><h3>Balance general al corte</h3><table class="data-table"><tbody>{% for label, value in balance_rows %}<tr{% if loop.last or loop.index == 5 %} class="strong"{% endif %}><td>{{ label | e }}</td><td class="num">{{ value | e }}</td></tr>{% endfor %}</tbody></table></div></div>
+      <div class="col"><div class="panel"><h3>Estado de resultados del período</h3><table class="data-table"><tbody>{% for label, value in pnl_rows %}<tr{% if loop.last %} class="strong"{% endif %}><td>{{ label | e }}</td><td class="num">{{ value | e }}</td></tr>{% endfor %}</tbody></table></div></div>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="topline"></div><h2>Panorama financiero y desempeño comercial</h2>
+    <p class="section-subtitle">Gráficos del período seleccionado. Las cifras detalladas se presentan en el resumen y la tabla de indicadores.</p>
+    <table class="chart-grid">
+      <tr>{% for chart in charts[:2] %}<td><div class="chart-card"><div class="chart-title">{{ chart.title | e }}</div><img src="{{ chart.image | e }}" alt="{{ chart.title | e }}"></div></td>{% endfor %}</tr>
+      <tr>{% for chart in charts[2:4] %}<td><div class="chart-card"><div class="chart-title">{{ chart.title | e }}</div><img src="{{ chart.image | e }}" alt="{{ chart.title | e }}"></div></td>{% endfor %}</tr>
+    </table>
+  </div>
+
+  <div class="page">
+    <div class="topline"></div><h2>Productos, recaudación y patrones de venta</h2>
+    <p class="section-subtitle">Distribución de la actividad comercial y comportamiento por día y hora.</p>
+    <table class="chart-grid">
+      <tr>{% for chart in charts[4:6] %}<td><div class="chart-card"><div class="chart-title">{{ chart.title | e }}</div><img src="{{ chart.image | e }}" alt="{{ chart.title | e }}"></div></td>{% endfor %}</tr>
+      <tr>{% for chart in charts[6:8] %}<td><div class="chart-card"><div class="chart-title">{{ chart.title | e }}</div><img src="{{ chart.image | e }}" alt="{{ chart.title | e }}"></div></td>{% endfor %}</tr>
+    </table>
+  </div>
+
+  <div class="page">
+    <div class="topline"></div><h2>Capital en inventario</h2>
+    <p class="section-subtitle">Comparación del costo del stock y las ventas por categoría.</p>
+    <div class="wide-chart"><div class="chart-card"><div class="chart-title">{{ charts[8].title | e }}</div><img src="{{ charts[8].image | e }}" alt="{{ charts[8].title | e }}"></div></div>
+    <div class="period" style="margin-top: 5mm;"><strong>Lectura operativa:</strong> El capital en stock corresponde al inventario al corte seleccionado. Compare las categorías con mayor capital inmovilizado frente a sus ventas para priorizar reposición o liquidación.</div>
+  </div>
+
+  <div class="page">
+    <div class="topline"></div><h2>Alertas de reposición e inventario estancado</h2>
+    <p class="section-subtitle">Reposición: venta en los últimos 30 días y cobertura inferior a 7 días. Inventario estancado: más de 60 días sin venta. Hasta 15 productos por lista.</p>
+    <div class="columns">
+      <div class="col"><h3>Alerta de reposición</h3><table class="data-table alerts-table"><thead><tr><th class="product">Producto</th><th class="num">Stock</th><th class="num">Vendidos</th><th class="num">Venta 30d</th><th>Cobertura</th></tr></thead><tbody>{% for item in low_stock %}<tr><td>{{ item.name[:48] | e }}{% if item.name | length > 48 %}…{% endif %}<span class="code">{{ item.code | e }}</span></td><td class="num">{{ item.stock | e }}</td><td class="num">{{ item.sold | e }}</td><td class="num">{{ item.sales | e }}</td><td>{{ item.coverage | e }}</td></tr>{% else %}<tr><td colspan="5">Sin alertas de reposición.</td></tr>{% endfor %}</tbody></table></div>
+      <div class="col"><h3>Inventario estancado</h3><table class="data-table alerts-table"><thead><tr><th class="product">Producto</th><th class="num">Stock</th><th class="num">Capital</th><th>Última venta</th><th>Inactividad</th></tr></thead><tbody>{% for item in dead_stock %}<tr><td>{{ item.name[:48] | e }}{% if item.name | length > 48 %}…{% endif %}<span class="code">{{ item.code | e }}</span></td><td class="num">{{ item.stock | e }}</td><td class="num">{{ item.value | e }}</td><td>{{ item.last_sale | e }}</td><td>{{ item.days | e }}</td></tr>{% else %}<tr><td colspan="5">Sin inventario estancado.</td></tr>{% endfor %}</tbody></table></div>
+    </div>
+  </div>
+
+  <div class="page last">
+    <div class="topline"></div><h2>Indicadores financieros y operativos</h2>
+    <p class="section-subtitle">Análisis DuPont: ROE = margen neto × rotación de activos × apalancamiento financiero.</p>
+    <table class="dupont"><tr><td>Margen neto<strong>{{ dupont.margin | e }}</strong></td><td>Rotación de activos<strong>{{ dupont.turnover | e }}</strong></td><td>Apalancamiento<strong>{{ dupont.multiplier | e }}</strong></td><td>ROE<strong>{{ dupont.roe | e }}</strong></td></tr></table>
+    <table class="data-table indicators-table"><thead><tr><th class="cat">Categoría</th><th class="indicator">Indicador</th><th class="formula">Fórmula / base de cálculo</th><th class="current num">Valor actual</th><th class="reference">Referencia / meta</th><th class="status">Estado</th></tr></thead><tbody>
+      {% for item in indicators %}<tr><td>{{ item.category | e }}</td><td><strong>{{ item.name | e }}</strong></td><td class="muted">{{ item.formula | e }}</td><td class="num"><strong>{{ item.value_formatted | e }}</strong></td><td>{{ item.reference_formatted | e }}</td><td class="{{ item.status if item.status in ('good', 'warning', 'danger') else 'neutral' }}">{{ item.status_label | e }}</td></tr>{% endfor %}
+    </tbody></table>
+    <div class="footnote">Cifras calculadas con los filtros indicados al inicio del informe. Los datos de inventario corresponden al corte seleccionado.</div>
+  </div>
+</body>
+</html>

@@ -151,3 +151,72 @@ test("an older response cannot replace the selected period or its figures", asyn
 	assert.equal(values["#rt-db-from-date"], "2026-10-15");
 	assert.deepEqual([...activeButtons], ["30d"]);
 });
+
+test("PDF chart snapshots use a fixed print size and finish animations", () => {
+	const { dashboard, context } = makeDashboard();
+	const elements = [];
+	const copies = [];
+	context.window = {
+		echarts: {
+			init(node) {
+				const copy = {
+					setOption(option) { this.option = option; },
+					getDataURL() { return "data:image/png;base64,AAAA"; },
+					dispose() { this.disposed = true; },
+				};
+				copies.push(copy);
+				return copy;
+			},
+		},
+	};
+	context.document = {
+		body: { appendChild(node) { elements.push(node); } },
+		createElement() { return { style: {}, remove() { this.removed = true; } }; },
+	};
+	const keys = [
+		"rt-chart-balance", "rt-chart-pnl", "rt-chart-daily", "rt-chart-category",
+		"rt-chart-top-items", "rt-chart-payments", "rt-chart-calendar",
+		"rt-chart-heatmap", "rt-chart-stock-vs-sales",
+	];
+	dashboard.charts = Object.fromEntries(keys.map((key) => [key, { getOption: () => ({ series: [] }) }]));
+	const snapshots = dashboard.collectPdfCharts();
+	assert.deepEqual(Object.keys(snapshots), keys);
+	assert.equal(copies.length, 9);
+	assert.ok(copies.every((copy) => copy.disposed));
+	assert.ok(elements.every((node) => node.removed && node.style.cssText.includes("960px")));
+});
+
+test("PDF export sends the visible period and downloads the returned file", async () => {
+	const { dashboard, context } = makeDashboard();
+	let request;
+	let clicked = false;
+	let buttonDisabled = false;
+	context.frappe.csrf_token = "csrf-test";
+	context.frappe.msgprint = () => { throw new Error("Unexpected message"); };
+	context.fetch = async (url, options) => {
+		request = { url, options };
+		return { ok: true, headers: { get: () => "application/pdf" }, blob: async () => ({ size: 100 }) };
+	};
+	context.URL = { createObjectURL: () => "blob:report", revokeObjectURL() {} };
+	context.setTimeout = () => 1;
+	context.document = {
+		body: { appendChild() {} },
+		createElement: () => ({ click() { clicked = true; }, remove() {} }),
+	};
+	dashboard.$exportPdfButton = { prop(_name, value) { buttonDisabled = value; } };
+	dashboard.collectPdfCharts = () => ({ "rt-chart-balance": "data:image/png;base64,AAAA" });
+	dashboard.payload = { filters: {
+		company: "Tienda", warehouse: "Sucursal", from_date: "2026-10-15",
+		to_date: "2026-11-13", include_pending_pos: 1,
+	} };
+	dashboard.payloadRangeKey = "30d";
+	dashboard.pnlMode = "expenses";
+	await dashboard.exportDashboardPdf();
+	assert.equal(request.options.headers["X-Frappe-CSRF-Token"], "csrf-test");
+	const body = JSON.parse(request.options.body);
+	assert.equal(body.from_date, "2026-10-15");
+	assert.equal(body.range_key, "30d");
+	assert.equal(body.chart_modes.pnl, "expenses");
+	assert.equal(clicked, true);
+	assert.equal(buttonDisabled, false);
+});

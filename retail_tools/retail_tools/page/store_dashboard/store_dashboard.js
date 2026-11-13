@@ -30,6 +30,8 @@ class RetailStoreDashboard {
 		this.indicatorFilter = "all";
 		this.activeRangeKey = null;
 		this.refreshRequestId = 0;
+		this.isRefreshing = false;
+		this.isExportingPdf = false;
 
 		this.setupPageActions();
 		this.renderSkeleton();
@@ -43,6 +45,7 @@ class RetailStoreDashboard {
 			() => this.refreshData(),
 			"refresh"
 		);
+		this.$exportPdfButton = this.page.add_inner_button(__("Exportar PDF"), () => this.exportDashboardPdf());
 	}
 
 	renderSkeleton() {
@@ -602,6 +605,7 @@ class RetailStoreDashboard {
 
 	async refreshData() {
 		const requestId = ++this.refreshRequestId;
+		this.isRefreshing = true;
 		const company = this.$container.find("#rt-db-company").val();
 		const warehouse = this.$container.find("#rt-db-warehouse").val();
 		const from_date = this.fromDateControl.get_value();
@@ -630,6 +634,7 @@ class RetailStoreDashboard {
 			}
 
 			this.payload = data;
+			this.payloadRangeKey = this.activeRangeKey;
 			this.currency = (data.filters && data.filters.currency) || this.currency;
 			this.currencySymbol = (data.filters && data.filters.currency_symbol) || this.currencySymbol;
 
@@ -638,6 +643,96 @@ class RetailStoreDashboard {
 			if (requestId === this.refreshRequestId) {
 				console.error("Error cargando datos del dashboard:", e);
 			}
+		} finally {
+			if (requestId === this.refreshRequestId) this.isRefreshing = false;
+		}
+	}
+
+	collectPdfCharts() {
+		const keys = [
+			"rt-chart-balance", "rt-chart-pnl", "rt-chart-daily", "rt-chart-category",
+			"rt-chart-top-items", "rt-chart-payments", "rt-chart-calendar",
+			"rt-chart-heatmap", "rt-chart-stock-vs-sales",
+		];
+		if (!window.echarts || keys.some((key) => !this.charts[key])) {
+			throw new Error(__("Espere a que carguen todos los gráficos antes de exportar."));
+		}
+		const images = {};
+		for (const key of keys) {
+			const node = document.createElement("div");
+			node.style.cssText = "position:fixed;left:-10000px;top:0;width:960px;height:420px;pointer-events:none";
+			document.body.appendChild(node);
+			let chart;
+			try {
+				chart = window.echarts.init(node, null, { renderer: "canvas" });
+				const option = this.charts[key].getOption();
+				option.animation = false;
+				option.animationDuration = 0;
+				chart.setOption(option, true);
+				images[key] = chart.getDataURL({ type: "png", pixelRatio: 1.5, backgroundColor: "#ffffff" });
+			} finally {
+				if (chart) chart.dispose();
+				node.remove();
+			}
+		}
+		return images;
+	}
+
+	async exportDashboardPdf() {
+		if (this.isExportingPdf) return;
+		if (!this.payload || this.isRefreshing) {
+			frappe.msgprint(__("Espere a que termine de cargar el panel antes de exportar."));
+			return;
+		}
+		this.isExportingPdf = true;
+		if (this.$exportPdfButton) this.$exportPdfButton.prop("disabled", true);
+		try {
+			const charts = this.collectPdfCharts();
+			const filters = this.payload.filters;
+			const response = await fetch(
+				"/api/method/retail_tools.retail_tools.page.store_dashboard.store_dashboard.export_store_dashboard_pdf",
+				{
+					method: "POST",
+					credentials: "same-origin",
+					headers: {
+						"Content-Type": "application/json",
+						"X-Frappe-CSRF-Token": frappe.csrf_token,
+					},
+					body: JSON.stringify({
+						company: filters.company,
+						warehouse: filters.warehouse,
+						from_date: filters.from_date,
+						to_date: filters.to_date,
+						include_pending_pos: filters.include_pending_pos,
+						range_key: this.payloadRangeKey,
+						chart_modes: {
+							pnl: this.pnlMode,
+							top: this.topItemsMode,
+							calendar: this.calendarMode,
+							heatmap: this.heatmapMode,
+						},
+						charts,
+					}),
+				}
+			);
+			if (!response.ok || !(response.headers.get("content-type") || "").includes("application/pdf")) {
+				throw new Error(__("No se pudo generar el PDF. Verifique que el servidor tenga habilitada la generación de PDF."));
+			}
+			const blob = await response.blob();
+			const url = URL.createObjectURL(blob);
+			const link = document.createElement("a");
+			link.href = url;
+			link.download = `panel-tienda-${filters.from_date}-${filters.to_date}.pdf`;
+			document.body.appendChild(link);
+			link.click();
+			link.remove();
+			setTimeout(() => URL.revokeObjectURL(url), 30000);
+		} catch (error) {
+			console.error("Error exportando el panel a PDF:", error);
+			frappe.msgprint(error.message || __("No se pudo exportar el panel a PDF."));
+		} finally {
+			this.isExportingPdf = false;
+			if (this.$exportPdfButton) this.$exportPdfButton.prop("disabled", false);
 		}
 	}
 

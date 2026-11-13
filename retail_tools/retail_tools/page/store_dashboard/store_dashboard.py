@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+import base64
+import re
+from pathlib import Path
+
 import frappe
 from frappe import _
-from frappe.utils import add_days, cint, date_diff, flt, getdate, nowdate
+from frappe.utils import add_days, cint, date_diff, flt, formatdate, getdate, nowdate
 
 from retail_tools.retail_tools.page.store_dashboard.periods import previous_period
 
@@ -28,6 +32,19 @@ WEEKDAY_LABELS_ES = [
 	"Sábado",
 	"Domingo",
 ]
+
+PDF_CHART_KEYS = (
+	"rt-chart-balance",
+	"rt-chart-pnl",
+	"rt-chart-daily",
+	"rt-chart-category",
+	"rt-chart-top-items",
+	"rt-chart-payments",
+	"rt-chart-calendar",
+	"rt-chart-heatmap",
+	"rt-chart-stock-vs-sales",
+)
+_PDF_PNG_PATTERN = re.compile(r"\Adata:image/png;base64,([A-Za-z0-9+/]+={0,2})\Z")
 
 
 def _ensure_dashboard_access() -> None:
@@ -1494,3 +1511,192 @@ def get_store_dashboard_data(
 		},
 		"indicators_table": indicators_table,
 	}
+
+
+def _validate_pdf_charts(charts: dict | str) -> dict[str, str]:
+	"""Accept only bounded PNG snapshots of the dashboard's known charts."""
+	if isinstance(charts, str):
+		try:
+			charts = frappe.parse_json(charts)
+		except (TypeError, ValueError):
+			charts = None
+	if not isinstance(charts, dict) or any(key not in charts for key in PDF_CHART_KEYS):
+		frappe.throw(_("Espere a que carguen todos los gráficos antes de exportar."), frappe.ValidationError)
+
+	validated = {}
+	total_bytes = 0
+	for key in PDF_CHART_KEYS:
+		value = charts[key]
+		match = _PDF_PNG_PATTERN.fullmatch(value) if isinstance(value, str) else None
+		if not match or len(match.group(1)) > 2_000_000:
+			frappe.throw(_("Uno de los gráficos no se pudo preparar para el PDF."), frappe.ValidationError)
+		try:
+			content = base64.b64decode(match.group(1), validate=True)
+		except (ValueError, base64.binascii.Error):
+			frappe.throw(_("Uno de los gráficos no se pudo preparar para el PDF."), frappe.ValidationError)
+		if len(content) < 24 or content[:16] != b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR":
+			frappe.throw(_("Uno de los gráficos no es una imagen PNG válida."), frappe.ValidationError)
+		width = int.from_bytes(content[16:20], "big")
+		height = int.from_bytes(content[20:24], "big")
+		if not (300 <= width <= 2400 and 200 <= height <= 1600):
+			frappe.throw(_("Un gráfico tiene dimensiones no válidas para el PDF."), frappe.ValidationError)
+		total_bytes += len(content)
+		if total_bytes > 10_000_000:
+			frappe.throw(_("Los gráficos superan el tamaño máximo del PDF."), frappe.ValidationError)
+		validated[key] = value
+	return validated
+
+
+def _dashboard_pdf_context(data: dict, charts: dict[str, str], chart_modes: dict | str | None) -> dict:
+	filters = data["filters"]
+	kpis = data["kpis"]
+	financials = data["financials"]
+	bs = financials["balance_sheet"]
+	pnl = financials["income_statement"]
+	symbol = filters["currency_symbol"]
+	date_format = frappe.db.get_single_value("System Settings", "date_format") or "yyyy-mm-dd"
+
+	def money(value):
+		amount = flt(value, 2)
+		return f"{'-' if amount < 0 else ''}{symbol} {abs(amount):,.2f}"
+
+	def report_date(value):
+		return formatdate(value, date_format) if re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(value or "")) else value
+
+	if isinstance(chart_modes, str):
+		try:
+			chart_modes = frappe.parse_json(chart_modes)
+		except (TypeError, ValueError):
+			chart_modes = None
+	chart_modes = chart_modes if isinstance(chart_modes, dict) else {}
+	pnl_mode = chart_modes.get("pnl") if chart_modes.get("pnl") in ("waterfall", "expenses") else "waterfall"
+	top_mode = chart_modes.get("top") if chart_modes.get("top") in ("by_revenue", "by_profit", "by_qty") else "by_revenue"
+	calendar_mode = chart_modes.get("calendar") if chart_modes.get("calendar") in ("sales", "tickets") else "sales"
+	heatmap_mode = chart_modes.get("heatmap") if chart_modes.get("heatmap") in ("sales", "tickets") else "sales"
+
+	kpi_cards = [
+		{"label": "Ventas netas", "value": money(kpis["net_sales"]), "detail": f"Anterior: {money(kpis['prev_net_sales'])}"},
+		{"label": "Utilidad bruta comercial", "value": money(kpis["gross_profit"]), "detail": f"Margen: {flt(kpis['gross_margin_pct']):.1f}%"},
+		{"label": "Utilidad neta contable", "value": money(kpis["net_profit"]), "detail": f"Margen: {flt(kpis['net_margin_pct']):.1f}%"},
+		{"label": "Ticket promedio", "value": money(kpis["avg_ticket"]), "detail": f"{kpis['ticket_count']:,} transacciones"},
+		{"label": "Capital en inventario", "value": money(kpis["stock_cost_value"]), "detail": f"{kpis['sku_with_stock']:,} artículos con stock"},
+		{"label": "Efectivo y bancos", "value": money(kpis["cash_and_bank"]), "detail": f"CxC: {money(kpis['accounts_receivable'])}"},
+	]
+	balance_rows = [
+		("Efectivo y bancos", money(bs["cash_and_bank"])),
+		("Cuentas por cobrar", money(bs["accounts_receivable"])),
+		("Inventario", money(bs["inventory"])),
+		("Otros activos", money(bs["other_assets"])),
+		("Activo total", money(bs["total_assets"])),
+		("Pasivo total", money(bs["total_liabilities"])),
+		("Patrimonio total", money(bs["total_equity"])),
+	]
+	pnl_rows = [
+		("Ingresos totales", money(pnl["total_income"])),
+		("Costo de ventas", money(pnl["cogs"])),
+		("Utilidad bruta", money(pnl["gross_profit"])),
+		("Gastos operativos", money(pnl["operating_expenses"])),
+		("Utilidad neta", money(pnl["net_profit"])),
+	]
+	chart_specs = [
+		("rt-chart-balance", "Balance general"),
+		("rt-chart-pnl", "Estado de resultados" if pnl_mode == "waterfall" else "Desglose de gastos"),
+		("rt-chart-daily", "Evolución diaria de ventas y utilidad"),
+		("rt-chart-category", "Ventas por categoría"),
+		("rt-chart-top-items", {"by_revenue": "Productos por ingresos", "by_profit": "Productos por utilidad", "by_qty": "Productos por unidades"}[top_mode]),
+		("rt-chart-payments", "Métodos de pago"),
+		("rt-chart-calendar", "Calendario anual por monto" if calendar_mode == "sales" else "Calendario anual por tickets"),
+		("rt-chart-heatmap", "Horarios por monto" if heatmap_mode == "sales" else "Horarios por tickets"),
+		("rt-chart-stock-vs-sales", "Capital en stock y ventas por categoría"),
+	]
+	chart_cards = [{"title": title, "image": charts[key]} for key, title in chart_specs]
+	low_stock = [
+		{
+			"name": row["item_name"], "code": row["item_code"],
+			"stock": f"{flt(row['actual_qty']):,.2f}",
+			"sold": f"{flt(row['qty_sold_30d']):,.2f}",
+			"sales": money(row["revenue_30d"]),
+			"coverage": "Agotado" if flt(row["actual_qty"]) <= 0 else f"{flt(row['coverage_days']):.1f} días",
+		}
+		for row in data["alerts"]["low_stock_stars"]
+	]
+	dead_stock = [
+		{
+			"name": row["item_name"], "code": row["item_code"],
+			"stock": f"{flt(row['actual_qty']):,.2f}",
+			"value": money(row["stock_value"]),
+			"last_sale": report_date(row["last_sale_date"]),
+			"days": "Nunca vendido" if row["days_without_sale"] is None else f"{row['days_without_sale']} días",
+		}
+		for row in data["alerts"]["dead_stock"]
+	]
+	return {
+		"company": filters["company"],
+		"warehouse": filters["warehouse"] or "Todos los almacenes",
+		"from_date": report_date(filters["from_date"]),
+		"to_date": report_date(filters["to_date"]),
+		"prev_from_date": report_date(filters["prev_from_date"]),
+		"prev_to_date": report_date(filters["prev_to_date"]),
+		"period_days": filters["period_days"],
+		"include_pending_pos": bool(filters["include_pending_pos"]),
+		"currency": filters["currency"],
+		"kpi_cards": kpi_cards,
+		"balance_rows": balance_rows,
+		"pnl_rows": pnl_rows,
+		"charts": chart_cards,
+		"low_stock": low_stock,
+		"dead_stock": dead_stock,
+		"indicators": data["indicators_table"],
+		"dupont": {
+			"margin": f"{flt(pnl['net_profit']) / flt(pnl['total_income']) * 100:.1f}%" if flt(pnl["total_income"]) else "0.0%",
+			"turnover": f"{flt(pnl['total_income']) / flt(bs['total_assets']):.2f}x" if flt(bs["total_assets"]) else "0.00x",
+			"multiplier": f"{flt(bs['total_assets']) / flt(bs['total_equity']):.2f}x" if flt(bs["total_equity"]) else "0.00x",
+			"roe": f"{flt(pnl['net_profit']) / flt(bs['total_equity']) * 100:.1f}%" if flt(bs["total_equity"]) else "0.0%",
+		},
+	}
+
+
+@frappe.whitelist()
+def export_store_dashboard_pdf(
+	company: str | None = None,
+	from_date: str | None = None,
+	to_date: str | None = None,
+	warehouse: str | None = None,
+	include_pending_pos: int | str = 1,
+	range_key: str | None = None,
+	charts: dict | str | None = None,
+	chart_modes: dict | str | None = None,
+) -> None:
+	"""Download an A4 report for the same filters as the visible dashboard."""
+	from frappe.utils.pdf import get_pdf
+
+	_ensure_dashboard_access()
+	validated_charts = _validate_pdf_charts(charts)
+	data = get_store_dashboard_data(
+		company=company,
+		from_date=from_date,
+		to_date=to_date,
+		warehouse=warehouse,
+		include_pending_pos=include_pending_pos,
+		range_key=range_key,
+	)
+	context = _dashboard_pdf_context(data, validated_charts, chart_modes)
+	template = Path(__file__).with_name("store_dashboard_pdf.html").read_text(encoding="utf-8")
+	html = frappe.render_template(template, context)
+	frappe.local.response.filename = f"panel-tienda-{data['filters']['from_date']}-{data['filters']['to_date']}.pdf"
+	frappe.local.response.filecontent = get_pdf(
+		html,
+		{
+			"page-size": "A4",
+			"orientation": "Landscape",
+			"margin-top": "13mm",
+			"margin-bottom": "14mm",
+			"margin-left": "12mm",
+			"margin-right": "12mm",
+			"footer-left": f"Panel de Tienda · {context['from_date']} al {context['to_date']}",
+			"footer-right": "Página [page] de [topage]",
+			"footer-font-size": "8",
+			"footer-spacing": "5",
+		},
+	)
+	frappe.local.response.type = "pdf"
