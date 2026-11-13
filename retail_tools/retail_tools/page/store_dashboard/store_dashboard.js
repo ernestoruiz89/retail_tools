@@ -457,7 +457,7 @@ class RetailStoreDashboard {
 	}
 
 	async init() {
-		console.info("Store Dashboard build 20261112_22");
+		console.info("Store Dashboard build 20261113_01");
 		try {
 			await this.ensureECharts();
 			const res = await frappe.call({
@@ -1601,6 +1601,7 @@ class RetailStoreDashboard {
 		const self = this;
 		const isMobile = this.isMobileViewport();
 		const isTickets = this.calendarMode === "tickets";
+		const zeroColor = isTickets ? "#edf7f4" : "#edf3fa";
 
 		const rows = cal.data || [];
 		const positiveValues = rows
@@ -1622,7 +1623,7 @@ class RetailStoreDashboard {
 						value: [r[0], 0],
 						rawSales: Number(r[1] || 0),
 						tickets: Number(r[2] || 0),
-						itemStyle: { color: isTickets ? "#d3f4ec" : "#dbe8fd", borderColor: "#ffffff", borderWidth: 2 },
+						itemStyle: { color: zeroColor, borderColor: "#ffffff", borderWidth: 2 },
 				  };
 		});
 
@@ -1660,7 +1661,7 @@ class RetailStoreDashboard {
 						? ["#ccfbf1", "#5eead4", "#14b8a6", "#0d9488", "#0f766e", "#134e4a"]
 						: ["#dbeafe", "#93c5fd", "#60a5fa", "#2563eb", "#1d4ed8", "#1e3a8a"],
 				},
-				outOfRange: { color: [isTickets ? "#d3f4ec" : "#dbe8fd"] },
+				outOfRange: { color: [zeroColor] },
 				formatter: (v) => (isTickets ? `${Math.round(v)}` : self.fmtCompact(v)),
 			},
 			calendar: {
@@ -1671,7 +1672,7 @@ class RetailStoreDashboard {
 				cellSize: ["auto", isMobile ? 12 : 18],
 				range,
 				orient: "horizontal",
-				itemStyle: { borderWidth: 2, borderColor: "#ffffff", color: isTickets ? "#d3f4ec" : "#dbe8fd" },
+				itemStyle: { borderWidth: 2, borderColor: "#ffffff", color: zeroColor },
 				splitLine: { show: true, lineStyle: { color: "#cbd5e1", width: 1 } },
 				yearLabel: { show: false },
 				dayLabel: {
@@ -1868,6 +1869,7 @@ class RetailStoreDashboard {
 		const isMobile = this.isMobileViewport();
 
 		const isTickets = this.heatmapMode === "tickets";
+		const zeroColor = isTickets ? "#edf7f4" : "#edf3fa";
 		const ticketsMap = heatmap.tickets_by_cell || {};
 
 		// Build the full Day x Hour grid so cells without sales also get the soft "zero" color
@@ -1898,7 +1900,7 @@ class RetailStoreDashboard {
 					rawSales: 0,
 					tickets: 0,
 					itemStyle: {
-						color: isTickets ? "#d3f4ec" : "#dbe8fd",
+						color: zeroColor,
 						borderColor: "#ffffff",
 						borderWidth: isMobile ? 1 : 2,
 						borderRadius: isMobile ? 2 : 4,
@@ -1985,7 +1987,7 @@ class RetailStoreDashboard {
 						: ["#bfdbfe", "#60a5fa", "#3b82f6", "#2563eb", "#1d4ed8", "#1e3a8a"],
 				},
 				outOfRange: {
-					color: [isTickets ? "#d3f4ec" : "#dbe8fd"],
+					color: [zeroColor],
 				},
 				formatter: (value) =>
 					isTickets
