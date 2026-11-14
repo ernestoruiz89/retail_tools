@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import re
+from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 
 import frappe
@@ -1601,7 +1602,14 @@ def _dashboard_pdf_context(data: dict, charts: dict[str, str], chart_modes: dict
 	symbol = filters["currency_symbol"]
 	date_format = frappe.db.get_single_value("System Settings", "date_format") or "yyyy-mm-dd"
 
-	def money(value):
+	def whole(value):
+		rounded = Decimal(str(flt(value))).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+		return f"{rounded if rounded else abs(rounded):,f}"
+
+	def money(value, decimals=2):
+		if decimals == 0:
+			amount = flt(value)
+			return f"{'-' if amount <= -0.5 else ''}{symbol} {whole(abs(amount))}"
 		amount = flt(value, 2)
 		return f"{'-' if amount < 0 else ''}{symbol} {abs(amount):,.2f}"
 
@@ -1646,36 +1654,36 @@ def _dashboard_pdf_context(data: dict, charts: dict[str, str], chart_modes: dict
 
 	potential_profit = max(0, flt(kpis.get("potential_profit") or (flt(kpis["stock_retail_value"]) - flt(kpis["stock_cost_value"]))))
 	kpi_cards = [
-		card("Ventas netas", money(kpis["net_sales"]), "#2563eb", "#eff6ff",
+		card("Ventas netas", money(kpis["net_sales"], 0), "#2563eb", "#eff6ff",
 			"M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
 			delta_badge(kpis["net_sales_delta_pct"]),
-			metric("Período anterior", money(kpis["prev_net_sales"])),
-			metric("Transacciones", f"{kpis['ticket_count']:,} tickets")),
-		card("Utilidad bruta comercial", money(kpis["gross_profit"]), "#10b981", "#ecfdf5",
+			metric("Período anterior", money(kpis["prev_net_sales"], 0)),
+			metric("Transacciones", f"{whole(kpis['ticket_count'])} tickets")),
+		card("Utilidad bruta comercial", money(kpis["gross_profit"], 0), "#10b981", "#ecfdf5",
 			"M13 7h8m0 0v8m0-8l-8 8-4-4-6 6",
 			delta_badge(kpis["gross_profit_delta_pct"]),
 			metric("Margen bruto actual", f"{flt(kpis['gross_margin_pct']):.1f}%", "#059669"),
 			metric("Margen anterior", f"{flt(kpis['prev_gross_margin_pct']):.1f}%")),
-		card("Utilidad neta contable", money(kpis["net_profit"]), "#0d9488", "#f0fdfa",
+		card("Utilidad neta contable", money(kpis["net_profit"], 0), "#0d9488", "#f0fdfa",
 			"M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z",
 			delta_badge(kpis["net_profit_delta_pct"]),
 			metric("Margen neto", f"{flt(kpis['net_margin_pct']):.1f}%", "#0d9488"),
-			metric("Gastos operativos", money(kpis["operating_expenses"]))),
-		card("Ticket promedio", money(kpis["avg_ticket"]), "#8b5cf6", "#f5f3ff",
+			metric("Gastos operativos", money(kpis["operating_expenses"], 0))),
+		card("Ticket promedio", money(kpis["avg_ticket"], 0), "#8b5cf6", "#f5f3ff",
 			"M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z",
 			delta_badge(kpis["avg_ticket_delta_pct"]),
-			metric("Unid. por ticket (UPT)", f"{flt(kpis['upt']):.2f} u/ticket"),
-			metric("Unidades vendidas", f"{flt(kpis['total_units']):,.2f}".rstrip("0").rstrip(".") + " unid.")),
-		card("Capital en inventario", money(kpis["stock_cost_value"]), "#f59e0b", "#fffbeb",
+			metric("Unid. por ticket (UPT)", f"{whole(kpis['upt'])} u/ticket"),
+			metric("Unidades vendidas", whole(kpis['total_units']) + " unid.")),
+		card("Capital en inventario", money(kpis["stock_cost_value"], 0), "#f59e0b", "#fffbeb",
 			"M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4",
-			{"text": f"{kpis['sku_with_stock']:,} SKUs", "tone": "neutral"},
-			metric("Venta potencial", money(kpis["stock_retail_value"])),
-			metric("Ganancia potencial", money(potential_profit), "#d97706")),
-		card("Efectivo y bancos", money(kpis["cash_and_bank"]), "#0284c7", "#f0f9ff",
+			{"text": f"{whole(kpis['sku_with_stock'])} SKUs", "tone": "neutral"},
+			metric("Venta potencial", money(kpis["stock_retail_value"], 0)),
+			metric("Ganancia potencial", money(potential_profit, 0), "#d97706")),
+		card("Efectivo y bancos", money(kpis["cash_and_bank"], 0), "#0284c7", "#f0f9ff",
 			"M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z",
 			{"text": "Al corte", "tone": "neutral"},
-			metric("Por cobrar (CxC)", money(kpis["accounts_receivable"])),
-			metric("Por pagar (CxP)", money(kpis["accounts_payable"]), "#dc2626")),
+			metric("Por cobrar (CxC)", money(kpis["accounts_receivable"], 0)),
+			metric("Por pagar (CxP)", money(kpis["accounts_payable"], 0), "#dc2626")),
 	]
 	balance_rows = [
 		("Efectivo y bancos", money(bs["cash_and_bank"])),
@@ -1708,20 +1716,20 @@ def _dashboard_pdf_context(data: dict, charts: dict[str, str], chart_modes: dict
 	low_stock = [
 		{
 			"name": row["item_name"], "code": row["item_code"],
-			"stock": f"{flt(row['actual_qty']):,.2f}",
-			"sold": f"{flt(row['qty_sold_30d']):,.2f}",
-			"sales": money(row["revenue_30d"]),
-			"coverage": "Agotado" if flt(row["actual_qty"]) <= 0 else f"{flt(row['coverage_days']):.1f} días",
+			"stock": whole(row["actual_qty"]),
+			"sold": whole(row["qty_sold_30d"]),
+			"sales": money(row["revenue_30d"], 0),
+			"coverage": "Agotado" if flt(row["actual_qty"]) <= 0 else f"{whole(row['coverage_days'])} días",
 		}
 		for row in data["alerts"]["low_stock_stars"]
 	]
 	dead_stock = [
 		{
 			"name": row["item_name"], "code": row["item_code"],
-			"stock": f"{flt(row['actual_qty']):,.2f}",
-			"value": money(row["stock_value"]),
+			"stock": whole(row["actual_qty"]),
+			"value": money(row["stock_value"], 0),
 			"last_sale": report_date(row["last_sale_date"]),
-			"days": "Nunca vendido" if row["days_without_sale"] is None else f"{row['days_without_sale']} días",
+			"days": "Nunca vendido" if row["days_without_sale"] is None else f"{whole(row['days_without_sale'])} días",
 		}
 		for row in data["alerts"]["dead_stock"]
 	]

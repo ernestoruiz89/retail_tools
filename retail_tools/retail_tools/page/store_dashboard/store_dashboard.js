@@ -766,12 +766,18 @@ class RetailStoreDashboard {
 		this.renderIndicatorsTable(data.indicators_table);
 	}
 
-	fmtMoney(value) {
+	fmtInteger(value) {
 		const num = Number(value || 0);
-		const sign = num < 0 ? "-" : "";
+		const rounded = Math.round(Math.abs(num));
+		return `${num < 0 && rounded ? "-" : ""}${rounded.toLocaleString("en-US")}`;
+	}
+
+	fmtMoney(value, decimals = 2) {
+		const num = Number(value || 0);
+		const sign = num < 0 && (decimals !== 0 || Math.abs(num) >= 0.5) ? "-" : "";
 		return `${sign}${this.currencySymbol}\u00a0${Math.abs(num).toLocaleString("en-US", {
-			minimumFractionDigits: 2,
-			maximumFractionDigits: 2,
+			minimumFractionDigits: decimals,
+			maximumFractionDigits: decimals,
 		})}`;
 	}
 
@@ -846,15 +852,15 @@ class RetailStoreDashboard {
 					</div>
 					${this.deltaBadgeHtml(kpis.net_sales_delta_pct)}
 				</div>
-				<div class="rt-db-kpi-value">${this.fmtMoney(kpis.net_sales)}</div>
+				<div class="rt-db-kpi-value">${this.fmtMoney(kpis.net_sales, 0)}</div>
 				<div class="rt-db-kpi-footer">
 					<div class="rt-db-kpi-metric">
 						<span class="rt-db-kpi-metric-label">${__("Período Anterior")}</span>
-						<span class="rt-db-kpi-metric-val">${this.fmtMoney(kpis.prev_net_sales)}</span>
+						<span class="rt-db-kpi-metric-val">${this.fmtMoney(kpis.prev_net_sales, 0)}</span>
 					</div>
 					<div class="rt-db-kpi-metric" style="text-align:right;">
 						<span class="rt-db-kpi-metric-label">${__("Transacciones")}</span>
-						<span class="rt-db-kpi-metric-val">${Number(kpis.ticket_count || 0).toLocaleString()} ${__("tickets")}</span>
+						<span class="rt-db-kpi-metric-val">${this.fmtInteger(kpis.ticket_count)} ${__("tickets")}</span>
 					</div>
 				</div>
 			</div>
@@ -869,7 +875,7 @@ class RetailStoreDashboard {
 					</div>
 					${this.deltaBadgeHtml(kpis.gross_profit_delta_pct)}
 				</div>
-				<div class="rt-db-kpi-value">${this.fmtMoney(kpis.gross_profit)}</div>
+				<div class="rt-db-kpi-value">${this.fmtMoney(kpis.gross_profit, 0)}</div>
 				<div class="rt-db-kpi-footer">
 					<div class="rt-db-kpi-metric">
 						<span class="rt-db-kpi-metric-label">${__("Margen Bruto Actual")}</span>
@@ -892,7 +898,7 @@ class RetailStoreDashboard {
 					</div>
 					${this.deltaBadgeHtml(kpis.net_profit_delta_pct)}
 				</div>
-				<div class="rt-db-kpi-value">${this.fmtMoney(kpis.net_profit)}</div>
+				<div class="rt-db-kpi-value">${this.fmtMoney(kpis.net_profit, 0)}</div>
 				<div class="rt-db-kpi-footer">
 					<div class="rt-db-kpi-metric">
 						<span class="rt-db-kpi-metric-label">${__("Margen Neto")}</span>
@@ -900,7 +906,7 @@ class RetailStoreDashboard {
 					</div>
 					<div class="rt-db-kpi-metric" style="text-align:right;">
 						<span class="rt-db-kpi-metric-label">${__("Gastos Operativos")}</span>
-						<span class="rt-db-kpi-metric-val">${this.fmtMoney(kpis.operating_expenses)}</span>
+						<span class="rt-db-kpi-metric-val">${this.fmtMoney(kpis.operating_expenses, 0)}</span>
 					</div>
 				</div>
 			</div>
@@ -915,15 +921,15 @@ class RetailStoreDashboard {
 					</div>
 					${this.deltaBadgeHtml(kpis.avg_ticket_delta_pct)}
 				</div>
-				<div class="rt-db-kpi-value">${this.fmtMoney(kpis.avg_ticket)}</div>
+				<div class="rt-db-kpi-value">${this.fmtMoney(kpis.avg_ticket, 0)}</div>
 				<div class="rt-db-kpi-footer">
 					<div class="rt-db-kpi-metric">
 						<span class="rt-db-kpi-metric-label">${__("Unid. por Ticket (UPT)")}</span>
-						<span class="rt-db-kpi-metric-val">${Number(kpis.upt || 0).toFixed(2)} ${__("u/ticket")}</span>
+						<span class="rt-db-kpi-metric-val">${this.fmtInteger(kpis.upt)} ${__("u/ticket")}</span>
 					</div>
 					<div class="rt-db-kpi-metric" style="text-align:right;">
 						<span class="rt-db-kpi-metric-label">${__("Unidades Vendidas")}</span>
-						<span class="rt-db-kpi-metric-val">${Number(kpis.total_units || 0).toLocaleString()} ${__("unid.")}</span>
+						<span class="rt-db-kpi-metric-val">${this.fmtInteger(kpis.total_units)} ${__("unid.")}</span>
 					</div>
 				</div>
 			</div>
@@ -936,17 +942,17 @@ class RetailStoreDashboard {
 						</span>
 						<span class="rt-db-kpi-title">${__("Capital en Inventario")}</span>
 					</div>
-					<span class="rt-db-kpi-delta neutral">${Number(kpis.sku_with_stock || 0).toLocaleString()} SKUs</span>
+					<span class="rt-db-kpi-delta neutral">${this.fmtInteger(kpis.sku_with_stock)} SKUs</span>
 				</div>
-				<div class="rt-db-kpi-value">${this.fmtMoney(kpis.stock_cost_value)}</div>
+				<div class="rt-db-kpi-value">${this.fmtMoney(kpis.stock_cost_value, 0)}</div>
 				<div class="rt-db-kpi-footer">
 					<div class="rt-db-kpi-metric">
 						<span class="rt-db-kpi-metric-label">${__("Venta Potencial")}</span>
-						<span class="rt-db-kpi-metric-val">${this.fmtMoney(kpis.stock_retail_value)}</span>
+						<span class="rt-db-kpi-metric-val">${this.fmtMoney(kpis.stock_retail_value, 0)}</span>
 					</div>
 					<div class="rt-db-kpi-metric" style="text-align:right;">
 						<span class="rt-db-kpi-metric-label">${__("Ganancia Potencial")}</span>
-						<span class="rt-db-kpi-metric-val" style="color:#d97706;">${this.fmtMoney(potentialProfit)}</span>
+						<span class="rt-db-kpi-metric-val" style="color:#d97706;">${this.fmtMoney(potentialProfit, 0)}</span>
 					</div>
 				</div>
 			</div>
@@ -961,15 +967,15 @@ class RetailStoreDashboard {
 					</div>
 					<span class="rt-db-kpi-delta neutral">${__("Al Corte")}</span>
 				</div>
-				<div class="rt-db-kpi-value">${this.fmtMoney(kpis.cash_and_bank)}</div>
+				<div class="rt-db-kpi-value">${this.fmtMoney(kpis.cash_and_bank, 0)}</div>
 				<div class="rt-db-kpi-footer">
 					<div class="rt-db-kpi-metric">
 						<span class="rt-db-kpi-metric-label">${__("Por Cobrar (CxC)")}</span>
-						<span class="rt-db-kpi-metric-val">${this.fmtMoney(kpis.accounts_receivable)}</span>
+						<span class="rt-db-kpi-metric-val">${this.fmtMoney(kpis.accounts_receivable, 0)}</span>
 					</div>
 					<div class="rt-db-kpi-metric" style="text-align:right;">
 						<span class="rt-db-kpi-metric-label">${__("Por Pagar (CxP)")}</span>
-						<span class="rt-db-kpi-metric-val" style="color:#dc2626;">${this.fmtMoney(kpis.accounts_payable)}</span>
+						<span class="rt-db-kpi-metric-val" style="color:#dc2626;">${this.fmtMoney(kpis.accounts_payable, 0)}</span>
 					</div>
 				</div>
 			</div>
@@ -2257,7 +2263,7 @@ class RetailStoreDashboard {
 				.map((r) => {
 					const badgeCls = r.actual_qty <= 0 ? "danger" : "warning";
 					const badgeText =
-						r.actual_qty <= 0 ? __("Agotado") : `${r.coverage_days} ${__("días")}`;
+						r.actual_qty <= 0 ? __("Agotado") : `${this.fmtInteger(r.coverage_days)} ${__("días")}`;
 					return `
 						<tr>
 							<td>
@@ -2266,9 +2272,9 @@ class RetailStoreDashboard {
 								</a>
 								<div style="font-size:11px;color:#64748b;">${frappe.utils.escape_html(r.item_code)}</div>
 							</td>
-							<td style="text-align:right;font-weight:700;white-space:nowrap;">${r.actual_qty}</td>
-							<td style="text-align:right;white-space:nowrap;">${r.qty_sold_30d}</td>
-							<td style="text-align:right;white-space:nowrap;">${this.fmtMoney(r.revenue_30d)}</td>
+							<td style="text-align:right;font-weight:700;white-space:nowrap;">${this.fmtInteger(r.actual_qty)}</td>
+							<td style="text-align:right;white-space:nowrap;">${this.fmtInteger(r.qty_sold_30d)}</td>
+							<td style="text-align:right;white-space:nowrap;">${this.fmtMoney(r.revenue_30d, 0)}</td>
 							<td style="text-align:center;white-space:nowrap;"><span class="rt-db-badge ${badgeCls}">${badgeText}</span></td>
 						</tr>
 					`;
@@ -2302,7 +2308,7 @@ class RetailStoreDashboard {
 					const daysLabel =
 						r.days_without_sale === null || r.days_without_sale === undefined
 							? __("Nunca vendido")
-							: `${r.days_without_sale} ${__("días")}`;
+							: `${this.fmtInteger(r.days_without_sale)} ${__("días")}`;
 					const lastSaleFormatted = frappe.utils.escape_html(this.formatDate(r.last_sale_date));
 					return `
 						<tr>
@@ -2312,8 +2318,8 @@ class RetailStoreDashboard {
 								</a>
 								<div style="font-size:11px;color:#64748b;">${frappe.utils.escape_html(r.item_code)}</div>
 							</td>
-							<td style="text-align:right;white-space:nowrap;">${r.actual_qty}</td>
-							<td style="text-align:right;font-weight:700;white-space:nowrap;">${this.fmtMoney(r.stock_value)}</td>
+							<td style="text-align:right;white-space:nowrap;">${this.fmtInteger(r.actual_qty)}</td>
+							<td style="text-align:right;font-weight:700;white-space:nowrap;">${this.fmtMoney(r.stock_value, 0)}</td>
 							<td style="white-space:nowrap;min-width:96px;">${lastSaleFormatted}</td>
 							<td style="text-align:center;white-space:nowrap;"><span class="rt-db-badge warning">${daysLabel}</span></td>
 						</tr>
