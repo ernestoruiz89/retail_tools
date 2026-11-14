@@ -304,7 +304,9 @@ def _sales_line_amounts(row: dict, cost_map: dict[str, float]) -> tuple[float, f
 	return flt(row.net_amount), stock_qty * unit_cost
 
 
-def _compute_monthly_trend(rows: list[dict], cost_map: dict[str, float], from_date: str, to_date: str) -> dict:
+def _compute_monthly_trend(
+	rows: list[dict], cost_map: dict[str, float], from_date: str, to_date: str, cutoff_day: int | None = None
+) -> dict:
 	start, end = getdate(from_date), getdate(to_date)
 	month = start.replace(day=1)
 	buckets = {}
@@ -314,6 +316,8 @@ def _compute_monthly_trend(rows: list[dict], cost_map: dict[str, float], from_da
 	for row in rows:
 		posting_date = getdate(row.posting_date)
 		if not start <= posting_date <= end:
+			continue
+		if cutoff_day is not None and posting_date.day > cutoff_day:
 			continue
 		bucket = buckets[str(posting_date.replace(day=1))]
 		sales, cost = _sales_line_amounts(row, cost_map)
@@ -332,7 +336,8 @@ def _compute_monthly_trend(rows: list[dict], cost_map: dict[str, float], from_da
 
 
 def _get_monthly_trend(company, warehouse, include_pending_pos, cost_map, from_date, to_date, range_key, current_rows):
-	start, end = monthly_period(getdate(from_date), getdate(to_date), range_key, getdate(nowdate()))
+	today = getdate(nowdate())
+	start, end = monthly_period(getdate(from_date), getdate(to_date), range_key, today)
 	rows = current_rows if (str(start), str(end)) == (from_date, to_date) else _fetch_sales_line_rows(
 		company, str(start), str(end), warehouse, include_pending_pos
 	)
@@ -340,6 +345,11 @@ def _get_monthly_trend(company, warehouse, include_pending_pos, cost_map, from_d
 	trend["scope"] = "ytd" if range_key == "ytd" else (
 		"12m" if range_key in {"today", "7d", "30d", "this_month", "last_month"} else "custom"
 	)
+	trend["to_day"] = {
+		**_compute_monthly_trend(rows, cost_map, str(start), str(end), cutoff_day=today.day),
+		"scope": trend["scope"],
+		"cutoff_day": today.day,
+	}
 	return trend
 
 
@@ -1627,10 +1637,14 @@ def _dashboard_pdf_context(data: dict, charts: dict[str, str], chart_modes: dict
 	calendar_mode = chart_modes.get("calendar") if chart_modes.get("calendar") in ("sales", "tickets") else "sales"
 	heatmap_mode = chart_modes.get("heatmap") if chart_modes.get("heatmap") in ("sales", "tickets") else "sales"
 	trend_title = "Evolución diaria de ventas y utilidad"
-	if chart_modes.get("trend") == "monthly":
+	if chart_modes.get("trend") in ("monthly", "monthly_to_day"):
 		monthly = data["charts"]["monthly_trend"]
+		caption = "Evolución mensual de ventas, utilidad y margen"
+		if chart_modes.get("trend") == "monthly_to_day":
+			monthly = monthly["to_day"]
+			caption = f"Ventas, utilidad y margen por mes al día {monthly['cutoff_day']}"
 		trend_title = (
-			"Evolución mensual de ventas, utilidad y margen · "
+			f"{caption} · "
 			f"{report_date(monthly['from_date'])} al {report_date(monthly['to_date'])}"
 		)
 

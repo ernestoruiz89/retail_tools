@@ -27,7 +27,7 @@ class RetailStoreDashboard {
 		this.topItemsMode = "by_revenue"; // "by_revenue" | "by_profit" | "by_qty"
 		this.heatmapMode = "sales"; // "sales" | "tickets"
 		this.calendarMode = "sales"; // "sales" | "tickets"
-		this.trendMode = "daily"; // "daily" | "monthly"
+		this.trendMode = "daily"; // "daily" | "monthly" | "monthly_to_day"
 		this.indicatorFilter = "all";
 		this.activeRangeKey = null;
 		this.refreshRequestId = 0;
@@ -174,6 +174,7 @@ class RetailStoreDashboard {
 							<div class="rt-db-segmented" id="rt-db-trend-toggle" role="group" aria-label="${__("Agrupación de ventas")}">
 								<button type="button" class="rt-db-seg-btn active" data-mode="daily" aria-pressed="true">${__("Diario")}</button>
 								<button type="button" class="rt-db-seg-btn" data-mode="monthly" aria-pressed="false">${__("Mensual")}</button>
+								<button type="button" class="rt-db-seg-btn" data-mode="monthly_to_day" aria-pressed="false">${__("Por mes al día")}</button>
 							</div>
 						</div>
 						<div id="rt-chart-daily" class="rt-db-chart-box"></div>
@@ -1359,18 +1360,25 @@ class RetailStoreDashboard {
 	 * 3. Daily / monthly sales, gross profit and gross margin.
 	 */
 	renderTrendChart(charts) {
-		const monthly = this.trendMode === "monthly";
-		const trend = monthly ? charts.monthly_trend : charts.daily_trend;
+		const toDay = this.trendMode === "monthly_to_day";
+		const monthly = this.trendMode === "monthly" || toDay;
+		const trend = toDay ? charts.monthly_trend.to_day : monthly ? charts.monthly_trend : charts.daily_trend;
 		this.$container.find("#rt-db-trend-toggle .rt-db-seg-btn").removeClass("active").attr("aria-pressed", "false");
-		this.$container.find(`#rt-db-trend-toggle [data-mode="${monthly ? "monthly" : "daily"}"]`).addClass("active").attr("aria-pressed", "true");
-		this.$container.find("#rt-db-trend-title").text(monthly
+		this.$container.find(`#rt-db-trend-toggle [data-mode="${toDay ? "monthly_to_day" : monthly ? "monthly" : "daily"}"]`).addClass("active").attr("aria-pressed", "true");
+		this.$container.find("#rt-db-trend-title").text(toDay
+			? __("Evolución Mensual al Día de Ventas, Utilidad Bruta y Margen (%)")
+			: monthly
 			? __("Evolución Mensual de Ventas, Utilidad Bruta y Margen (%)")
 			: __("Evolución Diaria de Ventas, Utilidad Bruta y Margen (%)"));
 		let subtitle = __("Use la barra inferior o rueda del ratón para hacer zoom en días específicos");
 		if (monthly && trend) {
 			const scope = trend.scope === "ytd" ? __("Este Año") : trend.scope === "12m" ? __("Últimos 12 meses") : __("Período seleccionado");
 			subtitle = `${scope} · ${this.formatDate(trend.from_date)} ${__("al")} ${this.formatDate(trend.to_date)}`;
-			if (trend.scope !== "custom") subtitle += ` · ${__("Mes actual hasta la fecha")}`;
+			if (toDay) {
+				subtitle += ` · ${__("Hasta el día {0} de cada mes", [trend.cutoff_day])}`;
+			} else if (trend.scope !== "custom") {
+				subtitle += ` · ${__("Mes actual hasta la fecha")}`;
+			}
 		}
 		this.$container.find("#rt-db-trend-subtitle").text(subtitle);
 		this.renderDailyTrendChart(trend, monthly);

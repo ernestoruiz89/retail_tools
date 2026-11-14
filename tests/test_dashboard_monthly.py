@@ -66,6 +66,41 @@ class DashboardMonthlyTest(unittest.TestCase):
 			self.assertEqual(trend["scope"], "custom")
 			fetch.assert_not_called()
 
+	def test_month_to_day_uses_same_cutoff_for_sales_profit_and_margin_without_extra_query(self):
+		rows = [
+			self.row("2026-10-01", 100, rate=60),
+			self.row("2026-10-14", 200, rate=100, channel="Direct"),
+			self.row("2026-10-14", -100, qty=-1, rate=60),
+			self.row("2026-10-15", 900, rate=400),
+			self.row("2026-11-14", 300, rate=150),
+		]
+		with patch.object(self.dashboard, "_fetch_sales_line_rows", return_value=rows) as fetch:
+			trend = self.dashboard._get_monthly_trend("Company", "Store", True, {}, "2026-11-14", "2026-11-14", "today", [])
+			fetch.assert_called_once_with("Company", "2025-12-01", "2026-11-14", "Store", True)
+		self.assertEqual(trend["sales"][-2:], [1100, 300])
+		partial = trend["to_day"]
+		self.assertEqual(partial["cutoff_day"], 14)
+		self.assertEqual(partial["scope"], "12m")
+		self.assertEqual(partial["dates"], trend["dates"])
+		self.assertEqual(partial["sales"][-2:], [200, 300])
+		self.assertEqual(partial["profit"][-2:], [100, 150])
+		self.assertEqual(partial["margin_pct"][-2:], [50, 50])
+		self.assertEqual(partial["sales"][0], 0)
+		self.assertIsNone(partial["margin_pct"][0])
+
+	def test_month_to_day_handles_first_day_and_short_leap_months(self):
+		rows = [self.row("2024-02-01", 100), self.row("2024-02-29", 200), self.row("2024-03-01", 300), self.row("2024-03-31", 400)]
+		first = self.dashboard._compute_monthly_trend(rows, {}, "2024-02-01", "2024-03-31", cutoff_day=1)
+		self.assertEqual(first["sales"], [100, 300])
+		last = self.dashboard._compute_monthly_trend(rows, {}, "2024-02-01", "2024-03-31", cutoff_day=31)
+		self.assertEqual(last["sales"], [300, 700])
+		self.dashboard.nowdate = lambda: "2026-11-07"
+		with patch.object(self.dashboard, "_fetch_sales_line_rows", return_value=[]):
+			trend = self.dashboard._get_monthly_trend("Company", None, True, {}, "2026-01-01", "2026-11-07", "ytd", [])
+		self.assertEqual(trend["to_day"]["cutoff_day"], 7)
+		self.assertEqual(trend["to_day"]["scope"], "ytd")
+		self.assertEqual(len(trend["to_day"]["dates"]), 11)
+
 
 if __name__ == "__main__":
 	unittest.main()

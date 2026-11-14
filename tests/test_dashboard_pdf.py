@@ -110,6 +110,14 @@ class DashboardPdfTest(unittest.TestCase):
 			monthly["charts"][2]["title"],
 			"Evolución mensual de ventas, utilidad y margen · 01/12/2025 al 14/11/2026",
 		)
+		data["charts"]["monthly_trend"]["to_day"] = {
+			"from_date": "2025-12-01", "to_date": "2026-11-14", "cutoff_day": 14,
+		}
+		partial = self.dashboard._dashboard_pdf_context(data, charts, {"trend": "monthly_to_day"})
+		self.assertEqual(
+			partial["charts"][2]["title"],
+			"Ventas, utilidad y margen por mes al día 14 · 01/12/2025 al 14/11/2026",
+		)
 
 
 if __name__ == "__main__":

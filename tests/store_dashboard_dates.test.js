@@ -23,7 +23,7 @@ function makeDashboard() {
 			},
 			utils: { escape_html: (value) => value },
 		},
-		__: (value) => value,
+		__: (value, args = []) => value.replace(/\{(\d+)\}/g, (_match, index) => args[index]),
 		console,
 	};
 	vm.runInNewContext(`${source}\nthis.Dashboard = RetailStoreDashboard;`, context);
@@ -262,4 +262,24 @@ test("switching trend views uses monthly history and keeps the daily data intact
 	dashboard.renderTrendChart(charts);
 	assert.equal(selected.trend, charts.daily_trend);
 	assert.equal(selected.monthly, false);
+});
+
+test("month-to-day view selects partial totals and describes the cutoff without changing monthly totals", () => {
+	const { dashboard, values } = makeDashboard();
+	let selected;
+	dashboard.renderDailyTrendChart = (trend, monthly) => { selected = { trend, monthly }; };
+	const charts = { monthly_trend: {
+		from_date: "2025-12-01", to_date: "2026-11-14", scope: "12m", sales: [1000],
+		to_day: { from_date: "2025-12-01", to_date: "2026-11-14", scope: "12m", cutoff_day: 14, sales: [400] },
+	} };
+	dashboard.trendMode = "monthly_to_day";
+	dashboard.renderTrendChart(charts);
+	assert.equal(selected.trend, charts.monthly_trend.to_day);
+	assert.equal(selected.monthly, true);
+	assert.match(values["#rt-db-trend-subtitle"], /Últimos 12 meses.*Hasta el día 14 de cada mes/);
+	assert.match(values["#rt-db-trend-title"], /Mensual al Día/);
+	dashboard.trendMode = "monthly";
+	dashboard.renderTrendChart(charts);
+	assert.equal(selected.trend, charts.monthly_trend);
+	assert.doesNotMatch(values["#rt-db-trend-subtitle"], /Hasta el día 14/);
 });
