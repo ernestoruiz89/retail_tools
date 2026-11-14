@@ -78,6 +78,10 @@ class DashboardPdfTest(unittest.TestCase):
 				"gross_margin_pct": 40, "net_profit": 20, "net_margin_pct": 20,
 				"avg_ticket": 10, "ticket_count": 10, "stock_cost_value": 300,
 				"sku_with_stock": 4, "cash_and_bank": 50, "accounts_receivable": 5,
+				"stock_retail_value": 500, "net_sales_delta_pct": 25,
+				"gross_profit_delta_pct": 20, "prev_gross_margin_pct": 35,
+				"net_profit_delta_pct": 10, "operating_expenses": 20,
+				"avg_ticket_delta_pct": 5, "upt": 2, "total_units": 20, "accounts_payable": 100,
 			},
 			"financials": {
 				"balance_sheet": {
@@ -100,6 +104,12 @@ class DashboardPdfTest(unittest.TestCase):
 		self.assertEqual(context["charts"][1]["title"], "Desglose de gastos")
 		self.assertEqual(context["charts"][4]["title"], "Productos por unidades")
 		self.assertEqual(context["dupont"]["roe"], "7.8%")
+		data["charts"] = {"monthly_trend": {"from_date": "2025-12-01", "to_date": "2026-11-14"}}
+		monthly = self.dashboard._dashboard_pdf_context(data, charts, {"trend": "monthly"})
+		self.assertEqual(
+			monthly["charts"][2]["title"],
+			"Evolución mensual de ventas, utilidad y margen · 01/12/2025 al 14/11/2026",
+		)
 
 
 if __name__ == "__main__":

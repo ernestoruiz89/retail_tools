@@ -108,7 +108,7 @@
 
   <div class="page">
     <div class="topline"></div><h2>Panorama financiero y desempeño comercial</h2>
-    <p class="section-subtitle">Gráficos del período seleccionado. Las cifras detalladas se presentan en el resumen y la tabla de indicadores.</p>
+    <p class="section-subtitle">Panorama de ventas y rentabilidad. Consulte las fechas del informe y el rango indicado en la evolución mensual.</p>
     <table class="chart-grid">
       <tr>{% for chart in charts[:2] %}<td><div class="chart-card"><div class="chart-title">{{ chart.title | e }}</div><img src="{{ chart.image | e }}" alt="{{ chart.title | e }}"></div></td>{% endfor %}</tr>
       <tr>{% for chart in charts[2:4] %}<td><div class="chart-card"><div class="chart-title">{{ chart.title | e }}</div><img src="{{ chart.image | e }}" alt="{{ chart.title | e }}"></div></td>{% endfor %}</tr>

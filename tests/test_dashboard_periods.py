@@ -3,10 +3,29 @@
 import unittest
 from datetime import date
 
-from retail_tools.retail_tools.page.store_dashboard.periods import previous_period
+from retail_tools.retail_tools.page.store_dashboard.periods import monthly_period, previous_period
 
 
 class DashboardPeriodsTest(unittest.TestCase):
+	def test_monthly_history_for_every_short_preset_includes_current_month(self):
+		for preset in ("today", "7d", "30d", "this_month", "last_month"):
+			with self.subTest(preset=preset):
+				self.assertEqual(
+					monthly_period(date(2026, 10, 1), date(2026, 10, 31), preset, date(2026, 11, 14)),
+					(date(2025, 12, 1), date(2026, 11, 14)),
+				)
+
+	def test_monthly_history_handles_year_boundary_and_leap_day(self):
+		for today, expected in ((date(2026, 1, 1), date(2025, 2, 1)), (date(2024, 2, 29), date(2023, 3, 1))):
+			self.assertEqual(monthly_period(today, today, "30d", today), (expected, today))
+			self.assertEqual(monthly_period(today, today, "ytd", today), (date(today.year, 1, 1), today))
+
+	def test_monthly_custom_dates_keep_the_selected_bounds(self):
+		self.assertEqual(
+			monthly_period(date(2025, 3, 10), date(2025, 8, 20), None, date(2026, 11, 14)),
+			(date(2025, 3, 10), date(2025, 8, 20)),
+		)
+
 	def test_current_month_compares_same_days_of_previous_month(self):
 		self.assertEqual(
 			previous_period(date(2026, 11, 1), date(2026, 11, 13), "this_month"),

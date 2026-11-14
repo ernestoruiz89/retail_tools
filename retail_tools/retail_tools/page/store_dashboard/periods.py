@@ -4,6 +4,16 @@ from calendar import monthrange
 from datetime import date, timedelta
 
 
+def monthly_period(start_date: date, end_date: date, range_key: str | None, today: date) -> tuple[date, date]:
+	"""Monthly history is independent of short presets; manual dates keep their bounds."""
+	if range_key == "ytd":
+		return date(today.year, 1, 1), today
+	if range_key in {"today", "7d", "30d", "this_month", "last_month"}:
+		month_index = today.year * 12 + today.month - 1 - 11
+		return date(month_index // 12, month_index % 12 + 1, 1), today
+	return start_date, end_date
+
+
 def previous_period(start_date: date, end_date: date, range_key: str | None = None) -> tuple[date, date]:
 	"""Return the comparison dates for the selected range."""
 	if range_key == "this_month" and start_date == end_date.replace(day=1):

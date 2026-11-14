@@ -8,7 +8,7 @@ import frappe
 from frappe import _
 from frappe.utils import add_days, cint, date_diff, flt, formatdate, getdate, nowdate
 
-from retail_tools.retail_tools.page.store_dashboard.periods import previous_period
+from retail_tools.retail_tools.page.store_dashboard.periods import monthly_period, previous_period
 
 DASHBOARD_ROLES = {
 	"System Manager",
@@ -294,6 +294,54 @@ def _fetch_sales_line_rows(
 	return rows
 
 
+def _sales_line_amounts(row: dict, cost_map: dict[str, float]) -> tuple[float, float]:
+	"""Use the same net sales and cost basis for daily and monthly charts."""
+	stock_qty = flt(row.stock_qty) if flt(row.stock_qty) != 0 else flt(row.qty)
+	unit_cost = flt(row.incoming_rate)
+	if unit_cost <= 0 and row.item_code:
+		unit_cost = flt(cost_map.get(row.item_code, 0.0))
+	return flt(row.net_amount), stock_qty * unit_cost
+
+
+def _compute_monthly_trend(rows: list[dict], cost_map: dict[str, float], from_date: str, to_date: str) -> dict:
+	start, end = getdate(from_date), getdate(to_date)
+	month = start.replace(day=1)
+	buckets = {}
+	while month <= end:
+		buckets[str(month)] = {"sales": 0.0, "profit": 0.0}
+		month = month.replace(year=month.year + 1, month=1) if month.month == 12 else month.replace(month=month.month + 1)
+	for row in rows:
+		posting_date = getdate(row.posting_date)
+		if not start <= posting_date <= end:
+			continue
+		bucket = buckets[str(posting_date.replace(day=1))]
+		sales, cost = _sales_line_amounts(row, cost_map)
+		bucket["sales"] += sales
+		bucket["profit"] += sales - cost
+	return {
+		"from_date": str(start),
+		"to_date": str(end),
+		"dates": list(buckets),
+		**{key: [round(bucket[key], 2) for bucket in buckets.values()] for key in ("sales", "profit")},
+		"margin_pct": [
+			round(bucket["profit"] / bucket["sales"] * 100, 2) if abs(bucket["sales"]) > 1e-9 else None
+			for bucket in buckets.values()
+		],
+	}
+
+
+def _get_monthly_trend(company, warehouse, include_pending_pos, cost_map, from_date, to_date, range_key, current_rows):
+	start, end = monthly_period(getdate(from_date), getdate(to_date), range_key, getdate(nowdate()))
+	rows = current_rows if (str(start), str(end)) == (from_date, to_date) else _fetch_sales_line_rows(
+		company, str(start), str(end), warehouse, include_pending_pos
+	)
+	trend = _compute_monthly_trend(rows, cost_map, str(start), str(end))
+	trend["scope"] = "ytd" if range_key == "ytd" else (
+		"12m" if range_key in {"today", "7d", "30d", "this_month", "last_month"} else "custom"
+	)
+	return trend
+
+
 def _compute_commercial_metrics(
 	rows: list[dict],
 	cost_map: dict[str, float],
@@ -333,15 +381,8 @@ def _compute_commercial_metrics(
 
 	for r in rows:
 		inv_key = f"{r.doctype}::{r.invoice_name}"
-		net_amount = flt(r.net_amount)
+		net_amount, line_cost = _sales_line_amounts(r, cost_map)
 		qty = flt(r.qty)
-		stock_qty = flt(r.stock_qty) if flt(r.stock_qty) != 0 else qty
-
-		unit_cost = flt(r.incoming_rate)
-		if unit_cost <= 0 and r.item_code:
-			unit_cost = flt(cost_map.get(r.item_code, 0.0))
-
-		line_cost = stock_qty * unit_cost
 		line_profit = net_amount - line_cost
 
 		total_sales += net_amount
@@ -1406,6 +1447,9 @@ def get_store_dashboard_data(
 
 	curr_comm = _compute_commercial_metrics(curr_rows, cost_map, start_date, end_date)
 	prev_comm = _compute_commercial_metrics(prev_rows, cost_map, prev_from_date, prev_to_date)
+	monthly_trend = _get_monthly_trend(
+		resolved_company, clean_warehouse, include_pos_bool, cost_map, start_date, end_date, range_key, curr_rows
+	)
 
 	# Inventory & operational alerts
 	inventory_data = _get_inventory_and_alerts(
@@ -1499,6 +1543,7 @@ def get_store_dashboard_data(
 		"financials": financials,
 		"charts": {
 			"daily_trend": curr_comm["daily_trend"],
+			"monthly_trend": monthly_trend,
 			"by_category": inventory_data["by_category"],
 			"top_items": curr_comm["top_items"],
 			"payment_methods": payment_methods,
@@ -1573,6 +1618,13 @@ def _dashboard_pdf_context(data: dict, charts: dict[str, str], chart_modes: dict
 	top_mode = chart_modes.get("top") if chart_modes.get("top") in ("by_revenue", "by_profit", "by_qty") else "by_revenue"
 	calendar_mode = chart_modes.get("calendar") if chart_modes.get("calendar") in ("sales", "tickets") else "sales"
 	heatmap_mode = chart_modes.get("heatmap") if chart_modes.get("heatmap") in ("sales", "tickets") else "sales"
+	trend_title = "Evolución diaria de ventas y utilidad"
+	if chart_modes.get("trend") == "monthly":
+		monthly = data["charts"]["monthly_trend"]
+		trend_title = (
+			"Evolución mensual de ventas, utilidad y margen · "
+			f"{report_date(monthly['from_date'])} al {report_date(monthly['to_date'])}"
+		)
 
 	def delta_badge(value):
 		percent = flt(value)
@@ -1644,7 +1696,7 @@ def _dashboard_pdf_context(data: dict, charts: dict[str, str], chart_modes: dict
 	chart_specs = [
 		("rt-chart-balance", "Balance general"),
 		("rt-chart-pnl", "Estado de resultados" if pnl_mode == "waterfall" else "Desglose de gastos"),
-		("rt-chart-daily", "Evolución diaria de ventas y utilidad"),
+		("rt-chart-daily", trend_title),
 		("rt-chart-category", "Ventas por categoría"),
 		("rt-chart-top-items", {"by_revenue": "Productos por ingresos", "by_profit": "Productos por utilidad", "by_qty": "Productos por unidades"}[top_mode]),
 		("rt-chart-payments", "Métodos de pago"),

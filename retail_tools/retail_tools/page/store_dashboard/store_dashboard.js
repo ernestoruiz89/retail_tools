@@ -27,6 +27,7 @@ class RetailStoreDashboard {
 		this.topItemsMode = "by_revenue"; // "by_revenue" | "by_profit" | "by_qty"
 		this.heatmapMode = "sales"; // "sales" | "tickets"
 		this.calendarMode = "sales"; // "sales" | "tickets"
+		this.trendMode = "daily"; // "daily" | "monthly"
 		this.indicatorFilter = "all";
 		this.activeRangeKey = null;
 		this.refreshRequestId = 0;
@@ -167,8 +168,12 @@ class RetailStoreDashboard {
 					<div class="rt-db-card">
 						<div class="rt-db-card-header">
 							<div>
-								<h4 class="rt-db-card-title">${__("Evolución Diaria de Ventas, Utilidad Bruta y Margen (%)")}</h4>
-								<div class="rt-db-card-subtitle">${__("Use la barra inferior o rueda del ratón para hacer zoom en días específicos")}</div>
+								<h4 class="rt-db-card-title" id="rt-db-trend-title">${__("Evolución Diaria de Ventas, Utilidad Bruta y Margen (%)")}</h4>
+								<div class="rt-db-card-subtitle" id="rt-db-trend-subtitle"></div>
+							</div>
+							<div class="rt-db-segmented" id="rt-db-trend-toggle" role="group" aria-label="${__("Agrupación de ventas")}">
+								<button type="button" class="rt-db-seg-btn active" data-mode="daily" aria-pressed="true">${__("Diario")}</button>
+								<button type="button" class="rt-db-seg-btn" data-mode="monthly" aria-pressed="false">${__("Mensual")}</button>
 							</div>
 						</div>
 						<div id="rt-chart-daily" class="rt-db-chart-box"></div>
@@ -375,6 +380,11 @@ class RetailStoreDashboard {
 			self.applyQuickRange($(this).data("range"));
 		});
 
+		this.$container.on("click", "#rt-db-trend-toggle .rt-db-seg-btn", function () {
+			self.trendMode = $(this).data("mode");
+			if (self.payload) self.renderTrendChart(self.payload.charts);
+		});
+
 		this.$container.on("click", "#rt-db-pnl-toggle .rt-db-seg-btn", function () {
 			const $btn = $(this);
 			self.$container.find("#rt-db-pnl-toggle .rt-db-seg-btn").removeClass("active");
@@ -482,7 +492,7 @@ class RetailStoreDashboard {
 	}
 
 	async init() {
-		console.info("Store Dashboard build 20261113_02");
+		console.info("Store Dashboard build 20261114_01");
 		try {
 			await this.ensureECharts();
 			const res = await frappe.call({
@@ -707,6 +717,7 @@ class RetailStoreDashboard {
 						include_pending_pos: filters.include_pending_pos,
 						range_key: this.payloadRangeKey,
 						chart_modes: {
+							trend: this.trendMode,
 							pnl: this.pnlMode,
 							top: this.topItemsMode,
 							calendar: this.calendarMode,
@@ -743,7 +754,7 @@ class RetailStoreDashboard {
 		this.renderKpiCards(data.kpis);
 		this.renderBalanceSheetChart(data.financials.balance_sheet);
 		this.renderPnlChart(data.financials.income_statement);
-		this.renderDailyTrendChart(data.charts.daily_trend);
+		this.renderTrendChart(data.charts);
 		this.renderCategoryChart(data.charts.by_category);
 		this.renderTopItemsChart(data.charts.top_items);
 		this.renderPaymentsChart(data.charts.payment_methods);
@@ -1339,17 +1350,37 @@ class RetailStoreDashboard {
 	}
 
 	/**
-	 * 3. Daily Trend Chart (Mixed Line & Bar + DataZoom)
-	 * Shows POS Sales + Direct Invoice Sales (without duplicating consolidated POS invoices),
-	 * alongside Gross Profit and Gross Margin %.
+	 * 3. Daily / monthly sales, gross profit and gross margin.
 	 */
-	renderDailyTrendChart(daily) {
+	renderTrendChart(charts) {
+		const monthly = this.trendMode === "monthly";
+		const trend = monthly ? charts.monthly_trend : charts.daily_trend;
+		this.$container.find("#rt-db-trend-toggle .rt-db-seg-btn").removeClass("active").attr("aria-pressed", "false");
+		this.$container.find(`#rt-db-trend-toggle [data-mode="${monthly ? "monthly" : "daily"}"]`).addClass("active").attr("aria-pressed", "true");
+		this.$container.find("#rt-db-trend-title").text(monthly
+			? __("Evolución Mensual de Ventas, Utilidad Bruta y Margen (%)")
+			: __("Evolución Diaria de Ventas, Utilidad Bruta y Margen (%)"));
+		let subtitle = __("Use la barra inferior o rueda del ratón para hacer zoom en días específicos");
+		if (monthly && trend) {
+			const scope = trend.scope === "ytd" ? __("Este Año") : trend.scope === "12m" ? __("Últimos 12 meses") : __("Período seleccionado");
+			subtitle = `${scope} · ${this.formatDate(trend.from_date)} ${__("al")} ${this.formatDate(trend.to_date)}`;
+			if (trend.scope !== "custom") subtitle += ` · ${__("Mes actual hasta la fecha")}`;
+		}
+		this.$container.find("#rt-db-trend-subtitle").text(subtitle);
+		this.renderDailyTrendChart(trend, monthly);
+	}
+
+	formatMonth(isoDate) {
+		const months = [__("Ene"), __("Feb"), __("Mar"), __("Abr"), __("May"), __("Jun"), __("Jul"), __("Ago"), __("Sep"), __("Oct"), __("Nov"), __("Dic")];
+		return `${months[Number(isoDate.slice(5, 7)) - 1]} ${isoDate.slice(0, 4)}`;
+	}
+
+	renderDailyTrendChart(daily, monthly = false) {
 		const chart = this.getOrCreateChart("rt-chart-daily");
 		if (!chart || !daily) return;
 		const self = this;
 		const isMobile = this.isMobileViewport();
 
-		const hasChannelSplit = Array.isArray(daily.pos_sales) && Array.isArray(daily.direct_sales);
 		const salesArr = daily.sales || [];
 		const marginData = (daily.margin_pct || []).map((val, idx) => {
 			if (val === null || val === undefined) return null;
@@ -1367,14 +1398,7 @@ class RetailStoreDashboard {
 				top: 0,
 				type: isMobile ? "scroll" : "plain",
 				textStyle: { fontSize: isMobile ? 10.5 : 12 },
-				data: hasChannelSplit
-					? [
-							__("Ventas POS"),
-							__("Factura Normal"),
-							__("Utilidad Bruta"),
-							__("Margen Bruto (%)"),
-					  ]
-					: [__("Ventas Netas"), __("Utilidad Bruta"), __("Margen Bruto (%)")],
+				data: [__("Ventas"), __("Utilidad Bruta"), __("Margen Bruto (%)")],
 			},
 			grid: {
 				top: 38,
@@ -1390,7 +1414,7 @@ class RetailStoreDashboard {
 			xAxis: [
 				{
 					type: "category",
-					data: (daily.dates || []).map((date) => this.formatDate(date)),
+					data: (daily.dates || []).map((date) => monthly ? this.formatMonth(date) : this.formatDate(date)),
 					axisPointer: { type: "shadow" },
 					axisLabel: {
 						hideOverlap: true,
@@ -1418,70 +1442,33 @@ class RetailStoreDashboard {
 					splitLine: { show: false },
 				},
 			],
-			series: hasChannelSplit
-				? [
-						{
-							name: __("Ventas POS"),
-							type: "bar",
-							stack: "ventas_diarias",
-							barMaxWidth: 26,
-							itemStyle: { color: "#2563eb" },
-							data: daily.pos_sales || [],
-						},
-						{
-							name: __("Factura Normal"),
-							type: "bar",
-							stack: "ventas_diarias",
-							barMaxWidth: 26,
-							itemStyle: { color: "#6366f1", borderRadius: [4, 4, 0, 0] },
-							data: daily.direct_sales || [],
-						},
-						{
-							name: __("Utilidad Bruta"),
-							type: "bar",
-							barMaxWidth: 26,
-							itemStyle: { color: "#10b981", borderRadius: [4, 4, 0, 0] },
-							data: daily.profit || [],
-						},
-						{
-							name: __("Margen Bruto (%)"),
-							type: "line",
-							yAxisIndex: 1,
-							smooth: true,
-							connectNulls: true,
-							symbolSize: 6,
-							itemStyle: { color: "#f59e0b" },
-							lineStyle: { width: 2.5 },
-							data: marginData,
-						},
-				  ]
-				: [
-						{
-							name: __("Ventas Netas"),
-							type: "bar",
-							barMaxWidth: 28,
-							itemStyle: { color: "#3b82f6", borderRadius: [4, 4, 0, 0] },
-							data: daily.sales || [],
-						},
-						{
-							name: __("Utilidad Bruta"),
-							type: "bar",
-							barMaxWidth: 28,
-							itemStyle: { color: "#10b981", borderRadius: [4, 4, 0, 0] },
-							data: daily.profit || [],
-						},
-						{
-							name: __("Margen Bruto (%)"),
-							type: "line",
-							yAxisIndex: 1,
-							smooth: true,
-							connectNulls: true,
-							symbolSize: 6,
-							itemStyle: { color: "#f59e0b" },
-							lineStyle: { width: 2.5 },
-							data: marginData,
-						},
-				  ],
+			series: [
+				{
+					name: __("Ventas"),
+					type: "bar",
+					barMaxWidth: 28,
+					itemStyle: { color: "#3b82f6", borderRadius: [4, 4, 0, 0] },
+					data: daily.sales || [],
+				},
+				{
+					name: __("Utilidad Bruta"),
+					type: "bar",
+					barMaxWidth: 28,
+					itemStyle: { color: "#10b981", borderRadius: [4, 4, 0, 0] },
+					data: daily.profit || [],
+				},
+				{
+					name: __("Margen Bruto (%)"),
+					type: "line",
+					yAxisIndex: 1,
+					smooth: true,
+					connectNulls: true,
+					symbolSize: 6,
+					itemStyle: { color: "#f59e0b" },
+					lineStyle: { width: 2.5 },
+					data: marginData,
+				},
+			],
 		});
 	}
 

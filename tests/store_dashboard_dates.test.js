@@ -53,6 +53,10 @@ function makeDashboard() {
 				empty() {},
 				append() {},
 				html(value) { values[selector] = value; },
+				text(value) { values[selector] = value; return this; },
+				removeClass() { return this; },
+				addClass() { return this; },
+				attr() { return this; },
 			};
 		},
 	};
@@ -212,12 +216,50 @@ test("PDF export sends the visible period and downloads the returned file", asyn
 	} };
 	dashboard.payloadRangeKey = "30d";
 	dashboard.pnlMode = "expenses";
+	dashboard.trendMode = "monthly";
 	await dashboard.exportDashboardPdf();
 	assert.equal(request.options.headers["X-Frappe-CSRF-Token"], "csrf-test");
 	const body = JSON.parse(request.options.body);
 	assert.equal(body.from_date, "2026-10-15");
 	assert.equal(body.range_key, "30d");
 	assert.equal(body.chart_modes.pnl, "expenses");
+	assert.equal(body.chart_modes.trend, "monthly");
 	assert.equal(clicked, true);
 	assert.equal(buttonDisabled, false);
+});
+
+test("daily and monthly charts combine POS and normal invoices into one sales series", () => {
+	const { dashboard } = makeDashboard();
+	dashboard.isMobileViewport = () => false;
+	let option;
+	dashboard.getOrCreateChart = () => ({ setOption(value) { option = value; } });
+	const trend = { dates: ["2026-11-01"], sales: [150], pos_sales: [100], direct_sales: [50], profit: [30], margin_pct: [20] };
+	for (const monthly of [false, true]) {
+		dashboard.renderDailyTrendChart(trend, monthly);
+		assert.deepEqual(Array.from(option.series, (series) => series.name), ["Ventas", "Utilidad Bruta", "Margen Bruto (%)"]);
+		assert.equal(option.series[0].data[0], 150);
+		assert.equal(option.xAxis[0].data[0], monthly ? "Nov 2026" : "01-11-2026");
+	}
+});
+
+test("switching trend views uses monthly history and keeps the daily data intact", () => {
+	const { dashboard, values } = makeDashboard();
+	let selected;
+	dashboard.renderDailyTrendChart = (trend, monthly) => { selected = { trend, monthly }; };
+	const charts = {
+		daily_trend: { sales: [10] },
+		monthly_trend: { from_date: "2025-12-01", to_date: "2026-11-14", scope: "12m", sales: [100] },
+	};
+	dashboard.trendMode = "monthly";
+	dashboard.renderTrendChart(charts);
+	assert.equal(selected.trend, charts.monthly_trend);
+	assert.equal(selected.monthly, true);
+	assert.match(values["#rt-db-trend-subtitle"], /Últimos 12 meses.*01-12-2025.*14-11-2026/);
+	charts.monthly_trend = { from_date: "2026-01-01", to_date: "2026-11-14", scope: "ytd" };
+	dashboard.renderTrendChart(charts);
+	assert.match(values["#rt-db-trend-subtitle"], /Este Año.*01-01-2026/);
+	dashboard.trendMode = "daily";
+	dashboard.renderTrendChart(charts);
+	assert.equal(selected.trend, charts.daily_trend);
+	assert.equal(selected.monthly, false);
 });
