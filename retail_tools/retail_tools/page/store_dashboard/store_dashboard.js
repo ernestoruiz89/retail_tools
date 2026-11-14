@@ -795,6 +795,20 @@ class RetailStoreDashboard {
 		return `${sign}${this.currencySymbol}${abs.toFixed(0)}`;
 	}
 
+	formatAxisTooltip(params, percentageSeries = []) {
+		if (!params || !params.length) return "";
+		const title = frappe.utils.escape_html(params[0].axisValueLabel || params[0].name || "");
+		const rows = params.map((p) => {
+			const value = p.value === null || p.value === undefined || p.value === "-"
+				? "—"
+				: percentageSeries.includes(p.seriesName)
+					? `${Number(p.value).toFixed(1)}%`
+					: this.fmtMoney(p.value, 0);
+			return `${p.marker || ""} ${frappe.utils.escape_html(p.seriesName || "")}: <strong>${value}</strong>`;
+		});
+		return `<strong>${title}</strong><br/>${rows.join("<br/>")}`;
+	}
+
 	formatDate(isoDate) {
 		return /^\d{4}-\d{2}-\d{2}$/.test(isoDate || "")
 			? frappe.datetime.str_to_user(isoDate)
@@ -1106,7 +1120,7 @@ class RetailStoreDashboard {
 							lines.push(
 								`<div style="display:flex;justify-content:space-between;gap:16px;margin:3px 0;">
 									<span>${p.marker} ${frappe.utils.escape_html(p.seriesName)}</span>
-									<strong>${self.fmtMoney(val)}</strong>
+									<strong>${self.fmtMoney(val, 0)}</strong>
 								</div>`
 							);
 						}
@@ -1114,7 +1128,7 @@ class RetailStoreDashboard {
 					lines.push(
 						`<div style="border-top:1px solid #cbd5e1;margin-top:6px;padding-top:4px;display:flex;justify-content:space-between;gap:16px;">
 							<span><strong>Total ${frappe.utils.escape_html(colTitle)}</strong></span>
-							<strong>${self.fmtMoney(sum)}</strong>
+							<strong>${self.fmtMoney(sum, 0)}</strong>
 						</div>`
 					);
 					return `<div style="min-width:210px;"><div style="font-weight:700;margin-bottom:6px;">${frappe.utils.escape_html(
@@ -1191,9 +1205,7 @@ class RetailStoreDashboard {
 					formatter: (params) => {
 						const p = params[0];
 						if (!p) return "";
-						return `<strong>${frappe.utils.escape_html(p.name)}</strong><br/>${self.fmtMoney(
-							p.value
-						)}`;
+						return `<strong>${frappe.utils.escape_html(p.name)}</strong><br/>${self.fmtMoney(p.value, 0)}`;
 					},
 				},
 				grid: {
@@ -1290,7 +1302,7 @@ class RetailStoreDashboard {
 						const rawVal = valSeries.data && valSeries.data.raw !== undefined ? valSeries.data.raw : valSeries.value;
 						return `<strong>${frappe.utils.escape_html(
 							valSeries.name
-						)}</strong><br/>${self.fmtMoney(rawVal)}`;
+						)}</strong><br/>${self.fmtMoney(rawVal, 0)}`;
 					},
 				},
 				grid: {
@@ -1407,6 +1419,7 @@ class RetailStoreDashboard {
 				trigger: "axis",
 				confine: true,
 				axisPointer: { type: "cross" },
+				formatter: (params) => self.formatAxisTooltip(params, [__("Margen Bruto (%)")]),
 			},
 			legend: {
 				top: 0,
@@ -1508,9 +1521,7 @@ class RetailStoreDashboard {
 				trigger: "item",
 				confine: true,
 				formatter: (p) =>
-					`<strong>${frappe.utils.escape_html(p.name)}</strong><br/>${self.fmtMoney(
-						p.value
-					)} (${p.percent}%)`,
+					`<strong>${frappe.utils.escape_html(p.name)}</strong><br/>${self.fmtMoney(p.value, 0)} (${Number(p.percent || 0).toFixed(1)}%)`,
 			},
 			legend: {
 				bottom: 0,
@@ -1583,9 +1594,9 @@ class RetailStoreDashboard {
 							<strong>${frappe.utils.escape_html(item.item_name)}</strong> (${frappe.utils.escape_html(
 						item.item_code
 					)})<br/>
-							${__("Ingresos")}: <strong>${self.fmtMoney(item.revenue)}</strong><br/>
-							${__("Utilidad Bruta")}: <strong>${self.fmtMoney(item.profit)}</strong> (${item.margin_pct}%)<br/>
-							${__("Unidades")}: <strong>${item.qty}</strong>
+							${__("Ingresos")}: <strong>${self.fmtMoney(item.revenue, 0)}</strong><br/>
+							${__("Utilidad Bruta")}: <strong>${self.fmtMoney(item.profit, 0)}</strong> (${Number(item.margin_pct || 0).toFixed(1)}%)<br/>
+							${__("Unidades")}: <strong>${self.fmtInteger(item.qty)}</strong>
 						</div>
 					`;
 				},
@@ -1694,9 +1705,7 @@ class RetailStoreDashboard {
 				trigger: "item",
 				confine: true,
 				formatter: (p) =>
-					`<strong>${frappe.utils.escape_html(p.name)}</strong><br/>${self.fmtMoney(
-						p.value
-					)} (${p.percent}%)`,
+					`<strong>${frappe.utils.escape_html(p.name)}</strong><br/>${self.fmtMoney(p.value, 0)} (${Number(p.percent || 0).toFixed(1)}%)`,
 			},
 			legend: {
 				bottom: 0,
@@ -1798,9 +1807,7 @@ class RetailStoreDashboard {
 				formatter: (p) => {
 					const d = p.data || {};
 					const day = (p.value && p.value[0]) || "";
-					return `<strong>${self.formatDate(day)}</strong><br/>${__("Ventas")}: <strong>${self.fmtMoney(
-						d.rawSales || 0
-					)}</strong><br/>${__("Tickets")}: <strong>${d.tickets || 0}</strong>`;
+					return `<strong>${self.formatDate(day)}</strong><br/>${__("Ventas")}: <strong>${self.fmtMoney(d.rawSales || 0, 0)}</strong><br/>${__("Tickets")}: <strong>${self.fmtInteger(d.tickets)}</strong>`;
 				},
 			},
 			visualMap: {
@@ -2096,9 +2103,7 @@ class RetailStoreDashboard {
 					const tickets = (p.data && p.data.tickets) || 0;
 					const hourLabel = (heatmap.hours && heatmap.hours[val[0]]) || `${val[0]}:00`;
 					const dayLabel = (heatmap.days && heatmap.days[val[1]]) || "";
-					return `<strong>${dayLabel} · ${hourLabel}</strong><br/>${__("Ventas")}: <strong>${self.fmtMoney(
-						salesAmount
-					)}</strong><br/>${__("Tickets")}: <strong>${tickets}</strong>`;
+					return `<strong>${dayLabel} · ${hourLabel}</strong><br/>${__("Ventas")}: <strong>${self.fmtMoney(salesAmount, 0)}</strong><br/>${__("Tickets")}: <strong>${self.fmtInteger(tickets)}</strong>`;
 				},
 			},
 			grid: {
@@ -2195,6 +2200,7 @@ class RetailStoreDashboard {
 				trigger: "axis",
 				confine: true,
 				axisPointer: { type: "shadow" },
+				formatter: (params) => self.formatAxisTooltip(params),
 			},
 			legend: {
 				top: 0,
