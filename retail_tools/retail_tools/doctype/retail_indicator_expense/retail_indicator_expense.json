@@ -1,0 +1,9 @@
+{
+ "doctype": "DocType", "name": "Retail Indicator Expense", "module": "Retail Tools",
+ "engine": "InnoDB", "istable": 1, "editable_grid": 1,
+ "field_order": ["account", "behavior"],
+ "fields": [
+  {"fieldname": "account", "fieldtype": "Link", "options": "Account", "label": "Cuenta de gastos", "reqd": 1, "in_list_view": 1, "columns": 6},
+  {"fieldname": "behavior", "fieldtype": "Select", "options": "\nFijo\nVariable\nCosto de ventas\nExcluido", "label": "Clasificación", "in_list_view": 1, "columns": 4}
+ ], "permissions": []
+}

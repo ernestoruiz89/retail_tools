@@ -251,8 +251,9 @@ test("indicator mode updates DuPont and the table together and survives refresh 
 			{category: "Rentabilidad", name: "ROE", value_formatted: annualized ? "24.3%" : "2.0%", formula: "", reference_formatted: "", status: "warning"},
 			{category: "Liquidez y Solvencia", name: "Liquidez", value_formatted: "1.50x", formula: "", reference_formatted: ""},
 		],
+		inventory_details: [{ group: "Categoría", name: "Ropa", average: "C$ 12,000", gmroi: annualized ? "3.65x" : "0.30x", dead_value: "C$ 1,500", dead_pct: "12.5%", stockout: "2 / 20", stockout_pct: "10.0%" }],
 	});
-	dashboard.payload = { indicator_views: { period: view(false), annualized: view(true) } };
+	dashboard.payload = { indicator_views: { period: view(false), annualized: view(true) }, indicator_settings: { can_configure: true } };
 	dashboard.setIndicatorMode("annualized");
 	assert.match(values["#rt-chart-dupont"], /24\.3%/);
 	assert.match(values["#rt-chart-dupont"], /1\.22x/);
@@ -261,6 +262,8 @@ test("indicator mode updates DuPont and the table together and survives refresh 
 	assert.match(values["#rt-chart-dupont"], /Meta anual &gt;= 60.8%|Meta anual >= 60.8%/);
 	assert.match(values["#rt-db-indicators-tbody"], /24\.3%/);
 	assert.match(values["#rt-db-indicator-note"], /365 \/ 30/);
+	assert.match(values["#rt-db-inventory-details"], /3\.65x/);
+	assert.match(values["#rt-db-indicator-settings"], /Configurar gastos y metas/);
 	for (const method of ["renderPeriodNote", "renderKpiCards", "renderBalanceSheetChart", "renderPnlChart", "renderTrendChart", "renderCategoryChart", "renderTopItemsChart", "renderPaymentsChart", "renderCalendarHeatmapChart", "renderHeatmapChart", "renderStockVsSalesChart", "renderAlertTables"]) dashboard[method] = () => {};
 	dashboard.indicatorFilter = "Rentabilidad";
 	dashboard.renderAll({ ...dashboard.payload, financials: {}, charts: {} });
@@ -270,6 +273,10 @@ test("indicator mode updates DuPont and the table together and survives refresh 
 	assert.match(values["#rt-chart-dupont"], /2\.0%/);
 	assert.doesNotMatch(values["#rt-chart-dupont"], /24\.3%/);
 	assert.equal(dashboard.indicatorFilter, "Rentabilidad");
+	assert.match(values["#rt-db-inventory-details"], /0\.30x/);
+	dashboard.payload.indicator_settings.can_configure = false;
+	dashboard.renderIndicatorSection(dashboard.payload);
+	assert.equal(values["#rt-db-indicator-settings"], "");
 	dashboard.setIndicatorMode("invalid");
 	assert.equal(dashboard.indicatorMode, "period");
 });

@@ -1,0 +1,25 @@
+{
+ "doctype": "DocType",
+ "name": "Retail Indicator Settings",
+ "module": "Retail Tools",
+ "autoname": "field:company",
+ "naming_rule": "By fieldname",
+ "engine": "InnoDB",
+ "track_changes": 1,
+ "field_order": ["company", "dead_stock_days", "demand_days", "expenses_section", "expenses", "targets_section", "targets"],
+ "fields": [
+  {"fieldname": "company", "fieldtype": "Link", "options": "Company", "label": "Empresa", "reqd": 1, "unique": 1, "in_list_view": 1},
+  {"fieldname": "dead_stock_days", "fieldtype": "Int", "label": "Días sin venta para capital estancado", "default": "60", "reqd": 1},
+  {"fieldname": "demand_days", "fieldtype": "Int", "label": "Días de demanda reciente para agotados", "default": "30", "reqd": 1},
+  {"fieldname": "expenses_section", "fieldtype": "Section Break", "label": "Punto de equilibrio", "description": "Clasifique las cuentas de gastos de esta empresa. El costo de ventas se resta una sola vez; los otros gastos pueden ser fijos, variables o excluidos. Las cuentas sin clasificar con movimiento impiden calcular el indicador. Se calcula para toda la empresa."},
+  {"fieldname": "expenses", "fieldtype": "Table", "options": "Retail Indicator Expense", "label": "Clasificación de gastos"},
+  {"fieldname": "targets_section", "fieldtype": "Section Break", "label": "Metas de todos los indicadores", "description": "Metas propias por empresa. ROA, ROE, rotación de inventario y GMROI usan base anual y se convierten al período. Los otros valores conservan su unidad. DIO permite un rango saludable. Ticket y UPT tienen metas independientes y el semáforo conjunto muestra el peor estado configurado. Sin una meta personalizada se conserva la regla anterior; los indicadores nuevos quedan sin meta. La cobertura del punto de equilibrio compara ventas / punto de equilibrio × 100."},
+  {"fieldname": "targets", "fieldtype": "Table", "options": "Retail Indicator Target", "label": "Metas del semáforo"}
+ ],
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1},
+  {"role": "Accounts Manager", "read": 1, "write": 1, "create": 1, "report": 1},
+  {"role": "RT Contador", "read": 1, "write": 1, "create": 1, "report": 1},
+  {"role": "RT Administrador de Sistema", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1}
+ ]
+}

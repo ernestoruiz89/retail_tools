@@ -299,6 +299,7 @@ class RetailStoreDashboard {
 					</div>
 				</div>
 				<p class="rt-db-indicator-note" id="rt-db-indicator-note" aria-live="polite"></p>
+				<div id="rt-db-indicator-settings" class="rt-db-settings-action"></div>
 				<div class="rt-db-card" style="margin-bottom: 18px;">
 					<div class="rt-db-card-header">
 						<div>
@@ -323,7 +324,7 @@ class RetailStoreDashboard {
 						</div>
 					</div>
 					<div class="rt-db-table-wrap">
-						<table class="rt-db-table">
+						<table class="rt-db-table rt-db-indicator-table">
 							<thead>
 								<tr>
 									<th>${__("Categoría")}</th>
@@ -338,6 +339,14 @@ class RetailStoreDashboard {
 						</table>
 					</div>
 				</div>
+				<details class="rt-db-card rt-db-retail-details">
+					<summary>${__("Detalle de inventario por categoría y almacén")}</summary>
+					<p class="rt-db-indicator-note">${__("Promedio diario al costo y existencias registradas al corte. Los POS sin consolidar pueden estar pendientes de afectar el inventario. Los porcentajes se calculan sobre todos los artículos; los grupos no se suman entre sí.")}</p>
+					<div class="rt-db-table-wrap"><table class="rt-db-table">
+						<thead><tr><th>${__("Agrupación")}</th><th>${__("Nombre")}</th><th>${__("Inventario promedio")}</th><th>GMROI</th><th>${__("Capital estancado")}</th><th>${__("Estancado %")}</th><th>${__("Agotados / Con demanda")}</th><th>${__("Agotados %")}</th></tr></thead>
+						<tbody id="rt-db-inventory-details"></tbody>
+					</table></div>
+				</details>
 			</div>
 		`);
 
@@ -433,6 +442,12 @@ class RetailStoreDashboard {
 
 		this.$container.on("click", "#rt-db-indicator-mode .rt-db-seg-btn", function () {
 			self.setIndicatorMode($(this).data("mode"));
+		});
+		this.$container.on("click", "#rt-db-configure-indicators", () => {
+			const settings = this.payload && this.payload.indicator_settings;
+			if (!settings || !settings.can_configure) return;
+			if (settings.name) frappe.set_route("Form", "Retail Indicator Settings", settings.name);
+			else frappe.new_doc("Retail Indicator Settings", { company: this.payload.filters.company });
 		});
 
 		this.$container.on("click", "#rt-db-ind-filter .rt-db-seg-btn", function () {
@@ -790,6 +805,15 @@ class RetailStoreDashboard {
 		this.$container.find("#rt-db-indicator-note").text(view.note);
 		this.renderDupontChart(view);
 		this.renderIndicatorsTable(view.indicators);
+		this.$container.find("#rt-db-indicator-settings").html(
+			data.indicator_settings && data.indicator_settings.can_configure
+				? `<button type="button" class="btn btn-default btn-sm" id="rt-db-configure-indicators">${__("Configurar gastos y metas")}</button>` : ""
+		);
+		const detailRows = (view.inventory_details || []).map(row => `<tr>${
+			["group", "name", "average", "gmroi", "dead_value", "dead_pct", "stockout", "stockout_pct"]
+				.map(key => `<td>${frappe.utils.escape_html(String(row[key]))}</td>`).join("")
+		}</tr>`).join("");
+		this.$container.find("#rt-db-inventory-details").html(detailRows || `<tr><td colspan="8" class="rt-db-empty">${__("Sin movimientos de inventario o demanda para este alcance.")}</td></tr>`);
 	}
 
 	fmtInteger(value) {
@@ -2400,7 +2424,7 @@ class RetailStoreDashboard {
 					<td><span class="rt-db-cat-pill">${frappe.utils.escape_html(ind.category)}</span></td>
 					<td><strong>${frappe.utils.escape_html(ind.name)}</strong></td>
 					<td style="color:#64748b;font-size:12px;">${frappe.utils.escape_html(ind.formula)}</td>
-					<td style="text-align:right;font-weight:800;font-size:13.5px;white-space:nowrap;">${frappe.utils.escape_html(
+					<td style="text-align:right;font-weight:800;font-size:13.5px;">${frappe.utils.escape_html(
 						ind.value_formatted
 					)}</td>
 					<td style="color:#475569;font-size:12px;">${frappe.utils.escape_html(

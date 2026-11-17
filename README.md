@@ -23,7 +23,8 @@ Executive business-owner dashboard powered by **Apache ECharts 5** combining fin
   - Capital in Stock (Cost) vs. Sales by Category (`Grouped Bar`).
 - **Operational Alerts & Executive Indicators Table**:
   - Low-stock best-sellers alert and dead stock (+60 days without sale) table.
-  - Final 13-indicator table covering Profitability, Liquidity & Solvency, and Inventory/Operations.
+  - Final 20-indicator table covering Profitability, Liquidity & Solvency, and Inventory/Operations, including GMROI, stagnant capital, stockouts with demand, break-even sales, discounts, returns and cash conversion cycle.
+  - Company-specific expense classification and optional targets through **Retail Indicator Settings**, with period/annualized GMROI, inventory detail by category/warehouse and PDF export. See [configuration and calculation bases](docs/store-dashboard-indicators.md).
 
 ---
 

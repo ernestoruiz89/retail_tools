@@ -98,7 +98,9 @@ class DashboardPdfTest(unittest.TestCase):
 			"indicators_table": [],
 		}
 		from test_dashboard_indicators import indicator_inputs
+		from test_dashboard_retail_metrics import sample_metrics
 		inputs = indicator_inputs(days=13)
+		inputs["retail_metrics"] = sample_metrics()
 		inputs["financials"] = data["financials"]
 		inputs["financials"]["income_statement"].update(op_expense_pct=20, net_margin_pct=20)
 		inputs["financials"]["balance_sheet"]["accounts_payable"] = 100
@@ -121,6 +123,10 @@ class DashboardPdfTest(unittest.TestCase):
 		self.assertEqual(annual["dupont"]["margin"], context["dupont"]["margin"])
 		self.assertEqual(annual["dupont"]["multiplier"], context["dupont"]["multiplier"])
 		self.assertEqual(annual["indicators"], data["indicator_views"]["annualized"]["indicators"])
+		self.assertEqual(len(annual["indicators"]), 20)
+		self.assertEqual(annual["inventory_details"], data["indicator_views"]["annualized"]["inventory_details"])
+		self.assertEqual(annual["inventory_details"][0]["gmroi"], "8.42x")
+		self.assertEqual(context["inventory_details"][0]["gmroi"], "0.30x")
 		invalid = self.dashboard._dashboard_pdf_context(data, charts, '{"indicators":"other"}')
 		self.assertEqual(invalid["indicator_basis_label"], "Del período")
 		data["charts"] = {"monthly_trend": {"from_date": "2025-11-01", "to_date": "2026-11-14"}}

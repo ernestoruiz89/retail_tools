@@ -69,6 +69,9 @@
     .indicators-table .current { width: 12%; }
     .indicators-table .reference { width: 19%; }
     .indicators-table .status { width: 8%; }
+    .retail-indicators-table { font-size: 10.5px; }
+    .retail-indicators-table td { padding-top: 3mm; padding-bottom: 3mm; }
+    .retail-indicators-table tr { page-break-inside: avoid; }
     .good { color: #047857; font-weight: bold; }
     .warning { color: #ad6b00; font-weight: bold; }
     .danger { color: #b42332; font-weight: bold; }
@@ -140,15 +143,34 @@
     </div>
   </div>
 
-  <div class="page last">
+  <div class="page{% if indicators | length <= 13 and not inventory_details %} last{% endif %}">
     <div class="topline"></div><h2>Indicadores financieros y operativos</h2>
     <p class="section-subtitle"><strong>Base de indicadores y DuPont:</strong> {{ indicator_basis_note | e }}</p>
     <p class="section-subtitle">Análisis DuPont: ROE = margen neto × rotación de activos × apalancamiento financiero.</p>
     <table class="dupont"><tr><td>Margen neto<strong>{{ dupont.margin | e }}</strong></td><td>Rotación de activos · {{ indicator_basis_label | e }}<strong>{{ dupont.turnover | e }}</strong></td><td>Apalancamiento<strong>{{ dupont.multiplier | e }}</strong></td><td>ROE · {{ indicator_basis_label | e }}<strong>{{ dupont.roe | e }}</strong><span class="{{ dupont.status | e }}">{{ dupont.status_label | e }}</span> · {{ dupont.reference | e }}</td></tr></table>
     <table class="data-table indicators-table"><thead><tr><th class="cat">Categoría</th><th class="indicator">Indicador</th><th class="formula">Fórmula / base de cálculo</th><th class="current num">Valor actual</th><th class="reference">Referencia / meta</th><th class="status">Estado</th></tr></thead><tbody>
-      {% for item in indicators %}<tr><td>{{ item.category | e }}</td><td><strong>{{ item.name | e }}</strong></td><td class="muted">{{ item.formula | e }}</td><td class="num"><strong>{{ item.value_formatted | e }}</strong></td><td>{{ item.reference_formatted | e }}</td><td class="{{ item.status if item.status in ('good', 'warning', 'danger') else 'neutral' }}">{{ item.status_label | e }}</td></tr>{% endfor %}
+      {% for item in indicators[:13] %}<tr><td>{{ item.category | e }}</td><td><strong>{{ item.name | e }}</strong></td><td class="muted">{{ item.formula | e }}</td><td class="num"><strong>{{ item.value_formatted | e }}</strong></td><td>{{ item.reference_formatted | e }}</td><td class="{{ item.status if item.status in ('good', 'warning', 'danger') else 'neutral' }}">{{ item.status_label | e }}</td></tr>{% endfor %}
     </tbody></table>
     <div class="footnote">Cifras calculadas con los filtros del informe. Saldos contables al corte seleccionado; inventario de existencias actuales.</div>
   </div>
+  {% if indicators | length > 13 %}
+  <div class="page{% if not inventory_details %} last{% endif %}">
+    <div class="topline"></div><h2>Rentabilidad comercial, inventario y ciclo de efectivo</h2>
+    <p class="section-subtitle">GMROI: {{ indicator_basis_label | e }}. Porcentajes, días y punto de equilibrio conservan su base del período. Metas personalizadas por empresa.</p>
+    <table class="data-table indicators-table retail-indicators-table"><thead><tr><th class="cat">Categoría</th><th class="indicator">Indicador</th><th class="formula">Fórmula / base de cálculo</th><th class="current num">Valor actual</th><th class="reference">Referencia / meta</th><th class="status">Estado</th></tr></thead><tbody>
+      {% for item in indicators[13:] %}<tr><td>{{ item.category | e }}</td><td><strong>{{ item.name | e }}</strong></td><td class="muted">{{ item.formula | e }}</td><td class="num"><strong>{{ item.value_formatted | e }}</strong></td><td>{{ item.reference_formatted | e }}</td><td class="{{ item.status if item.status in ('good', 'warning', 'danger') else 'neutral' }}">{{ item.status_label | e }}</td></tr>{% endfor %}
+    </tbody></table>
+    <div class="footnote">Inventario promedio: media de saldos diarios al costo. Existencias registradas al corte; los POS sin consolidar pueden estar pendientes de afectar inventario. Punto de equilibrio y ciclo de efectivo se calculan para toda la empresa. N/A indica una base insuficiente o una configuración pendiente.</div>
+  </div>
+  {% endif %}
+  {% for batch in inventory_details | batch(15) %}
+  <div class="page{% if loop.last %} last{% endif %}">
+    <div class="topline"></div><h2>Detalle de inventario por categoría y almacén</h2>
+    <p class="section-subtitle">GMROI: {{ indicator_basis_label | e }}. Cada agrupación se calcula de forma independiente; no sumar categorías y almacenes. Página de detalle {{ loop.index }}.</p>
+    <table class="data-table"><thead><tr><th>Agrupación</th><th>Nombre</th><th class="num">Inventario promedio</th><th class="num">GMROI</th><th class="num">Capital estancado</th><th class="num">Estancado %</th><th class="num">Agotados / Con demanda</th><th class="num">Agotados %</th></tr></thead><tbody>
+      {% for row in batch %}<tr><td>{{ row.group | e }}</td><td>{{ row.name | e }}</td><td class="num">{{ row.average | e }}</td><td class="num">{{ row.gmroi | e }}</td><td class="num">{{ row.dead_value | e }}</td><td class="num">{{ row.dead_pct | e }}</td><td class="num">{{ row.stockout | e }}</td><td class="num">{{ row.stockout_pct | e }}</td></tr>{% endfor %}
+    </tbody></table>
+  </div>
+  {% endfor %}
 </body>
 </html>

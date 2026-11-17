@@ -10,6 +10,17 @@ from frappe import _
 from frappe.utils import add_days, cint, date_diff, flt, formatdate, getdate, nowdate
 
 from retail_tools.retail_tools.page.store_dashboard.periods import monthly_period, previous_period
+from retail_tools.retail_tools.page.store_dashboard.retail_metrics import (
+	accounting_metrics,
+	apply_existing_targets,
+	build_retail_indicators,
+	fetch_accounting,
+	fetch_demand,
+	fetch_inventory_history,
+	inventory_detail_view,
+	inventory_metrics,
+	sales_quality,
+)
 
 DASHBOARD_ROLES = {
 	"System Manager",
@@ -234,6 +245,11 @@ def _fetch_sales_line_rows(
 			COALESCE(NULLIF(sii.item_name, ''), sii.item_code) AS item_name,
 			COALESCE(NULLIF(sii.item_group, ''), i.item_group, 'Sin Categoría') AS item_group,
 			sii.warehouse,
+			IFNULL(i.is_stock_item, 0) AS is_stock_item,
+			IFNULL(sii.base_amount, 0) AS base_amount,
+			IFNULL(sii.discount_amount, 0) AS discount_amount,
+			IFNULL(sii.distributed_discount_amount, 0) AS distributed_discount_amount,
+			IFNULL(si.conversion_rate, 1) AS conversion_rate,
 			IFNULL(sii.qty, 0) AS qty,
 			IFNULL(NULLIF(sii.stock_qty, 0), IFNULL(sii.qty, 0)) AS stock_qty,
 			IFNULL(sii.base_net_amount, 0) AS net_amount,
@@ -274,6 +290,11 @@ def _fetch_sales_line_rows(
 				COALESCE(NULLIF(pii.item_name, ''), pii.item_code) AS item_name,
 				COALESCE(NULLIF(pii.item_group, ''), i.item_group, 'Sin Categoría') AS item_group,
 				pii.warehouse,
+				IFNULL(i.is_stock_item, 0) AS is_stock_item,
+				IFNULL(pii.base_amount, 0) AS base_amount,
+				IFNULL(pii.discount_amount, 0) AS discount_amount,
+				IFNULL(pii.distributed_discount_amount, 0) AS distributed_discount_amount,
+				IFNULL(pi.conversion_rate, 1) AS conversion_rate,
 				IFNULL(pii.qty, 0) AS qty,
 				IFNULL(NULLIF(pii.stock_qty, 0), IFNULL(pii.qty, 0)) AS stock_qty,
 				IFNULL(pii.base_net_amount, 0) AS net_amount,
@@ -1239,8 +1260,10 @@ def _indicator_basis(period_days: int, mode: str = "period") -> dict:
 		"note": (
 			f"{label} · {days} días analizados. "
 			+ (f"Estimación lineal: valor del período × 365 / {days}. " if annualized else "")
-			+ "ROA, ROE y rotaciones usan saldos al corte; inventario usa el stock actual. "
-			"Metas equivalentes a las configuradas para 30 días."
+			+ "ROA, ROE y rotación de activos usan saldos al corte; rotación de inventario usa stock actual. "
+			"Sin metas personalizadas, conservan la equivalencia de 30 días. GMROI usa inventario promedio histórico. "
+			"Las metas propias de ROA, ROE, rotación de inventario y GMROI usan base anual. "
+			"Los demás porcentajes, días y punto de equilibrio no se anualizan."
 		),
 	}
 
@@ -1273,7 +1296,14 @@ def _build_indicator_view(mode: str, **kwargs) -> dict:
 	dupont = _return_ratios(kwargs["financials"], basis)
 	roe_indicator = next(row for row in indicators if row.get("key") == "roe")
 	dupont.update({key: roe_indicator[key] for key in ("status", "status_label", "reference_formatted")})
-	return {**basis, "indicators": indicators, "dupont": dupont}
+	metrics = kwargs.get("retail_metrics") or {}
+	symbol = frappe.db.get_value("Currency", kwargs["currency"], "symbol") or kwargs["currency"]
+	return {
+		**basis,
+		"indicators": indicators,
+		"dupont": dupont,
+		"inventory_details": inventory_detail_view(metrics, basis, symbol),
+	}
 
 
 def _build_indicators_table(
@@ -1285,8 +1315,9 @@ def _build_indicators_table(
 	prev_financials: dict,
 	inventory_data: dict,
 	mode: str = "period",
+	retail_metrics: dict | None = None,
 ) -> list[dict]:
-	"""Build the 13 executive financial & operational indicators table at the bottom of the dashboard."""
+	"""Build the financial and retail indicator table, shared by screen and PDF."""
 	bs = financials["balance_sheet"]
 	pnl = financials["income_statement"]
 	prev_pnl = prev_financials["income_statement"]
@@ -1361,6 +1392,7 @@ def _build_indicators_table(
 		{
 			"category": "Rentabilidad",
 			"name": "Margen Bruto (%)",
+			"key": "gross_margin",
 			"formula": "(Ventas Netas - Costo de Ventas) / Ventas Netas",
 			"value": gross_margin,
 			"value_formatted": f"{gross_margin:.1f}%",
@@ -1371,6 +1403,7 @@ def _build_indicators_table(
 		{
 			"category": "Rentabilidad",
 			"name": "Margen Neto Contable (%)",
+			"key": "net_margin",
 			"formula": "Utilidad Neta / Ingresos Totales",
 			"value": net_margin,
 			"value_formatted": f"{net_margin:.1f}%",
@@ -1381,6 +1414,7 @@ def _build_indicators_table(
 		{
 			"category": "Rentabilidad",
 			"name": "Peso de Gastos Operativos (%)",
+			"key": "operating_expenses_pct",
 			"formula": "Gastos Operativos / Ingresos Totales",
 			"value": op_exp_pct,
 			"value_formatted": f"{op_exp_pct:.1f}%",
@@ -1413,6 +1447,7 @@ def _build_indicators_table(
 		{
 			"category": "Liquidez y Solvencia",
 			"name": "Razón Corriente (Liquidez General)",
+			"key": "current_ratio",
 			"formula": "(Caja/Bancos + Cuentas por Cobrar + Inventario) / Pasivo Total",
 			"value": current_ratio if current_ratio is not None else 99.0,
 			"value_formatted": f"{current_ratio:.2f}x" if current_ratio is not None else "Sin Deuda",
@@ -1427,6 +1462,7 @@ def _build_indicators_table(
 		{
 			"category": "Liquidez y Solvencia",
 			"name": "Prueba Ácida (Liquidez Inmediata)",
+			"key": "quick_ratio",
 			"formula": "(Caja/Bancos + Cuentas por Cobrar) / Pasivo Total",
 			"value": quick_ratio if quick_ratio is not None else 99.0,
 			"value_formatted": f"{quick_ratio:.2f}x" if quick_ratio is not None else "Sin Deuda",
@@ -1441,6 +1477,7 @@ def _build_indicators_table(
 		{
 			"category": "Liquidez y Solvencia",
 			"name": "Capital de Trabajo Neto",
+			"key": "working_capital",
 			"formula": "Activo Corriente - Pasivo Total",
 			"value": working_capital,
 			"value_formatted": _format_currency_compact(working_capital, currency),
@@ -1451,6 +1488,7 @@ def _build_indicators_table(
 		{
 			"category": "Liquidez y Solvencia",
 			"name": "Índice de Endeudamiento (%)",
+			"key": "debt_ratio",
 			"formula": "Pasivo Total / Activo Total",
 			"value": debt_ratio,
 			"value_formatted": f"{debt_ratio:.1f}%",
@@ -1474,6 +1512,7 @@ def _build_indicators_table(
 		{
 			"category": "Inventario y Operación",
 			"name": "Días Estimados de Inventario (DIO)",
+			"key": "dio",
 			"formula": "Inventario Actual / Costo de Venta Diario Promedio",
 			"value": dio_days if dio_days is not None else 0.0,
 			"value_formatted": f"{dio_days:.1f} días" if dio_days is not None else "N/A",
@@ -1488,6 +1527,7 @@ def _build_indicators_table(
 		{
 			"category": "Inventario y Operación",
 			"name": "Ticket Promedio y Unidades (UPT)",
+			"key": "avg_ticket",
 			"formula": "Ventas Netas / N.º Tickets | Unidades / N.º Tickets",
 			"value": avg_ticket,
 			"value_formatted": f"{_format_currency_compact(avg_ticket, currency)} ({upt:.2f} u/t)",
@@ -1502,6 +1542,7 @@ def _build_indicators_table(
 		{
 			"category": "Inventario y Operación",
 			"name": "Cobertura de Caja sobre Cuentas por Pagar",
+			"key": "cash_coverage",
 			"formula": "Efectivo y Bancos / Cuentas por Pagar a Proveedores",
 			"value": cash_coverage if cash_coverage is not None else 99.0,
 			"value_formatted": f"{cash_coverage:.2f}x" if cash_coverage is not None else "Sin CxP",
@@ -1514,6 +1555,10 @@ def _build_indicators_table(
 			else ("Parcial" if cash_coverage >= 0.5 else "Ajustado"),
 		},
 	]
+	if retail_metrics is not None:
+		symbol = frappe.db.get_value("Currency", currency, "symbol") or currency
+		apply_existing_targets(indicators, retail_metrics.get("settings", {}), basis, upt, symbol)
+		indicators.extend(build_retail_indicators(retail_metrics, basis, symbol))
 	return indicators
 
 
@@ -1596,6 +1641,24 @@ def get_store_dashboard_data(
 	calendar_heatmap = _get_calendar_heatmap_data(
 		resolved_company, end_date, clean_warehouse, include_pos_bool
 	)
+	settings_name = frappe.db.get_value("Retail Indicator Settings", {"company": resolved_company}, "name")
+	settings = frappe.get_doc("Retail Indicator Settings", settings_name).as_dict() if settings_name else {}
+	stock_history = fetch_inventory_history(frappe.db, resolved_company, start_date, end_date, clean_warehouse)
+	demand = fetch_demand(
+		frappe.db, resolved_company, end_date, cint(settings.get("demand_days") or 30),
+		clean_warehouse, include_pos_bool,
+	)
+	retail_metrics = inventory_metrics(
+		stock_history, demand, curr_rows, cost_map, end_date, cint(settings.get("dead_stock_days") or 60),
+	)
+	retail_metrics.update(sales_quality(curr_rows))
+	retail_metrics.update(
+		accounting_metrics(
+			fetch_accounting(frappe.db, resolved_company, start_date, end_date), settings,
+			curr_comm["net_sales"], curr_comm["cogs"], period_days, clean_warehouse, retail_metrics["cost_complete"],
+		)
+	)
+	retail_metrics["settings"] = settings
 
 	indicator_inputs = dict(
 		currency=currency,
@@ -1605,6 +1668,7 @@ def get_store_dashboard_data(
 		financials=financials,
 		prev_financials=prev_financials,
 		inventory_data=inventory_data,
+		retail_metrics=retail_metrics,
 	)
 	indicator_views = {
 		mode: _build_indicator_view(mode, **indicator_inputs) for mode in ("period", "annualized")
@@ -1659,6 +1723,12 @@ def get_store_dashboard_data(
 			"accounts_payable": bs["accounts_payable"],
 		},
 		"financials": financials,
+		"indicator_settings": {
+			"name": settings_name,
+			"can_configure": bool(frappe.has_permission(
+				"Retail Indicator Settings", "write" if settings_name else "create", doc=settings_name,
+			)),
+		},
 		"charts": {
 			"daily_trend": curr_comm["daily_trend"],
 			"monthly_trend": monthly_trend,
@@ -1880,6 +1950,7 @@ def _dashboard_pdf_context(data: dict, charts: dict[str, str], chart_modes: dict
 		"indicator_basis_label": indicator_view["label"],
 		"indicator_basis_note": indicator_view["note"],
 		"indicators": indicator_view["indicators"],
+		"inventory_details": indicator_view.get("inventory_details", []),
 		"dupont": {
 			"margin": ratio_text(dupont["margin"], "%", 1),
 			"turnover": ratio_text(dupont["turnover"], "x", 2),

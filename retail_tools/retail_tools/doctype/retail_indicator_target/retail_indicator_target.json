@@ -1,0 +1,12 @@
+{
+ "doctype": "DocType", "name": "Retail Indicator Target", "module": "Retail Tools",
+ "engine": "InnoDB", "istable": 1, "editable_grid": 1,
+ "field_order": ["indicator", "target_rule", "target", "warning", "healthy_min"],
+ "fields": [
+  {"fieldname": "indicator", "fieldtype": "Select", "options": "Margen bruto (%)\nMargen neto (%)\nPeso de gastos operativos (%)\nROA anual (%)\nROE anual (%)\nRazón corriente (veces)\nPrueba ácida (veces)\nCapital de trabajo (moneda empresa)\nEndeudamiento (%)\nRotación de inventario anual (veces)\nDías de inventario (DIO)\nTicket promedio (moneda empresa)\nUnidades por ticket (UPT)\nCobertura de caja sobre CxP (veces)\nGMROI\nCapital estancado (%)\nAgotados con demanda (%)\nDescuentos (%)\nDevoluciones (%)\nCiclo de efectivo (días)\nCobertura del punto de equilibrio (%)", "label": "Indicador", "reqd": 1, "in_list_view": 1, "columns": 4},
+  {"fieldname": "target_rule", "fieldtype": "Data", "label": "Criterio", "read_only": 1, "in_list_view": 1, "columns": 2},
+  {"fieldname": "target", "fieldtype": "Float", "label": "Meta saludable", "in_list_view": 1, "columns": 2, "description": "Según el criterio: mínimo requerido o máximo aceptable. ROA, ROE, rotación y GMROI se configuran por año."},
+  {"fieldname": "warning", "fieldtype": "Float", "label": "Límite moderado", "in_list_view": 1, "columns": 2},
+  {"fieldname": "healthy_min", "fieldtype": "Float", "label": "Mínimo saludable de días de inventario", "default": "10", "depends_on": "eval:doc.indicator === 'Días de inventario (DIO)'", "description": "Para DIO, el intervalo saludable va desde este mínimo hasta la meta máxima. Por debajo indica revisar cobertura; sobre el límite moderado indica exceso de inventario."}
+ ], "permissions": []
+}

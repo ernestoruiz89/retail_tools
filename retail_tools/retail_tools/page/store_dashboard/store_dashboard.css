@@ -763,3 +763,17 @@
 		margin-bottom: 12px;
 	}
 }
+.rt-db-settings-action { margin: 0 0 16px; }
+.rt-db-retail-details { margin-top: 18px; }
+.rt-db-retail-details summary { cursor: pointer; font-weight: 600; padding: 4px 0 12px; }
+.rt-db-retail-details .rt-db-table { min-width: 850px; }
+.rt-db-indicator-table { table-layout: fixed; min-width: 880px; }
+.rt-db-indicator-table th:nth-child(1) { width: 12%; }
+.rt-db-indicator-table th:nth-child(2) { width: 20%; }
+.rt-db-indicator-table th:nth-child(3) { width: 23%; }
+.rt-db-indicator-table th:nth-child(4) { width: 13%; }
+.rt-db-indicator-table th:nth-child(5) { width: 22%; }
+.rt-db-indicator-table th:nth-child(6) { width: 10%; }
+.rt-db-indicator-table td:not(:first-child),
+.rt-db-indicator-table th:not(:first-child) { white-space: normal; overflow-wrap: anywhere; }
+.rt-db-indicator-table .rt-db-badge { white-space: normal; }

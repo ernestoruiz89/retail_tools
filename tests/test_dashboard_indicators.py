@@ -66,7 +66,7 @@ class DashboardIndicatorsTest(unittest.TestCase):
 			inputs["current_comm"]["cogs"] = 6000 * days / 30
 			for view in self.views(inputs):
 				for row in view["indicators"]:
-					if row.get("key"):
+					if row.get("key") in ("roa", "roe", "inventory_turnover"):
 						self.assertEqual(row["status"], "good")
 		period, annual = self.views(indicator_inputs())
 		by_key = {row["key"]: row for row in annual["indicators"] if row.get("key")}
@@ -89,7 +89,7 @@ class DashboardIndicatorsTest(unittest.TestCase):
 			inputs["inventory_data"]["stock_cost_value"] = denominator
 			for view in self.views(inputs):
 				for row in view["indicators"]:
-					if row.get("key"):
+					if row.get("key") in ("roa", "roe", "inventory_turnover"):
 						self.assertIsNone(row["value"])
 						self.assertEqual(row["value_formatted"], "N/A")
 						self.assertEqual(row["status"], "neutral")
