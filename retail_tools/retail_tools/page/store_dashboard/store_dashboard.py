@@ -1264,7 +1264,8 @@ def _indicator_basis(period_days: int, mode: str = "period") -> dict:
 			+ "ROA, ROE y rotación de activos usan saldos al corte; rotación de inventario usa stock actual. "
 			"Sin metas personalizadas, conservan la equivalencia de 30 días. GMROI usa inventario promedio histórico. "
 			"Las metas propias de ROA, ROE, rotación de inventario y GMROI usan base anual. "
-			"Los demás porcentajes, días y punto de equilibrio no se anualizan."
+			"El punto de equilibrio muestra ventas mensuales necesarias en base fija de 30 días. "
+			"Los demás porcentajes y días no se anualizan."
 		),
 	}
 

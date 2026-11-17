@@ -534,6 +534,7 @@ def accounting_metrics(
 def build_retail_indicators(metrics, basis, symbol):
 	"""Single presentation contract for the screen and PDF; no invented sector benchmarks."""
 	factor = basis["factor"]
+	monthly_factor = 30 / basis["period_days"]
 	targets = {
 		TARGET_KEYS[r["indicator"]]: r
 		for r in metrics.get("settings", {}).get("targets", [])
@@ -577,8 +578,9 @@ def build_retail_indicators(metrics, basis, symbol):
 		(
 			"break_even",
 			"Rentabilidad",
-			"Punto de equilibrio · Del período",
-			"Gastos fijos / [1 − (Costo comercial + Otros gastos variables) / Ventas netas]",
+			"Punto de equilibrio mensual",
+			"(Gastos fijos del período × 30 / Días) / "
+			"[1 − (Costo comercial + Otros gastos variables) / Ventas netas]",
 			"money",
 			metrics.get("break_even_note", "Pendiente de configurar"),
 		),
@@ -620,10 +622,16 @@ def build_retail_indicators(metrics, basis, symbol):
 			label = {"good": "En meta", "warning": "Vigilancia", "danger": "Fuera de meta"}[status]
 			note = reference + ". " + note
 		if key == "break_even" and value is not None:
-			status = "good" if metrics["net_sales"] >= value else "danger"
-			label = "Cubierto" if status == "good" else "Sin cubrir"
+			# Both amounts use the same 30-day basis, independently of annualized mode.
+			value *= monthly_factor
+			monthly_sales = metrics["net_sales"] * monthly_factor
+			note = (
+				f"Estimación a 30 días; ritmo de ventas {money(monthly_sales)}/mes. " + note
+			)
+			status = "good" if monthly_sales >= value else "danger"
+			label = "Ritmo suficiente" if status == "good" else "Ritmo insuficiente"
 			if value > 0 and "break_even_coverage" in targets:
-				coverage = metrics["net_sales"] / value * 100
+				coverage = monthly_sales / value * 100
 				status, reference = evaluate_target(
 					"break_even_coverage", coverage, targets["break_even_coverage"], basis, "%"
 				)
@@ -642,6 +650,8 @@ def build_retail_indicators(metrics, basis, symbol):
 				else f"{value:,.0f} días"
 			)
 		)
+		if key == "break_even" and value is not None:
+			text += " / mes"
 		result.append(
 			dict(
 				key=key,

@@ -334,7 +334,7 @@ class RetailCalculationTest(unittest.TestCase):
 			rows, settings, 10000, 6000, 30, cost_complete=data["cost_complete"]
 		)
 		self.assertAlmostEqual(accounting["break_even"], 1000 / 0.35)
-		basis = dict(factor=1, label="Del período")
+		basis = dict(factor=1, label="Del período", period_days=30)
 		gmroi = next(r for r in metrics.build_retail_indicators(data, basis, "C$") if r["key"] == "gmroi")
 		self.assertEqual(gmroi["reference_formatted"], data["gmroi_note"])
 		self.assertEqual(gmroi["value_formatted"], "N/A")
@@ -438,6 +438,65 @@ class RetailCalculationTest(unittest.TestCase):
 		self.assertEqual(period["inventory_details"][0]["gmroi"], "0.30x")
 		self.assertEqual(period["indicators"][14]["status"], "warning")
 		self.assertEqual(period["indicators"][15]["status"], "neutral")
+
+	def test_break_even_projects_short_and_long_periods_to_thirty_days_in_both_modes(self):
+		dashboard = _load_dashboard_module()
+		dashboard.frappe.db.get_value = lambda *args: "C$"
+		for days in (1, 7, 17, 28, 30, 31, 365, 366, 730):
+			with self.subTest(days=days):
+				rows, settings = self.accounting_fixture()
+				for row in rows:
+					row["period_amount"] = row.get("period_amount", 0) * days / 30
+				inputs = indicator_inputs(days)
+				inputs["retail_metrics"] = metrics.accounting_metrics(
+					rows, settings, 10000 * days / 30, 6000 * days / 30, days
+				)
+				period, annual = [
+					next(r for r in dashboard._build_indicator_view(mode, **inputs)["indicators"] if r["key"] == "break_even")
+					for mode in ("period", "annualized")
+				]
+				self.assertAlmostEqual(period["value"], 1000 / 0.35)
+				self.assertEqual(period["value_formatted"], "C$ 2,857 / mes")
+				self.assertEqual(period["name"], "Punto de equilibrio mensual")
+				self.assertIn("30 / Días", period["formula"])
+				self.assertIn("ritmo de ventas C$ 10,000/mes", period["reference_formatted"])
+				self.assertEqual(period["status"], "good")
+				self.assertEqual(period, annual)
+
+	def test_monthly_break_even_coverage_compares_sales_and_threshold_on_same_basis(self):
+		dashboard = _load_dashboard_module()
+		dashboard.frappe.db.get_value = lambda *args: "C$"
+		for days in (7, 60):
+			for sales, target, status in ((2500, False, "danger"), (10000, False, "good"), (10000, True, "warning")):
+				with self.subTest(days=days, sales=sales, target=target):
+					inputs = indicator_inputs(days)
+					data = sample_metrics()
+					data["net_sales"] = sales
+					if target:
+						data["settings"]["targets"].append(
+							dict(indicator="Cobertura del punto de equilibrio (%)", target=250, warning=150)
+						)
+					inputs["retail_metrics"] = data
+					row = next(r for r in dashboard._build_indicator_view("period", **inputs)["indicators"] if r["key"] == "break_even")
+					self.assertAlmostEqual(row["value"], 5000 * 30 / days)
+					self.assertEqual(row["status"], status)
+					if target:
+						self.assertIn("Cobertura 200.0%", row["reference_formatted"])
+					self.assertEqual(data["break_even"], 5000)  # period input stays reusable
+
+	def test_monthly_break_even_keeps_missing_and_zero_distinct(self):
+		dashboard = _load_dashboard_module()
+		dashboard.frappe.db.get_value = lambda *args: "C$"
+		for amount, text, status in ((None, "N/A", "neutral"), (0, "C$ 0 / mes", "good")):
+			inputs = indicator_inputs(17)
+			inputs["retail_metrics"] = sample_metrics()
+			inputs["retail_metrics"]["break_even"] = amount
+			inputs["retail_metrics"]["settings"]["targets"].append(
+				dict(indicator="Cobertura del punto de equilibrio (%)", target=120, warning=100)
+			)
+			row = next(r for r in dashboard._build_indicator_view("period", **inputs)["indicators"] if r["key"] == "break_even")
+			self.assertEqual(row["value_formatted"], text)
+			self.assertEqual(row["status"], status)
 
 	def test_config_accepts_groups_but_rejects_other_company_duplicates_and_reversed_targets(self):
 		settings = dict(

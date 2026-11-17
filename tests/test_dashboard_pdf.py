@@ -127,6 +127,11 @@ class DashboardPdfTest(unittest.TestCase):
 		self.assertEqual(annual["inventory_details"], data["indicator_views"]["annualized"]["inventory_details"])
 		self.assertEqual(annual["inventory_details"][0]["gmroi"], "8.42x")
 		self.assertEqual(context["inventory_details"][0]["gmroi"], "0.30x")
+		monthly_break_even = next(row for row in context["indicators"] if row["key"] == "break_even")
+		self.assertEqual(monthly_break_even["name"], "Punto de equilibrio mensual")
+		self.assertAlmostEqual(monthly_break_even["value"], 5000 * 30 / 13)
+		self.assertEqual(monthly_break_even["value_formatted"], "C$ 11,538 / mes")
+		self.assertEqual(monthly_break_even, next(row for row in annual["indicators"] if row["key"] == "break_even"))
 		invalid = self.dashboard._dashboard_pdf_context(data, charts, '{"indicators":"other"}')
 		self.assertEqual(invalid["indicator_basis_label"], "Del período")
 		data["charts"] = {"monthly_trend": {"from_date": "2025-11-01", "to_date": "2026-11-14"}}

@@ -156,7 +156,7 @@
   {% if indicators | length > 13 %}
   <div class="page{% if not inventory_details %} last{% endif %}">
     <div class="topline"></div><h2>Rentabilidad comercial, inventario y ciclo de efectivo</h2>
-    <p class="section-subtitle">GMROI: {{ indicator_basis_label | e }}. Porcentajes, días y punto de equilibrio conservan su base del período. Metas personalizadas por empresa.</p>
+    <p class="section-subtitle">GMROI: {{ indicator_basis_label | e }}. Punto de equilibrio: ventas mensuales necesarias, estimadas en base fija de 30 días. Porcentajes y días conservan su base del período. Metas personalizadas por empresa.</p>
     <table class="data-table indicators-table retail-indicators-table"><thead><tr><th class="cat">Categoría</th><th class="indicator">Indicador</th><th class="formula">Fórmula / base de cálculo</th><th class="current num">Valor actual</th><th class="reference">Referencia / meta</th><th class="status">Estado</th></tr></thead><tbody>
       {% for item in indicators[13:] %}<tr><td>{{ item.category | e }}</td><td><strong>{{ item.name | e }}</strong></td><td class="muted">{{ item.formula | e }}</td><td class="num"><strong>{{ item.value_formatted | e }}</strong></td><td>{{ item.reference_formatted | e }}</td><td class="{{ item.status if item.status in ('good', 'warning', 'danger') else 'neutral' }}">{{ item.status_label | e }}</td></tr>{% endfor %}
     </tbody></table>
