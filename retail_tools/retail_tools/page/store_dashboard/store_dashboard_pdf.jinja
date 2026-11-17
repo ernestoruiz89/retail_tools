@@ -160,13 +160,13 @@
     <table class="data-table indicators-table retail-indicators-table"><thead><tr><th class="cat">Categoría</th><th class="indicator">Indicador</th><th class="formula">Fórmula / base de cálculo</th><th class="current num">Valor actual</th><th class="reference">Referencia / meta</th><th class="status">Estado</th></tr></thead><tbody>
       {% for item in indicators[13:] %}<tr><td>{{ item.category | e }}</td><td><strong>{{ item.name | e }}</strong></td><td class="muted">{{ item.formula | e }}</td><td class="num"><strong>{{ item.value_formatted | e }}</strong></td><td>{{ item.reference_formatted | e }}</td><td class="{{ item.status if item.status in ('good', 'warning', 'danger') else 'neutral' }}">{{ item.status_label | e }}</td></tr>{% endfor %}
     </tbody></table>
-    <div class="footnote">Inventario promedio: media de saldos diarios al costo. Existencias registradas al corte; los POS sin consolidar pueden estar pendientes de afectar inventario. Punto de equilibrio y ciclo de efectivo se calculan para toda la empresa. N/A indica una base insuficiente o una configuración pendiente.</div>
+    <div class="footnote">Inventario promedio: media de saldos diarios al costo. GMROI ajustado toma como cero los promedios negativos por artículo/almacén, sin modificar inventario ni costos de venta. Existencias registradas al corte; los POS sin consolidar pueden estar pendientes de afectar inventario. Punto de equilibrio y ciclo de efectivo se calculan para toda la empresa. N/A indica una base insuficiente o una configuración pendiente.</div>
   </div>
   {% endif %}
   {% for batch in inventory_details | batch(15) %}
   <div class="page{% if loop.last %} last{% endif %}">
     <div class="topline"></div><h2>Detalle de inventario por categoría y almacén</h2>
-    <p class="section-subtitle">GMROI: {{ indicator_basis_label | e }}. Cada agrupación se calcula de forma independiente; no sumar categorías y almacenes. Página de detalle {{ loop.index }}.</p>
+    <p class="section-subtitle">GMROI: {{ indicator_basis_label | e }}. Cada agrupación se calcula de forma independiente; no sumar categorías y almacenes. * Promedios negativos por artículo/almacén tomados como cero para GMROI; ajuste solo del informe. Página de detalle {{ loop.index }}.</p>
     <table class="data-table"><thead><tr><th>Agrupación</th><th>Nombre</th><th class="num">Inventario promedio</th><th class="num">GMROI</th><th class="num">Capital estancado</th><th class="num">Estancado %</th><th class="num">Agotados / Con demanda</th><th class="num">Agotados %</th></tr></thead><tbody>
       {% for row in batch %}<tr><td>{{ row.group | e }}</td><td>{{ row.name | e }}</td><td class="num">{{ row.average | e }}</td><td class="num">{{ row.gmroi | e }}</td><td class="num">{{ row.dead_value | e }}</td><td class="num">{{ row.dead_pct | e }}</td><td class="num">{{ row.stockout | e }}</td><td class="num">{{ row.stockout_pct | e }}</td></tr>{% endfor %}
     </tbody></table>

@@ -285,18 +285,20 @@ def inventory_metrics(stock, activity, sales, cost_map, end, dead_days):
 		by_item = defaultdict(list)
 		for record in records:
 			by_item[record["item_code"]].append(record)
-		stock_value = dead_value = average = profit = 0.0
+		stock_value = dead_value = average = gmroi_average = profit = 0.0
 		demand_count = stockout_count = 0
 		valid_history = any(r["history"] for r in records)
-		# Sales costs and historical stock valuation are independent inputs. Negative
-		# stock invalidates GMROI, but must not block break-even for costed sales.
+		# Keep the ledger average intact; only GMROI's denominator floors each
+		# item/warehouse average at zero. Sales costs remain a separate requirement.
 		valid_cost = not any(r["missing_cost"] for r in records)
-		valid_valuation = not any(r["average_value"] < -0.01 for r in records)
+		negative_inventory = [r for r in records if r["average_value"] < 0]
+		adjustment = sum(-r["average_value"] for r in negative_inventory)
 		for group in by_item.values():
 			qty = sum(r["qty"] for r in group)
 			value = sum(max(0, r["stock_value"]) for r in group)
 			stock_value += value
 			average += sum(r["average_value"] for r in group)
+			gmroi_average += sum(max(0, r["average_value"]) for r in group)
 			profit += sum(r["profit"] for r in group)
 			if sum(r["recent_qty"] for r in group) > 0:
 				demand_count += 1
@@ -306,24 +308,30 @@ def inventory_metrics(stock, activity, sales, cost_map, end, dead_days):
 			inactive_since = last_sale or first_receipt
 			if qty > 0 and inactive_since and (as_date(end) - as_date(inactive_since)).days >= dead_days:
 				dead_value += value
+		if not valid_cost:
+			gmroi_note = "Requiere costo de los artículos vendidos"
+		elif not valid_history or gmroi_average <= 0:
+			gmroi_note = "Requiere historial e inventario promedio positivo"
+		else:
+			gmroi_note = "Inventario histórico; costo comercial con valoración de respaldo cuando sea necesaria"
+		if negative_inventory:
+			gmroi_note += (
+				f". Ajustado: {len(negative_inventory)} promedios negativos por artículo/almacén "
+				"tomados como cero solo para GMROI"
+			)
 		return dict(
 			average_inventory=average if valid_history else None,
+			gmroi_average_inventory=gmroi_average if valid_history else None,
 			cost_complete=valid_cost,
-			inventory_valuation_valid=valid_valuation,
+			inventory_valuation_valid=not negative_inventory,
+			negative_inventory_count=len(negative_inventory),
+			negative_inventory_adjustment=adjustment,
 			stock_value=stock_value,
 			dead_value=dead_value,
 			demand_count=demand_count,
 			stockout_count=stockout_count,
-			gmroi=profit / average if valid_history and valid_cost and valid_valuation and average > 0 else None,
-			gmroi_note=(
-				"Revisar inventario histórico con valoración promedio negativa por artículo y almacén"
-				if not valid_valuation
-				else "Requiere costo de los artículos vendidos"
-				if not valid_cost
-				else "Requiere historial e inventario promedio positivo"
-				if not valid_history or average <= 0
-				else "Inventario histórico; costo comercial con valoración de respaldo cuando sea necesaria"
-			),
+			gmroi=profit / gmroi_average if valid_history and valid_cost and gmroi_average > 0 else None,
+			gmroi_note=gmroi_note,
 			dead_stock_pct=dead_value / stock_value * 100 if stock_value > 0 else None,
 			stockout_pct=stockout_count / demand_count * 100 if demand_count else None,
 		)
@@ -546,18 +554,25 @@ def build_retail_indicators(metrics, basis, symbol):
 	def money(value):
 		return f"{symbol} {value:,.0f}"
 
+	gmroi_adjusted = bool(metrics.get("negative_inventory_count"))
+	gmroi_note = metrics.get(
+		"gmroi_note", "Inventario histórico; costo comercial con valoración de respaldo cuando sea necesaria"
+	)
+	gmroi_denominator = (
+		"Suma de promedios al costo por artículo/almacén, con negativos en cero"
+		if gmroi_adjusted else "Inventario promedio diario al costo"
+	)
+	if gmroi_adjusted:
+		gmroi_note += f". Ajuste al promedio: +{money(metrics['negative_inventory_adjustment'])}"
 	definitions = [
 		(
 			"gmroi",
 			"Rentabilidad",
-			"GMROI · " + basis["label"],
-			"Utilidad bruta de artículos de stock / Inventario promedio diario al costo"
+			("GMROI ajustado · " if gmroi_adjusted else "GMROI · ") + basis["label"],
+			"Utilidad bruta de artículos de stock / " + gmroi_denominator
 			+ (" × 365 / Días" if factor != 1 else ""),
 			"x",
-			metrics.get(
-				"gmroi_note",
-				"Inventario histórico; costo comercial con valoración de respaldo cuando sea necesaria",
-			),
+			gmroi_note,
 		),
 		(
 			"dead_stock_pct",
@@ -671,14 +686,14 @@ def build_retail_indicators(metrics, basis, symbol):
 def inventory_detail_view(metrics, basis, symbol):
 	rows = []
 	for row in metrics.get("details", []):
+		average = row.get("gmroi_average_inventory", row["average_inventory"])
+		marker = " *" if row.get("negative_inventory_count") else ""
 		rows.append(
 			dict(
 				group=row["group"],
 				name=row["name"],
-				average=f"{symbol} {row['average_inventory']:,.0f}"
-				if row["average_inventory"] is not None
-				else "N/A",
-				gmroi=f"{row['gmroi'] * basis['factor']:.2f}x" if row["gmroi"] is not None else "N/A",
+				average=f"{symbol} {average:,.0f}{marker}" if average is not None else "N/A",
+				gmroi=f"{row['gmroi'] * basis['factor']:.2f}x{marker}" if row["gmroi"] is not None else "N/A",
 				dead_value=f"{symbol} {row['dead_value']:,.0f}",
 				dead_pct=f"{row['dead_stock_pct']:.1f}%" if row["dead_stock_pct"] is not None else "N/A",
 				stockout=f"{row['stockout_count']} / {row['demand_count']}",

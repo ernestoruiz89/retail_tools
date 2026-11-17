@@ -346,6 +346,7 @@ class RetailStoreDashboard {
 						<thead><tr><th>${__("Agrupación")}</th><th>${__("Nombre")}</th><th>${__("Inventario promedio")}</th><th>GMROI</th><th>${__("Capital estancado")}</th><th>${__("Estancado %")}</th><th>${__("Agotados / Con demanda")}</th><th>${__("Agotados %")}</th></tr></thead>
 						<tbody id="rt-db-inventory-details"></tbody>
 					</table></div>
+					<p class="rt-db-indicator-note">${__("* Promedios negativos por artículo/almacén tomados como cero para GMROI. Ajuste solo del informe; no modifica inventario ni costos de venta.")}</p>
 				</details>
 			</div>
 		`);

@@ -325,10 +325,13 @@ class RetailCalculationTest(unittest.TestCase):
 		sales = [dict(item_code="X", warehouse="W1", is_stock_item=1, qty=2, net_amount=10000)]
 		data = metrics.inventory_metrics(stock, [], sales, {"X": 3000}, "2026-11-30", 60)
 		self.assertEqual(data["average_inventory"], 80)
+		self.assertEqual(data["gmroi_average_inventory"], 100)
 		self.assertTrue(data["cost_complete"])
 		self.assertFalse(data["inventory_valuation_valid"])
-		self.assertIsNone(data["gmroi"])
-		self.assertIn("valoración promedio negativa", data["gmroi_note"])
+		self.assertEqual(data["gmroi"], 40)
+		self.assertEqual(data["negative_inventory_count"], 1)
+		self.assertEqual(data["negative_inventory_adjustment"], 20)
+		self.assertIn("tomados como cero solo para GMROI", data["gmroi_note"])
 		rows, settings = self.accounting_fixture()
 		accounting = metrics.accounting_metrics(
 			rows, settings, 10000, 6000, 30, cost_complete=data["cost_complete"]
@@ -336,8 +339,67 @@ class RetailCalculationTest(unittest.TestCase):
 		self.assertAlmostEqual(accounting["break_even"], 1000 / 0.35)
 		basis = dict(factor=1, label="Del período", period_days=30)
 		gmroi = next(r for r in metrics.build_retail_indicators(data, basis, "C$") if r["key"] == "gmroi")
-		self.assertEqual(gmroi["reference_formatted"], data["gmroi_note"])
-		self.assertEqual(gmroi["value_formatted"], "N/A")
+		self.assertIn(data["gmroi_note"], gmroi["reference_formatted"])
+		self.assertIn("+C$ 20", gmroi["reference_formatted"])
+		self.assertEqual(gmroi["name"], "GMROI ajustado · Del período")
+		self.assertEqual(gmroi["value_formatted"], "40.00x")
+
+	def test_adjusted_gmroi_floors_each_item_warehouse_before_grouping_and_preserves_raw_values(self):
+		stock = [
+			dict(item_code="X", warehouse="W1", item_group="Ropa", qty=5, stock_value=100, average_value=100),
+			dict(item_code="X", warehouse="W2", item_group="Ropa", qty=-5, stock_value=-150, average_value=-150),
+			dict(item_code="Y", warehouse="W1", item_group="Accesorios", qty=10, stock_value=200, average_value=200),
+		]
+		sales = [dict(item_code="X", warehouse="W2", is_stock_item=1, qty=2, net_amount=100, incoming_rate=20)]
+		original_stock, original_sales = copy.deepcopy(stock), copy.deepcopy(sales)
+		data = metrics.inventory_metrics(stock, [], sales, {}, "2026-11-30", 60)
+		self.assertEqual(data["average_inventory"], 150)
+		self.assertEqual(data["gmroi_average_inventory"], 300)
+		self.assertEqual(data["negative_inventory_adjustment"], 150)
+		self.assertEqual(data["gmroi"], 0.2)  # commercial cost stays 2 * 20, not zero
+		self.assertEqual(stock, original_stock)
+		self.assertEqual(sales, original_sales)
+		ropa = next(r for r in data["details"] if r["name"] == "Ropa")
+		self.assertEqual(ropa["average_inventory"], -50)
+		self.assertEqual(ropa["gmroi_average_inventory"], 100)
+		self.assertEqual(ropa["gmroi"], 0.6)
+		data["settings"] = {"targets": [dict(indicator="GMROI", target=3, warning=1)]}
+		dashboard = _load_dashboard_module()
+		for mode in ("period", "annualized"):
+			basis = dashboard._indicator_basis(30, mode)
+			row = next(r for r in metrics.build_retail_indicators(data, basis, "C$") if r["key"] == "gmroi")
+			self.assertEqual(row["status"], "warning")
+			self.assertAlmostEqual(row["value"], 0.2 * basis["factor"])
+			self.assertIn("GMROI ajustado", row["name"])
+			details = metrics.inventory_detail_view(data, basis, "C$")
+			ropa_view = next(r for r in details if r["name"] == "Ropa")
+			self.assertEqual(ropa_view["average"], "C$ 100 *")
+			self.assertEqual(ropa_view["gmroi"], f"{0.6 * basis['factor']:.2f}x *")
+			w2 = next(r for r in details if r["name"] == "W2")
+			self.assertEqual(w2["average"], "C$ 0 *")
+			self.assertEqual(w2["gmroi"], "N/A")
+			accessories = next(r for r in details if r["name"] == "Accesorios")
+			self.assertEqual(accessories["average"], "C$ 200")
+			self.assertNotIn("*", accessories["gmroi"])
+
+	def test_gmroi_zero_floor_does_not_invent_costs_denominators_or_positive_profit(self):
+		stock = [
+			dict(item_code="X", warehouse="W1", average_value=100),
+			dict(item_code="OLD", warehouse="W1", average_value=-50),
+		]
+		sale = dict(item_code="X", warehouse="W1", is_stock_item=1, qty=2, net_amount=10)
+		for rate in (0, -20):
+			data = metrics.inventory_metrics(stock, [], [{**sale, "incoming_rate": rate}], {}, "2026-11-30", 60)
+			self.assertFalse(data["cost_complete"])
+			self.assertIsNone(data["gmroi"])
+			self.assertIn("Requiere costo", data["gmroi_note"])
+		data = metrics.inventory_metrics(stock, [], [sale], {"X": 20}, "2026-11-30", 60)
+		self.assertEqual(data["gmroi"], -0.3)
+		stock[0]["average_value"] = -100
+		data = metrics.inventory_metrics(stock, [], [sale], {"X": 20}, "2026-11-30", 60)
+		self.assertEqual(data["gmroi_average_inventory"], 0)
+		self.assertIsNone(data["gmroi"])
+		self.assertIn("inventario promedio positivo", data["gmroi_note"])
 
 	def test_missing_sold_item_cost_still_blocks_break_even_with_valid_inventory(self):
 		stock = [dict(item_code="X", warehouse="W1", qty=5, stock_value=100, average_value=80)]

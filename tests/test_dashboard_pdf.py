@@ -148,6 +148,26 @@ class DashboardPdfTest(unittest.TestCase):
 			partial["charts"][2]["title"],
 			"Ventas, utilidad y margen por mes al día 14 · 01/11/2025 al 14/11/2026",
 		)
+		inputs["retail_metrics"].update(
+			negative_inventory_count=2, negative_inventory_adjustment=20,
+			gmroi_note="Ajustado: 2 promedios negativos tomados como cero solo para GMROI",
+		)
+		inputs["retail_metrics"]["details"][0].update(
+			gmroi_average_inventory=12020, negative_inventory_count=2,
+		)
+		adjusted_data = {**data, "indicator_views": {
+			mode: self.dashboard._build_indicator_view(mode, **inputs) for mode in ("period", "annualized")
+		}}
+		for mode in ("period", "annualized"):
+			adjusted_pdf = self.dashboard._dashboard_pdf_context(adjusted_data, charts, {"indicators": mode})
+			gmroi = next(row for row in adjusted_pdf["indicators"] if row["key"] == "gmroi")
+			self.assertIn("GMROI ajustado", gmroi["name"])
+			self.assertIn("+C$ 20", gmroi["reference_formatted"])
+			self.assertEqual(adjusted_pdf["inventory_details"][0]["average"], "C$ 12,020 *")
+			self.assertTrue(adjusted_pdf["inventory_details"][0]["gmroi"].endswith("x *"))
+			self.assertEqual(gmroi, next(
+				row for row in adjusted_data["indicator_views"][mode]["indicators"] if row["key"] == "gmroi"
+			))
 
 
 if __name__ == "__main__":
