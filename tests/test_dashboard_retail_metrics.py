@@ -29,7 +29,8 @@ class Database:
 			CREATE TABLE `tabItem` (name TEXT, item_name TEXT, item_group TEXT, is_stock_item INTEGER);
 			CREATE TABLE `tabStock Ledger Entry` (company TEXT, item_code TEXT, warehouse TEXT, posting_date TEXT,
 				actual_qty REAL, stock_value_difference REAL, is_cancelled INTEGER DEFAULT 0);
-			CREATE TABLE `tabAccount` (name TEXT, root_type TEXT, account_type TEXT);
+			CREATE TABLE `tabAccount` (name TEXT, root_type TEXT, account_type TEXT,
+				company TEXT DEFAULT 'A', is_group INTEGER DEFAULT 0, parent_account TEXT, disabled INTEGER DEFAULT 0);
 			CREATE TABLE `tabGL Entry` (account TEXT, company TEXT, posting_date TEXT, debit REAL DEFAULT 0,
 				credit REAL DEFAULT 0, voucher_type TEXT, is_cancelled INTEGER DEFAULT 0);
 		""")
@@ -189,6 +190,73 @@ class RetailLedgerTest(unittest.TestCase):
 		self.assertEqual(rows["AR"]["credit_origin"], 200)
 		self.assertEqual(rows["Rent"]["period_amount"], 50)
 
+	def test_group_rules_use_real_company_tree_and_count_each_posting_once(self):
+		for name, parent, group, type_, company in [
+			("Expenses", None, 1, "", "A"),
+			("Admin", "Expenses", 1, "", "A"),
+			("Payroll", "Admin", 1, "", "A"),
+			("Rent", "Admin", 0, "", "A"),
+			("Salary", "Payroll", 0, "", "A"),
+			("Fees", "Admin", 0, "", "A"),
+			("COGS", "Expenses", 0, "Cost of Goods Sold", "A"),
+			("Excluded", "Admin", 0, "", "A"),
+			("Foreign", "Admin", 0, "", "B"),
+		]:
+			self.db.insert(
+				"Account",
+				name=name,
+				parent_account=parent,
+				is_group=group,
+				root_type="Expense",
+				account_type=type_,
+				company=company,
+			)
+		for account, amount in [
+			("Rent", 1000),
+			("Salary", 2000),
+			("Fees", 500),
+			("COGS", 6000),
+			("Excluded", 80),
+		]:
+			self.db.insert(
+				"GL Entry",
+				account=account,
+				company="A",
+				posting_date="2026-11-10",
+				debit=amount,
+				voucher_type="Journal Entry",
+			)
+		# Historical disabled accounts still inherit. Another company's accounts never do.
+		self.db.connection.execute("UPDATE `tabAccount` SET disabled = 1 WHERE name = 'Rent'")
+		accounts = metrics.fetch_expense_accounts(self.db, "A")
+		self.assertEqual(len(accounts), 8)
+		settings = dict(
+			company="A",
+			expenses=[
+				dict(account="Expenses", behavior="Variable"),
+				dict(account="Admin", behavior="Fijo"),
+				dict(account="Payroll", behavior="Variable"),
+				dict(account="Salary", behavior="Fijo"),
+				dict(account="Fees", behavior="Variable"),
+				dict(account="Rent", behavior=""),  # Blank rows do not block inheritance.
+				dict(account="Excluded", behavior="Excluido"),
+			],
+		)
+		rows = metrics.fetch_accounting(self.db, "A", "2026-11-01", "2026-11-30")
+		data = metrics.accounting_metrics(rows, settings, 10000, 6000, 30, accounts=accounts)
+		self.assertEqual((data["fixed_expenses"], data["variable_expenses"]), (3000, 500))
+		self.assertAlmostEqual(data["break_even"], 3000 / 0.35)
+		self.assertEqual(data["unclassified_accounts"], [])
+		# A new descendant is covered without adding another settings row.
+		self.db.insert("Account", name="New salary", parent_account="Payroll", root_type="Expense")
+		resolved = metrics.resolve_expense_classifications(
+			settings, metrics.fetch_expense_accounts(self.db, "A")
+		)
+		self.assertEqual(resolved["New salary"], "Variable")
+		self.assertEqual(resolved["COGS"], "Costo de ventas")
+		self.assertNotIn("Foreign", resolved)
+		self.assertNotIn("Admin", resolved)
+
 
 class RetailCalculationTest(unittest.TestCase):
 	def test_stockouts_count_unique_demand_items_and_dead_stock_uses_all_items(self):
@@ -335,7 +403,7 @@ class RetailCalculationTest(unittest.TestCase):
 		self.assertEqual(period["indicators"][14]["status"], "warning")
 		self.assertEqual(period["indicators"][15]["status"], "neutral")
 
-	def test_config_rejects_other_company_group_accounts_duplicates_and_reversed_targets(self):
+	def test_config_accepts_groups_but_rejects_other_company_duplicates_and_reversed_targets(self):
 		settings = dict(
 			company="A",
 			dead_stock_days=60,
@@ -345,7 +413,8 @@ class RetailCalculationTest(unittest.TestCase):
 		)
 		accounts = {"Rent": dict(company="A", root_type="Expense", is_group=0)}
 		metrics.validate_settings(settings, accounts)
-		for change in ({"company": "B"}, {"root_type": "Asset"}, {"is_group": 1}):
+		metrics.validate_settings(settings, {"Rent": {**accounts["Rent"], "is_group": 1}})
+		for change in ({"company": "B"}, {"root_type": "Asset"}):
 			with self.assertRaises(ValueError):
 				metrics.validate_settings(settings, {"Rent": {**accounts["Rent"], **change}})
 		invalid = copy.deepcopy(settings)
@@ -358,6 +427,29 @@ class RetailCalculationTest(unittest.TestCase):
 		):
 			with self.assertRaises(ValueError):
 				metrics.validate_settings({**settings, "targets": [target]}, accounts)
+
+	def test_inheritance_does_not_cross_companies_use_prefixes_or_loop_on_broken_trees(self):
+		settings = dict(company="A", expenses=[dict(account="54", behavior="Fijo")])
+		accounts = [
+			dict(name="54", company="B", root_type="Expense", is_group=1),
+			dict(name="Foreign parent", parent_account="54", company="A", root_type="Expense"),
+			dict(name="5401", company="A", root_type="Expense"),
+			dict(name="Cycle", parent_account="Cycle group", company="A", root_type="Expense"),
+			dict(name="Cycle group", parent_account="Cycle", company="A", root_type="Expense", is_group=1),
+		]
+		self.assertEqual(metrics.resolve_expense_classifications(settings, accounts), {})
+		rows = [dict(account="5401", root_type="Expense", period_amount=10)]
+		data = metrics.accounting_metrics(rows, settings, 100, 50, 30, accounts=accounts)
+		self.assertEqual(data["unclassified_accounts"], ["5401"])
+		self.assertIsNone(data["break_even"])
+
+	def test_direct_cogs_cannot_be_classified_as_another_expense(self):
+		settings = dict(
+			company="A", dead_stock_days=60, demand_days=30, expenses=[dict(account="Cost", behavior="Fijo")]
+		)
+		accounts = {"Cost": dict(company="A", root_type="Expense", account_type="Cost of Goods Sold")}
+		with self.assertRaises(ValueError):
+			metrics.validate_settings(settings, accounts)
 
 	def test_custom_targets_apply_to_all_previous_indicators_and_dupont(self):
 		dashboard = _load_dashboard_module()

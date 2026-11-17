@@ -67,9 +67,10 @@ def validate_settings(settings, accounts):
 			not account
 			or account.get("company") != settings.get("company")
 			or account.get("root_type") != "Expense"
-			or account.get("is_group")
 		):
-			raise ValueError(f"La cuenta {name} debe ser una cuenta de gastos de detalle de esta empresa.")
+			raise ValueError(
+				f"La cuenta {name} debe ser una cuenta de gastos de esta empresa, de mayor o de detalle."
+			)
 		if (row.get("behavior") or "") not in BEHAVIORS:
 			raise ValueError(f"Clasificación de gastos inválida: {name}")
 		if account.get("account_type") == "Cost of Goods Sold" and row.get("behavior") not in (
@@ -363,6 +364,44 @@ def sales_quality(sales):
 	)
 
 
+def fetch_expense_accounts(db, company):
+	# Include disabled accounts: they can still have historical movements to classify.
+	return db.sql(
+		"""
+		SELECT name, company, root_type, account_type, is_group, parent_account
+		FROM `tabAccount` WHERE company = %(company)s AND root_type = 'Expense'
+		""",
+		{"company": company},
+		as_dict=True,
+	)
+
+
+def resolve_expense_classifications(settings, accounts):
+	"""Resolve each leaf once, using its nearest nonempty rule in the actual account tree."""
+	account_map = {
+		row["name"]: row
+		for row in accounts
+		if row.get("company") == settings.get("company") and row.get("root_type") == "Expense"
+	}
+	rules = {row["account"]: row.get("behavior") for row in settings.get("expenses", [])}
+	resolved = {}
+	for name, account in account_map.items():
+		if account.get("is_group"):
+			continue
+		# A broad fixed/variable rule must never charge commercial COGS a second time.
+		if account.get("account_type") == "Cost of Goods Sold":
+			resolved[name] = "Costo de ventas"
+			continue
+		current, visited = name, set()
+		while current in account_map and current not in visited:
+			visited.add(current)
+			if rules.get(current):
+				resolved[name] = rules[current]
+				break
+			current = account_map[current].get("parent_account")
+	return resolved
+
+
 def fetch_accounting(db, company, start, end):
 	days = (as_date(end) - as_date(start)).days + 1
 	return db.sql(
@@ -378,6 +417,7 @@ def fetch_accounting(db, company, start, end):
 				THEN gl.debit - gl.credit ELSE 0 END) AS credit_origin
 		FROM `tabGL Entry` gl INNER JOIN `tabAccount` a ON a.name = gl.account
 		WHERE gl.company = %(company)s AND gl.is_cancelled = 0 AND gl.posting_date <= %(end)s
+			AND a.company = %(company)s AND a.is_group = 0
 			AND (a.root_type = 'Expense' OR a.account_type IN ('Receivable', 'Payable', 'Stock'))
 		GROUP BY a.name, a.root_type, a.account_type
 	""",
@@ -387,9 +427,13 @@ def fetch_accounting(db, company, start, end):
 
 
 def accounting_metrics(
-	rows, settings, net_sales, commercial_cogs, period_days, warehouse=None, cost_complete=True
+	rows, settings, net_sales, commercial_cogs, period_days, warehouse=None, cost_complete=True, accounts=None
 ):
-	classification = {r["account"]: r.get("behavior") for r in settings.get("expenses", [])}
+	classification = (
+		resolve_expense_classifications(settings, accounts)
+		if accounts is not None
+		else {r["account"]: r.get("behavior") for r in settings.get("expenses", [])}
+	)
 	fixed = variable = cogs = ar = ap = credit_sales = credit_purchases = average_stock = 0.0
 	unclassified = []
 	for row in rows:
@@ -405,9 +449,7 @@ def accounting_metrics(
 			average_stock += number(row.get("average_balance"))
 		if row.get("root_type") != "Expense":
 			continue
-		behavior = classification.get(row["account"]) or (
-			"Costo de ventas" if type_ == "Cost of Goods Sold" else ""
-		)
+		behavior = "Costo de ventas" if type_ == "Cost of Goods Sold" else classification.get(row["account"])
 		if behavior == "Costo de ventas":
 			cogs += amount
 		elif behavior == "Fijo":

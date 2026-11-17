@@ -16,6 +16,7 @@ from retail_tools.retail_tools.page.store_dashboard.retail_metrics import (
 	build_retail_indicators,
 	fetch_accounting,
 	fetch_demand,
+	fetch_expense_accounts,
 	fetch_inventory_history,
 	inventory_detail_view,
 	inventory_metrics,
@@ -1656,6 +1657,7 @@ def get_store_dashboard_data(
 		accounting_metrics(
 			fetch_accounting(frappe.db, resolved_company, start_date, end_date), settings,
 			curr_comm["net_sales"], curr_comm["cogs"], period_days, clean_warehouse, retail_metrics["cost_complete"],
+			accounts=fetch_expense_accounts(frappe.db, resolved_company),
 		)
 	)
 	retail_metrics["settings"] = settings
