@@ -341,6 +341,13 @@
 }
 
 /* Section Headers */
+.rt-db-indicator-note {
+	margin: -6px 0 18px;
+	color: #64748b;
+	font-size: 12px;
+	line-height: 1.6;
+}
+
 .rt-db-section-header {
 	display: flex;
 	align-items: center;
@@ -358,6 +365,16 @@
 	align-items: center;
 	gap: 8px;
 	margin: 0;
+}
+
+.rt-db-indicator-header {
+	flex-wrap: wrap;
+	gap: 12px;
+}
+
+#rt-db-indicator-mode {
+	flex-shrink: 0;
+	max-width: 100%;
 }
 
 .rt-db-section-subtitle {

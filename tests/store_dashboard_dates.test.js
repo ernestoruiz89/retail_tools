@@ -44,6 +44,7 @@ function makeDashboard() {
 				return { addClass: () => activeButtons.add(button[1]) };
 			}
 			return {
+				length: 1,
 				val(value) {
 					if (arguments.length === 0) return values[selector];
 					values[selector] = value;
@@ -217,6 +218,7 @@ test("PDF export sends the visible period and downloads the returned file", asyn
 	dashboard.payloadRangeKey = "30d";
 	dashboard.pnlMode = "expenses";
 	dashboard.trendMode = "monthly";
+	dashboard.indicatorMode = "annualized";
 	await dashboard.exportDashboardPdf();
 	assert.equal(request.options.headers["X-Frappe-CSRF-Token"], "csrf-test");
 	const body = JSON.parse(request.options.body);
@@ -224,8 +226,52 @@ test("PDF export sends the visible period and downloads the returned file", asyn
 	assert.equal(body.range_key, "30d");
 	assert.equal(body.chart_modes.pnl, "expenses");
 	assert.equal(body.chart_modes.trend, "monthly");
+	assert.equal(body.chart_modes.indicators, "annualized");
 	assert.equal(clicked, true);
 	assert.equal(buttonDisabled, false);
+});
+
+test("indicator mode updates DuPont and the table together and survives refresh and category filters", () => {
+	const { dashboard, values } = makeDashboard();
+	dashboard.charts = {};
+	dashboard.indicatorFilter = "all";
+	dashboard.refreshData = () => { throw new Error("Switching modes must not fetch sales again"); };
+	const view = (annualized) => ({
+		mode: annualized ? "annualized" : "period",
+		label: annualized ? "Anualizado" : "Del período",
+		note: annualized ? "Estimación lineal: 365 / 30" : "30 días analizados",
+		dupont: {
+			sales: 10000, net_profit: 1000, assets: 100000, equity: 50000,
+			scaled_sales: annualized ? 121666.67 : 10000, scaled_profit: annualized ? 12166.67 : 1000,
+			margin: 10, turnover: annualized ? 1.2166667 : 0.1, multiplier: 2,
+			roe: annualized ? 24.333333 : 2, status: "warning", status_label: "Moderado",
+			reference_formatted: annualized ? "Meta anual >= 60.8%" : "Meta en 30 días >= 5.0%",
+		},
+		indicators: [
+			{category: "Rentabilidad", name: "ROE", value_formatted: annualized ? "24.3%" : "2.0%", formula: "", reference_formatted: "", status: "warning"},
+			{category: "Liquidez y Solvencia", name: "Liquidez", value_formatted: "1.50x", formula: "", reference_formatted: ""},
+		],
+	});
+	dashboard.payload = { indicator_views: { period: view(false), annualized: view(true) } };
+	dashboard.setIndicatorMode("annualized");
+	assert.match(values["#rt-chart-dupont"], /24\.3%/);
+	assert.match(values["#rt-chart-dupont"], /1\.22x/);
+	assert.match(values["#rt-chart-dupont"], /10\.0%/);
+	assert.match(values["#rt-chart-dupont"], /2\.00x/);
+	assert.match(values["#rt-chart-dupont"], /Meta anual &gt;= 60.8%|Meta anual >= 60.8%/);
+	assert.match(values["#rt-db-indicators-tbody"], /24\.3%/);
+	assert.match(values["#rt-db-indicator-note"], /365 \/ 30/);
+	for (const method of ["renderPeriodNote", "renderKpiCards", "renderBalanceSheetChart", "renderPnlChart", "renderTrendChart", "renderCategoryChart", "renderTopItemsChart", "renderPaymentsChart", "renderCalendarHeatmapChart", "renderHeatmapChart", "renderStockVsSalesChart", "renderAlertTables"]) dashboard[method] = () => {};
+	dashboard.indicatorFilter = "Rentabilidad";
+	dashboard.renderAll({ ...dashboard.payload, financials: {}, charts: {} });
+	assert.match(values["#rt-db-indicators-tbody"], /24\.3%/);
+	assert.doesNotMatch(values["#rt-db-indicators-tbody"], /Liquidez/);
+	dashboard.setIndicatorMode("period");
+	assert.match(values["#rt-chart-dupont"], /2\.0%/);
+	assert.doesNotMatch(values["#rt-chart-dupont"], /24\.3%/);
+	assert.equal(dashboard.indicatorFilter, "Rentabilidad");
+	dashboard.setIndicatorMode("invalid");
+	assert.equal(dashboard.indicatorMode, "period");
 });
 
 test("daily and monthly charts combine POS and normal invoices into one sales series", () => {

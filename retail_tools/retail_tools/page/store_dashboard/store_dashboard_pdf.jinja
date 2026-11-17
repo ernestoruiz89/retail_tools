@@ -142,12 +142,13 @@
 
   <div class="page last">
     <div class="topline"></div><h2>Indicadores financieros y operativos</h2>
+    <p class="section-subtitle"><strong>Base de indicadores y DuPont:</strong> {{ indicator_basis_note | e }}</p>
     <p class="section-subtitle">Análisis DuPont: ROE = margen neto × rotación de activos × apalancamiento financiero.</p>
-    <table class="dupont"><tr><td>Margen neto<strong>{{ dupont.margin | e }}</strong></td><td>Rotación de activos<strong>{{ dupont.turnover | e }}</strong></td><td>Apalancamiento<strong>{{ dupont.multiplier | e }}</strong></td><td>ROE<strong>{{ dupont.roe | e }}</strong></td></tr></table>
+    <table class="dupont"><tr><td>Margen neto<strong>{{ dupont.margin | e }}</strong></td><td>Rotación de activos · {{ indicator_basis_label | e }}<strong>{{ dupont.turnover | e }}</strong></td><td>Apalancamiento<strong>{{ dupont.multiplier | e }}</strong></td><td>ROE · {{ indicator_basis_label | e }}<strong>{{ dupont.roe | e }}</strong><span class="{{ dupont.status | e }}">{{ dupont.status_label | e }}</span> · {{ dupont.reference | e }}</td></tr></table>
     <table class="data-table indicators-table"><thead><tr><th class="cat">Categoría</th><th class="indicator">Indicador</th><th class="formula">Fórmula / base de cálculo</th><th class="current num">Valor actual</th><th class="reference">Referencia / meta</th><th class="status">Estado</th></tr></thead><tbody>
       {% for item in indicators %}<tr><td>{{ item.category | e }}</td><td><strong>{{ item.name | e }}</strong></td><td class="muted">{{ item.formula | e }}</td><td class="num"><strong>{{ item.value_formatted | e }}</strong></td><td>{{ item.reference_formatted | e }}</td><td class="{{ item.status if item.status in ('good', 'warning', 'danger') else 'neutral' }}">{{ item.status_label | e }}</td></tr>{% endfor %}
     </tbody></table>
-    <div class="footnote">Cifras calculadas con los filtros indicados al inicio del informe. Los datos de inventario corresponden al corte seleccionado.</div>
+    <div class="footnote">Cifras calculadas con los filtros del informe. Saldos contables al corte seleccionado; inventario de existencias actuales.</div>
   </div>
 </body>
 </html>

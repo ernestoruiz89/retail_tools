@@ -29,6 +29,7 @@ class RetailStoreDashboard {
 		this.calendarMode = "sales"; // "sales" | "tickets"
 		this.trendMode = "daily"; // "daily" | "monthly" | "monthly_to_day"
 		this.indicatorFilter = "all";
+		this.indicatorMode = "period";
 		this.activeRangeKey = null;
 		this.refreshRequestId = 0;
 		this.isRefreshing = false;
@@ -290,10 +291,14 @@ class RetailStoreDashboard {
 				</div>
 
 				<!-- Sección 5: Tabla Final de Indicadores -->
-				<div class="rt-db-section-header">
+				<div class="rt-db-section-header rt-db-indicator-header">
 					<h3 class="rt-db-section-title">${__("5. Tabla Ejecutiva de Indicadores Financieros y Operativos")}</h3>
-					<span class="rt-db-section-subtitle">${__("Resumen integral de ratios de rentabilidad, liquidez, solvencia y rotación de tienda")}</span>
+					<div class="rt-db-segmented" id="rt-db-indicator-mode" role="group" aria-label="${__("Base de los indicadores")}">
+						<button type="button" class="rt-db-seg-btn active" data-mode="period" aria-pressed="true">${__("Del período")}</button>
+						<button type="button" class="rt-db-seg-btn" data-mode="annualized" aria-pressed="false">${__("Anualizado")}</button>
+					</div>
 				</div>
+				<p class="rt-db-indicator-note" id="rt-db-indicator-note" aria-live="polite"></p>
 				<div class="rt-db-card" style="margin-bottom: 18px;">
 					<div class="rt-db-card-header">
 						<div>
@@ -308,7 +313,7 @@ class RetailStoreDashboard {
 					<div class="rt-db-card-header">
 						<div>
 							<h4 class="rt-db-card-title">${__("Tablero de Indicadores Clave para el Dueño de Negocio")}</h4>
-							<div class="rt-db-card-subtitle">${__("Evaluación automática con semáforo frente a metas recomendadas de retail y período anterior")}</div>
+							<div class="rt-db-card-subtitle">${__("Semáforo con metas equivalentes a la base seleccionada")}</div>
 						</div>
 						<div class="rt-db-segmented" id="rt-db-ind-filter">
 							<button type="button" class="rt-db-seg-btn active" data-cat="all">${__("Todos")}</button>
@@ -426,13 +431,17 @@ class RetailStoreDashboard {
 			}
 		});
 
+		this.$container.on("click", "#rt-db-indicator-mode .rt-db-seg-btn", function () {
+			self.setIndicatorMode($(this).data("mode"));
+		});
+
 		this.$container.on("click", "#rt-db-ind-filter .rt-db-seg-btn", function () {
 			const $btn = $(this);
 			self.$container.find("#rt-db-ind-filter .rt-db-seg-btn").removeClass("active");
 			$btn.addClass("active");
 			self.indicatorFilter = $btn.data("cat");
 			if (self.payload) {
-				self.renderIndicatorsTable(self.payload.indicators_table || []);
+				self.renderIndicatorSection(self.payload);
 			}
 		});
 
@@ -719,6 +728,7 @@ class RetailStoreDashboard {
 						range_key: this.payloadRangeKey,
 						chart_modes: {
 							trend: this.trendMode,
+							indicators: this.indicatorMode,
 							pnl: this.pnlMode,
 							top: this.topItemsMode,
 							calendar: this.calendarMode,
@@ -763,8 +773,23 @@ class RetailStoreDashboard {
 		this.renderHeatmapChart(data.charts.hourly_heatmap);
 		this.renderStockVsSalesChart(data.charts.by_category);
 		this.renderAlertTables(data.alerts);
-		this.renderDupontChart(data.financials);
-		this.renderIndicatorsTable(data.indicators_table);
+		this.renderIndicatorSection(data);
+	}
+
+	setIndicatorMode(mode) {
+		this.indicatorMode = mode === "annualized" ? "annualized" : "period";
+		if (this.payload) this.renderIndicatorSection(this.payload);
+	}
+
+	renderIndicatorSection(data) {
+		const mode = this.indicatorMode === "annualized" ? "annualized" : "period";
+		const view = data.indicator_views && data.indicator_views[mode];
+		if (!view) return;
+		this.$container.find("#rt-db-indicator-mode .rt-db-seg-btn").removeClass("active").attr("aria-pressed", "false");
+		this.$container.find(`#rt-db-indicator-mode [data-mode="${mode}"]`).addClass("active").attr("aria-pressed", "true");
+		this.$container.find("#rt-db-indicator-note").text(view.note);
+		this.renderDupontChart(view);
+		this.renderIndicatorsTable(view.indicators);
 	}
 
 	fmtInteger(value) {
@@ -1866,9 +1891,9 @@ class RetailStoreDashboard {
 	/**
 	 * 9. DuPont Analysis: ROE = Net Margin x Asset Turnover x Equity Multiplier
 	 */
-	renderDupontChart(financials) {
+	renderDupontChart(view) {
 		const $box = this.$container.find("#rt-chart-dupont");
-		if (!$box.length || !financials) return;
+		if (!$box.length || !view) return;
 		if (this.charts["rt-chart-dupont"]) {
 			try {
 				this.charts["rt-chart-dupont"].dispose();
@@ -1877,37 +1902,31 @@ class RetailStoreDashboard {
 		}
 
 		const self = this;
-		const bs = financials.balance_sheet || {};
-		const pnl = financials.income_statement || {};
-
-		const sales = Number(pnl.total_income || 0);
-		const netProfit = Number(pnl.net_profit || 0);
-		const assets = Number(bs.total_assets || 0);
-		const equity = Number(bs.total_equity || 0);
-
-		const margin = sales ? netProfit / sales : 0;
-		const turnover = assets ? sales / assets : 0;
-		const multiplier = equity ? assets / equity : 0;
-		const roe = margin * turnover * multiplier;
-
-		const pct = (v) => `${(v * 100).toFixed(1)}%`;
-		const times = (v) => `${v.toFixed(2)}x`;
-
-		const isPositiveRoe = roe >= 0;
-		const rootBorder = isPositiveRoe ? "#10b981" : "#ef4444";
-		const rootBg = isPositiveRoe
-			? "linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%)"
-			: "linear-gradient(135deg, #fef2f2 0%, #fff1f2 100%)";
-		const rootColor = isPositiveRoe ? "#065f46" : "#991b1b";
+		const ratios = view.dupont;
+		const { sales, net_profit: netProfit, assets, equity, margin, turnover, multiplier, roe } = ratios;
+		const annualized = view.mode === "annualized";
+		const basisLabel = frappe.utils.escape_html(view.label);
+		const profitLabel = annualized ? __("Utilidad Neta Anualizada") : __("Utilidad Neta");
+		const salesLabel = annualized ? __("Ventas Anualizadas") : __("Ventas Netas");
+		const pct = (v) => v == null ? __("N/A") : `${v.toFixed(1)}%`;
+		const times = (v) => v == null ? __("N/A") : `${v.toFixed(2)}x`;
+		const palette = {
+			good: ["#10b981", "#ecfdf5", "#065f46"],
+			warning: ["#f59e0b", "#fffbeb", "#92400e"],
+			danger: ["#ef4444", "#fef2f2", "#991b1b"],
+			neutral: ["#94a3b8", "#f8fafc", "#475569"],
+		};
+		const [rootBorder, rootBg, rootColor] = palette[ratios.status] || palette.neutral;
 
 		const html = `
 			<div class="rt-dupont-container">
 				<!-- Master ROE Node -->
 				<div class="rt-dupont-root-card" style="border-color:${rootBorder}; background:${rootBg};">
-					<div class="rt-dupont-root-tag" style="color:${rootColor};">${__("Rentabilidad sobre el Patrimonio (ROE)")}</div>
+					<div class="rt-dupont-root-tag" style="color:${rootColor};">${__("Rentabilidad sobre el Patrimonio (ROE)")} · ${basisLabel}</div>
 					<div class="rt-dupont-root-val" style="color:${rootColor};">${pct(roe)}</div>
 					<div class="rt-dupont-root-sub" style="color:${rootColor};">
-						${__("Utilidad Neta")} (<strong>${self.fmtCompact(netProfit)}</strong>) ÷ ${__("Patrimonio")} (<strong>${self.fmtCompact(equity)}</strong>)
+						${profitLabel} (<strong>${self.fmtCompact(ratios.scaled_profit)}</strong>) ÷ ${__("Patrimonio")} (<strong>${self.fmtCompact(equity)}</strong>)
+						<br>${frappe.utils.escape_html(ratios.status_label)} · ${frappe.utils.escape_html(ratios.reference_formatted)}
 					</div>
 				</div>
 
@@ -1962,14 +1981,14 @@ class RetailStoreDashboard {
 					<!-- 2. Rotación de Activos -->
 					<div class="rt-dupont-pillar" style="--pillar-color: #7c3aed; --pillar-soft: #f5f3ff;">
 						<div class="rt-dupont-pillar-head">
-							<span class="rt-dupont-pillar-title">${__("Rotación de Activos")}</span>
+							<span class="rt-dupont-pillar-title">${__("Rotación de Activos")} · ${basisLabel}</span>
 							<span class="rt-dupont-pillar-badge">${__("Eficiencia")}</span>
 						</div>
 						<div class="rt-dupont-pillar-val">${times(turnover)}</div>
 						<div class="rt-dupont-formula-box">
 							<div class="rt-dupont-formula-row">
-								<span class="rt-dupont-formula-label">${__("Ventas Netas")}</span>
-								<span class="rt-dupont-formula-num">${self.fmtMoney(sales)}</span>
+								<span class="rt-dupont-formula-label">${salesLabel}</span>
+								<span class="rt-dupont-formula-num">${self.fmtMoney(ratios.scaled_sales)}</span>
 							</div>
 							<div class="rt-dupont-formula-divider"></div>
 							<div class="rt-dupont-formula-row">
@@ -2019,7 +2038,7 @@ class RetailStoreDashboard {
 				`<span><strong>${__("Margen Neto")}:</strong> ${pct(margin)}</span>
 				<span><strong>${__("Rotación de Activos")}:</strong> ${times(turnover)}</span>
 				<span><strong>${__("Apalancamiento")}:</strong> ${times(multiplier)}</span>
-				<span><strong>ROE:</strong> ${pct(roe)} (${__("del período, sin anualizar")})</span>`
+				<span><strong>ROE:</strong> ${pct(roe)} (${basisLabel})</span>`
 			);
 	}
 

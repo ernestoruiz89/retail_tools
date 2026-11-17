@@ -1218,6 +1218,64 @@ def _get_financial_statements(
 	}
 
 
+# Preserve the existing targets at the dashboard's default 30-day period.
+# These are dashboard targets, not industry benchmarks.
+INDICATOR_YEAR_DAYS = 365
+INDICATOR_TARGET_BASE_DAYS = 30
+
+
+def _indicator_basis(period_days: int, mode: str = "period") -> dict:
+	days = max(1, int(period_days))
+	annualized = mode == "annualized"
+	factor = INDICATOR_YEAR_DAYS / days if annualized else 1.0
+	target_factor = (INDICATOR_YEAR_DAYS if annualized else days) / INDICATOR_TARGET_BASE_DAYS
+	label = "Anualizado" if annualized else "Del período"
+	return {
+		"mode": "annualized" if annualized else "period",
+		"label": label,
+		"period_days": days,
+		"factor": factor,
+		"target_factor": target_factor,
+		"note": (
+			f"{label} · {days} días analizados. "
+			+ (f"Estimación lineal: valor del período × 365 / {days}. " if annualized else "")
+			+ "ROA, ROE y rotaciones usan saldos al corte; inventario usa el stock actual. "
+			"Metas equivalentes a las configuradas para 30 días."
+		),
+	}
+
+
+def _return_ratios(financials: dict, basis: dict) -> dict:
+	bs, pnl = financials["balance_sheet"], financials["income_statement"]
+	assets, equity = flt(bs["total_assets"]), flt(bs["total_equity"])
+	sales, profit = flt(pnl["total_income"]), flt(pnl["net_profit"])
+	factor = basis["factor"]
+	return {
+		"sales": sales, "net_profit": profit, "assets": assets, "equity": equity,
+		"scaled_sales": sales * factor, "scaled_profit": profit * factor,
+		"margin": profit / sales * 100 if sales else None,
+		"turnover": sales / assets * factor if assets > 0 else None,
+		"multiplier": assets / equity if assets > 0 and equity > 0 else None,
+		"roa": profit / assets * 100 * factor if assets > 0 else None,
+		"roe": profit / equity * 100 * factor if equity > 0 else None,
+	}
+
+
+def _return_status(value: float | None, target: float, warning: float = 0) -> str:
+	if value is None:
+		return "neutral"
+	return "good" if value >= target - 1e-9 else ("warning" if value >= warning - 1e-9 else "danger")
+
+
+def _build_indicator_view(mode: str, **kwargs) -> dict:
+	basis = _indicator_basis(kwargs["period_days"], mode)
+	indicators = _build_indicators_table(**kwargs, mode=mode)
+	dupont = _return_ratios(kwargs["financials"], basis)
+	roe_indicator = next(row for row in indicators if row.get("key") == "roe")
+	dupont.update({key: roe_indicator[key] for key in ("status", "status_label", "reference_formatted")})
+	return {**basis, "indicators": indicators, "dupont": dupont}
+
+
 def _build_indicators_table(
 	currency: str,
 	period_days: int,
@@ -1226,11 +1284,22 @@ def _build_indicators_table(
 	financials: dict,
 	prev_financials: dict,
 	inventory_data: dict,
+	mode: str = "period",
 ) -> list[dict]:
 	"""Build the 13 executive financial & operational indicators table at the bottom of the dashboard."""
 	bs = financials["balance_sheet"]
 	pnl = financials["income_statement"]
 	prev_pnl = prev_financials["income_statement"]
+	basis = _indicator_basis(period_days, mode)
+	ratios = _return_ratios(financials, basis)
+	annualized = basis["mode"] == "annualized"
+	period_label = "Anualizado" if annualized else "Período"
+	scale_formula = " × 365 / Días del Período" if annualized else ""
+	target_suffix = "anual" if annualized else f"en {basis['period_days']} días"
+	roa_target = 3 * basis["target_factor"]
+	roe_target = 5 * basis["target_factor"]
+	inv_target = 0.5 * basis["target_factor"]
+	inv_warning = 0.15 * basis["target_factor"]
 
 	# 1. Margen Bruto (%)
 	gross_margin = flt(current_comm["gross_margin_pct"])
@@ -1246,11 +1315,12 @@ def _build_indicators_table(
 
 	# 4. ROA (%)
 	total_assets = flt(bs["total_assets"])
-	roa = round((flt(pnl["net_profit"]) / total_assets) * 100.0, 2) if total_assets > 0 else 0.0
+	roa = ratios["roa"]
+	roa_status = _return_status(roa, roa_target)
 
 	# 5. ROE (%)
-	total_equity = flt(bs["total_equity"])
-	roe = round((flt(pnl["net_profit"]) / total_equity) * 100.0, 2) if total_equity > 0 else 0.0
+	roe = ratios["roe"]
+	roe_status = _return_status(roe, roe_target)
 
 	# 6. Razón Corriente (Liquidez General)
 	current_assets = max(0.0, flt(bs["cash_and_bank"])) + max(0.0, flt(bs["accounts_receivable"])) + max(0.0, flt(bs["inventory"]))
@@ -1270,7 +1340,8 @@ def _build_indicators_table(
 	# 10. Rotación de Inventario (período)
 	stock_cost = flt(inventory_data["stock_cost_value"])
 	period_cogs = flt(current_comm["cogs"]) or flt(pnl["cogs"])
-	inv_turnover = round(period_cogs / stock_cost, 2) if stock_cost > 0 else 0.0
+	inv_turnover = period_cogs / stock_cost * basis["factor"] if stock_cost > 0 else None
+	inv_status = _return_status(inv_turnover, inv_target, inv_warning)
 
 	# 11. Días Estimados de Inventario (DIO)
 	daily_cogs = period_cogs / max(1, period_days)
@@ -1292,8 +1363,8 @@ def _build_indicators_table(
 			"name": "Margen Bruto (%)",
 			"formula": "(Ventas Netas - Costo de Ventas) / Ventas Netas",
 			"value": gross_margin,
-			"value_formatted": f"{gross_margin:.2f}%",
-			"reference_formatted": f"Período ant.: {prev_gross_margin:.2f}% (Meta >= 25%)",
+			"value_formatted": f"{gross_margin:.1f}%",
+			"reference_formatted": f"Período ant.: {prev_gross_margin:.1f}% (Meta >= 25%)",
 			"status": "good" if gross_margin >= 25 else ("warning" if gross_margin >= 15 else "danger"),
 			"status_label": "Saludable" if gross_margin >= 25 else ("Moderado" if gross_margin >= 15 else "Bajo"),
 		},
@@ -1302,8 +1373,8 @@ def _build_indicators_table(
 			"name": "Margen Neto Contable (%)",
 			"formula": "Utilidad Neta / Ingresos Totales",
 			"value": net_margin,
-			"value_formatted": f"{net_margin:.2f}%",
-			"reference_formatted": f"Período ant.: {prev_net_margin:.2f}% (Meta >= 10%)",
+			"value_formatted": f"{net_margin:.1f}%",
+			"reference_formatted": f"Período ant.: {prev_net_margin:.1f}% (Meta >= 10%)",
 			"status": "good" if net_margin >= 10 else ("warning" if net_margin >= 0 else "danger"),
 			"status_label": "Rentable" if net_margin >= 10 else ("Equilibrio" if net_margin >= 0 else "Pérdida"),
 		},
@@ -1312,30 +1383,32 @@ def _build_indicators_table(
 			"name": "Peso de Gastos Operativos (%)",
 			"formula": "Gastos Operativos / Ingresos Totales",
 			"value": op_exp_pct,
-			"value_formatted": f"{op_exp_pct:.2f}%",
-			"reference_formatted": f"Período ant.: {prev_op_exp_pct:.2f}% (Ideal <= 20%)",
+			"value_formatted": f"{op_exp_pct:.1f}%",
+			"reference_formatted": f"Período ant.: {prev_op_exp_pct:.1f}% (Ideal <= 20%)",
 			"status": "good" if op_exp_pct <= 20 else ("warning" if op_exp_pct <= 35 else "danger"),
 			"status_label": "Controlado" if op_exp_pct <= 20 else ("Vigilancia" if op_exp_pct <= 35 else "Elevado"),
 		},
 		{
 			"category": "Rentabilidad",
-			"name": "ROA (Retorno sobre Activos)",
-			"formula": "Utilidad Neta del Período / Activo Total",
+			"key": "roa",
+			"name": f"ROA (Retorno sobre Activos) · {period_label}",
+			"formula": f"Utilidad Neta / Activo Total al Corte{scale_formula}",
 			"value": roa,
-			"value_formatted": f"{roa:.2f}%",
-			"reference_formatted": "Meta periodo >= 3.0%",
-			"status": "good" if roa >= 3 else ("warning" if roa >= 0 else "danger"),
-			"status_label": "Positivo" if roa >= 3 else ("Moderado" if roa >= 0 else "Negativo"),
+			"value_formatted": f"{roa:.1f}%" if roa is not None else "N/A",
+			"reference_formatted": f"Meta {target_suffix} >= {roa_target:.1f}%" if roa is not None else "Requiere activos positivos",
+			"status": roa_status,
+			"status_label": {"good": "Positivo", "warning": "Moderado", "danger": "Negativo", "neutral": "No evaluable"}[roa_status],
 		},
 		{
 			"category": "Rentabilidad",
-			"name": "ROE (Retorno sobre Patrimonio)",
-			"formula": "Utilidad Neta del Período / Patrimonio Total",
+			"key": "roe",
+			"name": f"ROE (Retorno sobre Patrimonio) · {period_label}",
+			"formula": f"Utilidad Neta / Patrimonio al Corte{scale_formula}",
 			"value": roe,
-			"value_formatted": f"{roe:.2f}%",
-			"reference_formatted": "Meta periodo >= 5.0%",
-			"status": "good" if roe >= 5 else ("warning" if roe >= 0 else "danger"),
-			"status_label": "Óptimo" if roe >= 5 else ("Moderado" if roe >= 0 else "Negativo"),
+			"value_formatted": f"{roe:.1f}%" if roe is not None else "N/A",
+			"reference_formatted": f"Meta {target_suffix} >= {roe_target:.1f}%" if roe is not None else "Requiere patrimonio positivo",
+			"status": roe_status,
+			"status_label": {"good": "Óptimo", "warning": "Moderado", "danger": "Negativo", "neutral": "No evaluable"}[roe_status],
 		},
 		{
 			"category": "Liquidez y Solvencia",
@@ -1380,7 +1453,7 @@ def _build_indicators_table(
 			"name": "Índice de Endeudamiento (%)",
 			"formula": "Pasivo Total / Activo Total",
 			"value": debt_ratio,
-			"value_formatted": f"{debt_ratio:.2f}%",
+			"value_formatted": f"{debt_ratio:.1f}%",
 			"reference_formatted": "Límite prudente <= 50%",
 			"status": "good" if debt_ratio <= 50 else ("warning" if debt_ratio <= 70 else "danger"),
 			"status_label": "Bajo Endeudamiento"
@@ -1389,15 +1462,14 @@ def _build_indicators_table(
 		},
 		{
 			"category": "Inventario y Operación",
-			"name": "Rotación de Inventario (Período)",
-			"formula": "Costo de Ventas del Período / Valor del Inventario Actual",
+			"key": "inventory_turnover",
+			"name": f"Rotación de Inventario ({period_label})",
+			"formula": f"Costo de Ventas / Inventario Actual{scale_formula}",
 			"value": inv_turnover,
-			"value_formatted": f"{inv_turnover:.2f}x",
-			"reference_formatted": f"En {period_days} días analizados",
-			"status": "good" if inv_turnover >= 0.5 else ("warning" if inv_turnover >= 0.15 else "danger"),
-			"status_label": "Alta Rotación"
-			if inv_turnover >= 0.5
-			else ("Rotación Media" if inv_turnover >= 0.15 else "Rotación Lenta"),
+			"value_formatted": f"{inv_turnover:.2f}x" if inv_turnover is not None else "N/A",
+			"reference_formatted": f"Meta {target_suffix} >= {inv_target:.2f}x; alerta < {inv_warning:.2f}x" if inv_turnover is not None else "Requiere inventario positivo",
+			"status": inv_status,
+			"status_label": {"good": "Alta Rotación", "warning": "Rotación Media", "danger": "Rotación Lenta", "neutral": "No evaluable"}[inv_status],
 		},
 		{
 			"category": "Inventario y Operación",
@@ -1525,7 +1597,7 @@ def get_store_dashboard_data(
 		resolved_company, end_date, clean_warehouse, include_pos_bool
 	)
 
-	indicators_table = _build_indicators_table(
+	indicator_inputs = dict(
 		currency=currency,
 		period_days=period_days,
 		current_comm=curr_comm,
@@ -1534,6 +1606,9 @@ def get_store_dashboard_data(
 		prev_financials=prev_financials,
 		inventory_data=inventory_data,
 	)
+	indicator_views = {
+		mode: _build_indicator_view(mode, **indicator_inputs) for mode in ("period", "annualized")
+	}
 
 	bs = financials["balance_sheet"]
 	pnl = financials["income_statement"]
@@ -1597,7 +1672,8 @@ def get_store_dashboard_data(
 			"low_stock_stars": inventory_data["low_stock_stars"],
 			"dead_stock": inventory_data["dead_stock"],
 		},
-		"indicators_table": indicators_table,
+		"indicators_table": indicator_views["period"]["indicators"],
+		"indicator_views": indicator_views,
 	}
 
 
@@ -1664,6 +1740,12 @@ def _dashboard_pdf_context(data: dict, charts: dict[str, str], chart_modes: dict
 		except (TypeError, ValueError):
 			chart_modes = None
 	chart_modes = chart_modes if isinstance(chart_modes, dict) else {}
+	indicator_mode = "annualized" if chart_modes.get("indicators") == "annualized" else "period"
+	indicator_view = data["indicator_views"][indicator_mode]
+	dupont = indicator_view["dupont"]
+	def ratio_text(value, suffix, decimals):
+		return f"{value:.{decimals}f}{suffix}" if value is not None else "N/A"
+
 	pnl_mode = chart_modes.get("pnl") if chart_modes.get("pnl") in ("waterfall", "expenses") else "waterfall"
 	top_mode = chart_modes.get("top") if chart_modes.get("top") in ("by_revenue", "by_profit", "by_qty") else "by_revenue"
 	calendar_mode = chart_modes.get("calendar") if chart_modes.get("calendar") in ("sales", "tickets") else "sales"
@@ -1795,12 +1877,17 @@ def _dashboard_pdf_context(data: dict, charts: dict[str, str], chart_modes: dict
 		"charts": chart_cards,
 		"low_stock": low_stock,
 		"dead_stock": dead_stock,
-		"indicators": data["indicators_table"],
+		"indicator_basis_label": indicator_view["label"],
+		"indicator_basis_note": indicator_view["note"],
+		"indicators": indicator_view["indicators"],
 		"dupont": {
-			"margin": f"{flt(pnl['net_profit']) / flt(pnl['total_income']) * 100:.1f}%" if flt(pnl["total_income"]) else "0.0%",
-			"turnover": f"{flt(pnl['total_income']) / flt(bs['total_assets']):.2f}x" if flt(bs["total_assets"]) else "0.00x",
-			"multiplier": f"{flt(bs['total_assets']) / flt(bs['total_equity']):.2f}x" if flt(bs["total_equity"]) else "0.00x",
-			"roe": f"{flt(pnl['net_profit']) / flt(bs['total_equity']) * 100:.1f}%" if flt(bs["total_equity"]) else "0.0%",
+			"margin": ratio_text(dupont["margin"], "%", 1),
+			"turnover": ratio_text(dupont["turnover"], "x", 2),
+			"multiplier": ratio_text(dupont["multiplier"], "x", 2),
+			"roe": ratio_text(dupont["roe"], "%", 1),
+			"status": dupont["status"],
+			"status_label": dupont["status_label"],
+			"reference": dupont["reference_formatted"],
 		},
 	}
 

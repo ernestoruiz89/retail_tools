@@ -97,6 +97,15 @@ class DashboardPdfTest(unittest.TestCase):
 			"alerts": {"low_stock_stars": [], "dead_stock": []},
 			"indicators_table": [],
 		}
+		from test_dashboard_indicators import indicator_inputs
+		inputs = indicator_inputs(days=13)
+		inputs["financials"] = data["financials"]
+		inputs["financials"]["income_statement"].update(op_expense_pct=20, net_margin_pct=20)
+		inputs["financials"]["balance_sheet"]["accounts_payable"] = 100
+		self.dashboard.frappe.db.get_value = lambda *args, **kwargs: "C$"
+		data["indicator_views"] = {
+			mode: self.dashboard._build_indicator_view(mode, **inputs) for mode in ("period", "annualized")
+		}
 		charts = dict.fromkeys(self.dashboard.PDF_CHART_KEYS, _png_data_uri())
 		context = self.dashboard._dashboard_pdf_context(data, charts, {"pnl": "expenses", "top": "by_qty"})
 		self.assertEqual(context["from_date"], "01/11/2026")
@@ -104,6 +113,16 @@ class DashboardPdfTest(unittest.TestCase):
 		self.assertEqual(context["charts"][1]["title"], "Desglose de gastos")
 		self.assertEqual(context["charts"][4]["title"], "Productos por unidades")
 		self.assertEqual(context["dupont"]["roe"], "7.8%")
+		annual = self.dashboard._dashboard_pdf_context(data, charts, {"indicators": "annualized"})
+		self.assertEqual(annual["indicator_basis_label"], "Anualizado")
+		self.assertIn("365 / 13", annual["indicator_basis_note"])
+		self.assertEqual(annual["dupont"]["roe"], "220.2%")
+		self.assertEqual(annual["dupont"]["turnover"], "7.91x")
+		self.assertEqual(annual["dupont"]["margin"], context["dupont"]["margin"])
+		self.assertEqual(annual["dupont"]["multiplier"], context["dupont"]["multiplier"])
+		self.assertEqual(annual["indicators"], data["indicator_views"]["annualized"]["indicators"])
+		invalid = self.dashboard._dashboard_pdf_context(data, charts, '{"indicators":"other"}')
+		self.assertEqual(invalid["indicator_basis_label"], "Del período")
 		data["charts"] = {"monthly_trend": {"from_date": "2025-11-01", "to_date": "2026-11-14"}}
 		monthly = self.dashboard._dashboard_pdf_context(data, charts, {"trend": "monthly"})
 		self.assertEqual(
