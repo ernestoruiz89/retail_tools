@@ -288,7 +288,10 @@ def inventory_metrics(stock, activity, sales, cost_map, end, dead_days):
 		stock_value = dead_value = average = profit = 0.0
 		demand_count = stockout_count = 0
 		valid_history = any(r["history"] for r in records)
-		valid_cost = not any(r["missing_cost"] or r["average_value"] < -0.01 for r in records)
+		# Sales costs and historical stock valuation are independent inputs. Negative
+		# stock invalidates GMROI, but must not block break-even for costed sales.
+		valid_cost = not any(r["missing_cost"] for r in records)
+		valid_valuation = not any(r["average_value"] < -0.01 for r in records)
 		for group in by_item.values():
 			qty = sum(r["qty"] for r in group)
 			value = sum(max(0, r["stock_value"]) for r in group)
@@ -306,11 +309,21 @@ def inventory_metrics(stock, activity, sales, cost_map, end, dead_days):
 		return dict(
 			average_inventory=average if valid_history else None,
 			cost_complete=valid_cost,
+			inventory_valuation_valid=valid_valuation,
 			stock_value=stock_value,
 			dead_value=dead_value,
 			demand_count=demand_count,
 			stockout_count=stockout_count,
-			gmroi=profit / average if valid_history and valid_cost and average > 0 else None,
+			gmroi=profit / average if valid_history and valid_cost and valid_valuation and average > 0 else None,
+			gmroi_note=(
+				"Revisar inventario histórico con valoración promedio negativa por artículo y almacén"
+				if not valid_valuation
+				else "Requiere costo de los artículos vendidos"
+				if not valid_cost
+				else "Requiere historial e inventario promedio positivo"
+				if not valid_history or average <= 0
+				else "Inventario histórico; costo comercial con valoración de respaldo cuando sea necesaria"
+			),
 			dead_stock_pct=dead_value / stock_value * 100 if stock_value > 0 else None,
 			stockout_pct=stockout_count / demand_count * 100 if demand_count else None,
 		)
@@ -540,7 +553,10 @@ def build_retail_indicators(metrics, basis, symbol):
 			"Utilidad bruta de artículos de stock / Inventario promedio diario al costo"
 			+ (" × 365 / Días" if factor != 1 else ""),
 			"x",
-			"Inventario histórico; costo comercial con valoración de respaldo cuando sea necesaria",
+			metrics.get(
+				"gmroi_note",
+				"Inventario histórico; costo comercial con valoración de respaldo cuando sea necesaria",
+			),
 		),
 		(
 			"dead_stock_pct",

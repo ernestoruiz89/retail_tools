@@ -317,6 +317,42 @@ class RetailCalculationTest(unittest.TestCase):
 		self.assertIsNone(metrics.inventory_metrics(stock, [], sales, {}, "2026-11-30", 60)["gmroi"])
 		self.assertIsNone(metrics.inventory_metrics([], [], sales, {"X": 20}, "2026-11-30", 60)["gmroi"])
 
+	def test_negative_unsold_inventory_does_not_block_break_even_for_costed_sales(self):
+		stock = [
+			dict(item_code="X", warehouse="W1", qty=5, stock_value=100, average_value=100),
+			dict(item_code="OLD", warehouse="W1", qty=-1, stock_value=-20, average_value=-20),
+		]
+		sales = [dict(item_code="X", warehouse="W1", is_stock_item=1, qty=2, net_amount=10000)]
+		data = metrics.inventory_metrics(stock, [], sales, {"X": 3000}, "2026-11-30", 60)
+		self.assertEqual(data["average_inventory"], 80)
+		self.assertTrue(data["cost_complete"])
+		self.assertFalse(data["inventory_valuation_valid"])
+		self.assertIsNone(data["gmroi"])
+		self.assertIn("valoración promedio negativa", data["gmroi_note"])
+		rows, settings = self.accounting_fixture()
+		accounting = metrics.accounting_metrics(
+			rows, settings, 10000, 6000, 30, cost_complete=data["cost_complete"]
+		)
+		self.assertAlmostEqual(accounting["break_even"], 1000 / 0.35)
+		basis = dict(factor=1, label="Del período")
+		gmroi = next(r for r in metrics.build_retail_indicators(data, basis, "C$") if r["key"] == "gmroi")
+		self.assertEqual(gmroi["reference_formatted"], data["gmroi_note"])
+		self.assertEqual(gmroi["value_formatted"], "N/A")
+
+	def test_missing_sold_item_cost_still_blocks_break_even_with_valid_inventory(self):
+		stock = [dict(item_code="X", warehouse="W1", qty=5, stock_value=100, average_value=80)]
+		sales = [dict(item_code="X", warehouse="W1", is_stock_item=1, qty=2, net_amount=100)]
+		data = metrics.inventory_metrics(stock, [], sales, {}, "2026-11-30", 60)
+		self.assertFalse(data["cost_complete"])
+		self.assertTrue(data["inventory_valuation_valid"])
+		self.assertIsNone(data["gmroi"])
+		rows, settings = self.accounting_fixture()
+		accounting = metrics.accounting_metrics(
+			rows, settings, 10000, 6000, 30, cost_complete=data["cost_complete"]
+		)
+		self.assertIsNone(accounting["break_even"])
+		self.assertEqual(accounting["break_even_note"], "Requiere costo de los artículos vendidos")
+
 	def test_discount_handles_currency_included_tax_and_additional_discount_once(self):
 		# List 115, line rate 103.5 includes 15% tax: 10% line + 10% additional => 19% net discount.
 		rows = [
