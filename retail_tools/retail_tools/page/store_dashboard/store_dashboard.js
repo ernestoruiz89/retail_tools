@@ -1384,7 +1384,7 @@ class RetailStoreDashboard {
 			: __("Evolución Diaria de Ventas, Utilidad Bruta y Margen (%)"));
 		let subtitle = __("Use la barra inferior o rueda del ratón para hacer zoom en días específicos");
 		if (monthly && trend) {
-			const scope = trend.scope === "ytd" ? __("Este Año") : trend.scope === "12m" ? __("Últimos 12 meses") : __("Período seleccionado");
+			const scope = trend.scope === "ytd" ? __("Este Año") : trend.scope === "13m" ? __("Últimos 13 meses") : __("Período seleccionado");
 			subtitle = `${scope} · ${this.formatDate(trend.from_date)} ${__("al")} ${this.formatDate(trend.to_date)}`;
 			if (toDay) {
 				subtitle += ` · ${__("Hasta el día {0} de cada mes", [trend.cutoff_day])}`;
@@ -1837,7 +1837,7 @@ class RetailStoreDashboard {
 				range,
 				orient: "horizontal",
 				itemStyle: { borderWidth: 2, borderColor: "#ffffff", color: zeroColor },
-				splitLine: { show: true, lineStyle: { color: "#cbd5e1", width: 1 } },
+				splitLine: { show: true, lineStyle: { color: "#94a3b8", width: 1 } },
 				yearLabel: { show: false },
 				dayLabel: {
 					firstDay: 1,

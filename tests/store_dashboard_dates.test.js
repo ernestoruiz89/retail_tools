@@ -248,13 +248,13 @@ test("switching trend views uses monthly history and keeps the daily data intact
 	dashboard.renderDailyTrendChart = (trend, monthly) => { selected = { trend, monthly }; };
 	const charts = {
 		daily_trend: { sales: [10] },
-		monthly_trend: { from_date: "2025-12-01", to_date: "2026-11-14", scope: "12m", sales: [100] },
+		monthly_trend: { from_date: "2025-11-01", to_date: "2026-11-14", scope: "13m", sales: [100] },
 	};
 	dashboard.trendMode = "monthly";
 	dashboard.renderTrendChart(charts);
 	assert.equal(selected.trend, charts.monthly_trend);
 	assert.equal(selected.monthly, true);
-	assert.match(values["#rt-db-trend-subtitle"], /Últimos 12 meses.*01-12-2025.*14-11-2026/);
+	assert.match(values["#rt-db-trend-subtitle"], /Últimos 13 meses.*01-11-2025.*14-11-2026/);
 	charts.monthly_trend = { from_date: "2026-01-01", to_date: "2026-11-14", scope: "ytd" };
 	dashboard.renderTrendChart(charts);
 	assert.match(values["#rt-db-trend-subtitle"], /Este Año.*01-01-2026/);
@@ -269,14 +269,14 @@ test("month-to-day view selects partial totals and describes the cutoff without 
 	let selected;
 	dashboard.renderDailyTrendChart = (trend, monthly) => { selected = { trend, monthly }; };
 	const charts = { monthly_trend: {
-		from_date: "2025-12-01", to_date: "2026-11-14", scope: "12m", sales: [1000],
-		to_day: { from_date: "2025-12-01", to_date: "2026-11-14", scope: "12m", cutoff_day: 14, sales: [400] },
+		from_date: "2025-11-01", to_date: "2026-11-14", scope: "13m", sales: [1000],
+		to_day: { from_date: "2025-11-01", to_date: "2026-11-14", scope: "13m", cutoff_day: 14, sales: [400] },
 	} };
 	dashboard.trendMode = "monthly_to_day";
 	dashboard.renderTrendChart(charts);
 	assert.equal(selected.trend, charts.monthly_trend.to_day);
 	assert.equal(selected.monthly, true);
-	assert.match(values["#rt-db-trend-subtitle"], /Últimos 12 meses.*Hasta el día 14 de cada mes/);
+	assert.match(values["#rt-db-trend-subtitle"], /Últimos 13 meses.*Hasta el día 14 de cada mes/);
 	assert.match(values["#rt-db-trend-title"], /Mensual al Día/);
 	dashboard.trendMode = "monthly";
 	dashboard.renderTrendChart(charts);

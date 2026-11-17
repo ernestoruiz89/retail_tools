@@ -9,8 +9,8 @@ def monthly_period(start_date: date, end_date: date, range_key: str | None, toda
 	if range_key == "ytd":
 		return date(today.year, 1, 1), today
 	if range_key in {"today", "7d", "30d", "this_month", "last_month"}:
-		month_index = today.year * 12 + today.month - 1 - 11
-		return date(month_index // 12, month_index % 12 + 1, 1), today
+		# Include the same month last year as well as the current month (13 buckets).
+		return date(today.year - 1, today.month, 1), today
 	return start_date, end_date
 
 

@@ -12,11 +12,11 @@ class DashboardPeriodsTest(unittest.TestCase):
 			with self.subTest(preset=preset):
 				self.assertEqual(
 					monthly_period(date(2026, 10, 1), date(2026, 10, 31), preset, date(2026, 11, 14)),
-					(date(2025, 12, 1), date(2026, 11, 14)),
+					(date(2025, 11, 1), date(2026, 11, 14)),
 				)
 
 	def test_monthly_history_handles_year_boundary_and_leap_day(self):
-		for today, expected in ((date(2026, 1, 1), date(2025, 2, 1)), (date(2024, 2, 29), date(2023, 3, 1))):
+		for today, expected in ((date(2026, 1, 1), date(2025, 1, 1)), (date(2024, 2, 29), date(2023, 2, 1))):
 			self.assertEqual(monthly_period(today, today, "30d", today), (expected, today))
 			self.assertEqual(monthly_period(today, today, "ytd", today), (date(today.year, 1, 1), today))
 

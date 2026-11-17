@@ -343,7 +343,7 @@ def _get_monthly_trend(company, warehouse, include_pending_pos, cost_map, from_d
 	)
 	trend = _compute_monthly_trend(rows, cost_map, str(start), str(end))
 	trend["scope"] = "ytd" if range_key == "ytd" else (
-		"12m" if range_key in {"today", "7d", "30d", "this_month", "last_month"} else "custom"
+		"13m" if range_key in {"today", "7d", "30d", "this_month", "last_month"} else "custom"
 	)
 	trend["to_day"] = {
 		**_compute_monthly_trend(rows, cost_map, str(start), str(end), cutoff_day=today.day),
@@ -553,7 +553,7 @@ def _get_payment_methods_breakdown(
 	warehouse: str | None = None,
 	include_pending_pos: bool = True,
 ) -> list[dict]:
-	"""Aggregate payment methods from Sales Invoice Payment, Payment Entry, and POS Invoice Payment."""
+	"""Aggregate direct/POS invoice payments and Payment Entries by payment method."""
 	params = {"company": company, "from_date": from_date, "to_date": to_date}
 	wh_exists_si = ""
 	if warehouse:
@@ -566,7 +566,8 @@ def _get_payment_methods_breakdown(
 		"""
 
 	mode_totals: dict[str, float] = {}
-	has_pos_table = frappe.db.table_exists("POS Invoice") and frappe.db.table_exists("POS Invoice Payment")
+	# POS Invoice and Sales Invoice share the Sales Invoice Payment child DocType.
+	has_pos_table = frappe.db.table_exists("POS Invoice")
 	exclude_consolidated_si = ""
 	if has_pos_table:
 		exclude_consolidated_si = """
@@ -587,6 +588,8 @@ def _get_payment_methods_breakdown(
 		FROM `tabSales Invoice Payment` sip
 		INNER JOIN `tabSales Invoice` si ON si.name = sip.parent
 		WHERE si.docstatus = 1
+		  AND sip.parenttype = 'Sales Invoice'
+		  AND sip.parentfield = 'payments'
 		  AND si.company = %(company)s
 		  AND si.posting_date BETWEEN %(from_date)s AND %(to_date)s
 		  {exclude_consolidated_si}
@@ -620,9 +623,11 @@ def _get_payment_methods_breakdown(
 			SELECT
 				COALESCE(NULLIF(pip.mode_of_payment, ''), 'Efectivo') AS mode_of_payment,
 				SUM(IFNULL(pip.base_amount, pip.amount)) AS total_amount
-			FROM `tabPOS Invoice Payment` pip
+			FROM `tabSales Invoice Payment` pip
 			INNER JOIN `tabPOS Invoice` pi ON pi.name = pip.parent
 			WHERE pi.docstatus = 1
+			  AND pip.parenttype = 'POS Invoice'
+			  AND pip.parentfield = 'payments'
 			  AND pi.company = %(company)s
 			  AND pi.posting_date BETWEEN %(from_date)s AND %(to_date)s
 			  {pos_status_clause}

@@ -48,13 +48,15 @@ class DashboardMonthlyTest(unittest.TestCase):
 		self.assertEqual(trend["sales"], [0])
 		self.assertEqual(trend["margin_pct"], [None])
 
-	def test_short_presets_fetch_twelve_months_with_same_company_warehouse_and_pos_filter(self):
+	def test_short_presets_fetch_thirteen_months_with_same_company_warehouse_and_pos_filter(self):
 		with patch.object(self.dashboard, "_fetch_sales_line_rows", return_value=[]) as fetch:
 			for preset in ("today", "7d", "30d", "this_month", "last_month"):
 				trend = self.dashboard._get_monthly_trend("Company", "Store", False, {}, "2026-10-01", "2026-10-31", preset, [])
-				fetch.assert_called_with("Company", "2025-12-01", "2026-11-14", "Store", False)
-				self.assertEqual(len(trend["dates"]), 12)
-				self.assertEqual(trend["scope"], "12m")
+				fetch.assert_called_with("Company", "2025-11-01", "2026-11-14", "Store", False)
+				self.assertEqual(len(trend["dates"]), 13)
+				self.assertEqual(trend["dates"][0], "2025-11-01")
+				self.assertEqual(trend["dates"][-1], "2026-11-01")
+				self.assertEqual(trend["scope"], "13m")
 
 	def test_ytd_and_custom_ranges_reuse_loaded_sales(self):
 		with patch.object(self.dashboard, "_fetch_sales_line_rows") as fetch:
@@ -68,6 +70,8 @@ class DashboardMonthlyTest(unittest.TestCase):
 
 	def test_month_to_day_uses_same_cutoff_for_sales_profit_and_margin_without_extra_query(self):
 		rows = [
+			self.row("2025-11-14", 100, rate=60),
+			self.row("2025-11-15", 400, rate=200),
 			self.row("2026-10-01", 100, rate=60),
 			self.row("2026-10-14", 200, rate=100, channel="Direct"),
 			self.row("2026-10-14", -100, qty=-1, rate=60),
@@ -76,17 +80,20 @@ class DashboardMonthlyTest(unittest.TestCase):
 		]
 		with patch.object(self.dashboard, "_fetch_sales_line_rows", return_value=rows) as fetch:
 			trend = self.dashboard._get_monthly_trend("Company", "Store", True, {}, "2026-11-14", "2026-11-14", "today", [])
-			fetch.assert_called_once_with("Company", "2025-12-01", "2026-11-14", "Store", True)
+			fetch.assert_called_once_with("Company", "2025-11-01", "2026-11-14", "Store", True)
+		self.assertEqual(trend["sales"][0], 500)
 		self.assertEqual(trend["sales"][-2:], [1100, 300])
 		partial = trend["to_day"]
 		self.assertEqual(partial["cutoff_day"], 14)
-		self.assertEqual(partial["scope"], "12m")
+		self.assertEqual(partial["scope"], "13m")
 		self.assertEqual(partial["dates"], trend["dates"])
 		self.assertEqual(partial["sales"][-2:], [200, 300])
 		self.assertEqual(partial["profit"][-2:], [100, 150])
 		self.assertEqual(partial["margin_pct"][-2:], [50, 50])
-		self.assertEqual(partial["sales"][0], 0)
-		self.assertIsNone(partial["margin_pct"][0])
+		self.assertEqual(partial["sales"][0], 100)
+		self.assertEqual(partial["profit"][0], 40)
+		self.assertEqual(partial["sales"][1], 0)
+		self.assertIsNone(partial["margin_pct"][1])
 
 	def test_month_to_day_handles_first_day_and_short_leap_months(self):
 		rows = [self.row("2024-02-01", 100), self.row("2024-02-29", 200), self.row("2024-03-01", 300), self.row("2024-03-31", 400)]

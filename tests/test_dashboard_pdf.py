@@ -104,19 +104,19 @@ class DashboardPdfTest(unittest.TestCase):
 		self.assertEqual(context["charts"][1]["title"], "Desglose de gastos")
 		self.assertEqual(context["charts"][4]["title"], "Productos por unidades")
 		self.assertEqual(context["dupont"]["roe"], "7.8%")
-		data["charts"] = {"monthly_trend": {"from_date": "2025-12-01", "to_date": "2026-11-14"}}
+		data["charts"] = {"monthly_trend": {"from_date": "2025-11-01", "to_date": "2026-11-14"}}
 		monthly = self.dashboard._dashboard_pdf_context(data, charts, {"trend": "monthly"})
 		self.assertEqual(
 			monthly["charts"][2]["title"],
-			"Evolución mensual de ventas, utilidad y margen · 01/12/2025 al 14/11/2026",
+			"Evolución mensual de ventas, utilidad y margen · 01/11/2025 al 14/11/2026",
 		)
 		data["charts"]["monthly_trend"]["to_day"] = {
-			"from_date": "2025-12-01", "to_date": "2026-11-14", "cutoff_day": 14,
+			"from_date": "2025-11-01", "to_date": "2026-11-14", "cutoff_day": 14,
 		}
 		partial = self.dashboard._dashboard_pdf_context(data, charts, {"trend": "monthly_to_day"})
 		self.assertEqual(
 			partial["charts"][2]["title"],
-			"Ventas, utilidad y margen por mes al día 14 · 01/12/2025 al 14/11/2026",
+			"Ventas, utilidad y margen por mes al día 14 · 01/11/2025 al 14/11/2026",
 		)
 
 
