@@ -546,6 +546,29 @@ def _compute_commercial_metrics(
 	}
 
 
+def _accumulate_invoice_payments(mode_totals: dict[str, float], payment_rows: list[dict]) -> None:
+	"""Deduct change once per invoice, using the payment row that supplied it."""
+	by_invoice: dict[str, list] = {}
+	for row in payment_rows:
+		by_invoice.setdefault(row.invoice_name, []).append(row)
+
+	for rows in by_invoice.values():
+		change_account = rows[0].change_account
+		account_rows = [row for row in rows if change_account and row.account == change_account]
+		# Match ERPNext's closing reconciliation: prefer cash on the change account,
+		# then another payment on that account, then the first cash payment.
+		change_row = (
+			next((row for row in account_rows if row.payment_type == "Cash"), None)
+			or next(iter(account_rows), None)
+			or next((row for row in rows if row.payment_type == "Cash"), None)
+		)
+		for row in rows:
+			amount = flt(row.total_amount)
+			if row is change_row:
+				amount -= flt(row.change_amount)
+			mode_totals[row.mode_of_payment] = mode_totals.get(row.mode_of_payment, 0.0) + amount
+
+
 def _get_payment_methods_breakdown(
 	company: str,
 	from_date: str,
@@ -583,8 +606,12 @@ def _get_payment_methods_breakdown(
 	sip_rows = frappe.db.sql(
 		f"""
 		SELECT
+			si.name AS invoice_name,
 			COALESCE(NULLIF(sip.mode_of_payment, ''), 'Efectivo') AS mode_of_payment,
-			SUM(IFNULL(sip.base_amount, sip.amount)) AS total_amount
+			IFNULL(sip.base_amount, sip.amount) AS total_amount,
+			sip.type AS payment_type, sip.account,
+			si.base_change_amount AS change_amount,
+			si.account_for_change_amount AS change_account
 		FROM `tabSales Invoice Payment` sip
 		INNER JOIN `tabSales Invoice` si ON si.name = sip.parent
 		WHERE si.docstatus = 1
@@ -594,14 +621,12 @@ def _get_payment_methods_breakdown(
 		  AND si.posting_date BETWEEN %(from_date)s AND %(to_date)s
 		  {exclude_consolidated_si}
 		  {wh_exists_si}
-		GROUP BY COALESCE(NULLIF(sip.mode_of_payment, ''), 'Efectivo')
+		ORDER BY si.name, sip.idx
 		""",
 		params,
 		as_dict=True,
 	)
-	for r in sip_rows:
-		if flt(r.total_amount) > 0:
-			mode_totals[r.mode_of_payment] = mode_totals.get(r.mode_of_payment, 0.0) + flt(r.total_amount)
+	_accumulate_invoice_payments(mode_totals, sip_rows)
 
 	# 2. All POS Invoices (both consolidated and optionally pending unconsolidated) on their real posting_date
 	if has_pos_table:
@@ -621,8 +646,12 @@ def _get_payment_methods_breakdown(
 		pos_pay_rows = frappe.db.sql(
 			f"""
 			SELECT
+				pi.name AS invoice_name,
 				COALESCE(NULLIF(pip.mode_of_payment, ''), 'Efectivo') AS mode_of_payment,
-				SUM(IFNULL(pip.base_amount, pip.amount)) AS total_amount
+				IFNULL(pip.base_amount, pip.amount) AS total_amount,
+				pip.type AS payment_type, pip.account,
+				pi.base_change_amount AS change_amount,
+				pi.account_for_change_amount AS change_account
 			FROM `tabSales Invoice Payment` pip
 			INNER JOIN `tabPOS Invoice` pi ON pi.name = pip.parent
 			WHERE pi.docstatus = 1
@@ -632,14 +661,12 @@ def _get_payment_methods_breakdown(
 			  AND pi.posting_date BETWEEN %(from_date)s AND %(to_date)s
 			  {pos_status_clause}
 			  {wh_exists_pos}
-			GROUP BY COALESCE(NULLIF(pip.mode_of_payment, ''), 'Efectivo')
+			ORDER BY pi.name, pip.idx
 			""",
 			params,
 			as_dict=True,
 		)
-		for r in pos_pay_rows:
-			if flt(r.total_amount) > 0:
-				mode_totals[r.mode_of_payment] = mode_totals.get(r.mode_of_payment, 0.0) + flt(r.total_amount)
+		_accumulate_invoice_payments(mode_totals, pos_pay_rows)
 
 	# 3. Payment Entries in the period (Receive from Customers) when not using POS payments
 	if frappe.db.table_exists("Payment Entry") and not warehouse:

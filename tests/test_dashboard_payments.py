@@ -18,15 +18,19 @@ class DashboardPaymentsTest(unittest.TestCase):
 			CREATE TABLE `tabSales Invoice` (
 				name TEXT PRIMARY KEY, company TEXT, posting_date TEXT,
 				docstatus INTEGER, is_consolidated INTEGER DEFAULT 0,
-				outstanding_amount REAL DEFAULT 0
+				outstanding_amount REAL DEFAULT 0, base_change_amount REAL DEFAULT 0,
+				account_for_change_amount TEXT DEFAULT 'Cash Account'
 			);
 			CREATE TABLE `tabPOS Invoice` (
 				name TEXT PRIMARY KEY, company TEXT, posting_date TEXT,
-				docstatus INTEGER, consolidated_invoice TEXT DEFAULT ''
+				docstatus INTEGER, consolidated_invoice TEXT DEFAULT '',
+				base_change_amount REAL DEFAULT 0,
+				account_for_change_amount TEXT DEFAULT 'Cash Account'
 			);
 			CREATE TABLE `tabSales Invoice Payment` (
 				parent TEXT, parenttype TEXT, parentfield TEXT,
-				mode_of_payment TEXT, base_amount REAL, amount REAL
+				mode_of_payment TEXT, base_amount REAL, amount REAL,
+				type TEXT, account TEXT, idx INTEGER
 			);
 			CREATE TABLE `tabSales Invoice Item` (parent TEXT, warehouse TEXT);
 			CREATE TABLE `tabPOS Invoice Item` (parent TEXT, warehouse TEXT);
@@ -55,10 +59,12 @@ class DashboardPaymentsTest(unittest.TestCase):
 		self.db.execute(f"INSERT INTO `tab{doctype}` ({columns}) VALUES ({placeholders})", tuple(values.values()))
 		self.db.execute(f"INSERT INTO `tab{doctype} Item` VALUES (?, ?)", (name, warehouse))
 
-	def _payment(self, doctype, name, amount, mode="Efectivo", field="payments"):
+	def _payment(self, doctype, name, amount, mode="Efectivo", field="payments",
+				 payment_type="Cash", account="Cash Account", idx=1, base_amount=None):
 		self.db.execute(
-			"INSERT INTO `tabSales Invoice Payment` VALUES (?, ?, ?, ?, ?, ?)",
-			(name, doctype, field, mode, amount, amount),
+			"INSERT INTO `tabSales Invoice Payment` VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+			(name, doctype, field, mode, amount if base_amount is None else base_amount,
+			 amount, payment_type, account, idx),
 		)
 
 	def _totals(self, **kwargs):
@@ -116,6 +122,37 @@ class DashboardPaymentsTest(unittest.TestCase):
 
 	def test_empty_period_returns_no_payment_methods(self):
 		self.assertEqual(self._totals(), {})
+
+	def test_change_is_deducted_once_from_cash_for_both_invoice_types(self):
+		for doctype in ("Sales Invoice", "POS Invoice"):
+			with self.subTest(doctype=doctype):
+				self._invoice(doctype, "MIXED", base_change_amount=60)
+				self._payment(doctype, "MIXED", 100, "Tarjeta", payment_type="Bank", account="Bank Account")
+				self._payment(doctype, "MIXED", 200, idx=2)
+				self._payment(doctype, "MIXED", 0, "Efectivo USD", idx=3)
+				expected = 1 if doctype == "Sales Invoice" else 2
+				self.assertEqual(self._totals(), {"Tarjeta": 100 * expected, "Efectivo": 140 * expected})
+
+	def test_change_prefers_cash_on_its_account_then_account_then_cash(self):
+		for name, change_account, expected in (
+			("CASH-ACCOUNT", "Shared Account", {"Tarjeta": 100, "Efectivo": 140}),
+			("BANK-ACCOUNT", "Bank Account", {"Tarjeta": 40, "Efectivo": 200}),
+			("CASH-FALLBACK", "Other Account", {"Tarjeta": 100, "Efectivo": 140}),
+		):
+			with self.subTest(name=name):
+				self._invoice("POS Invoice", name, warehouse=name, base_change_amount=60,
+					account_for_change_amount=change_account)
+				self._payment("POS Invoice", name, 100, "Tarjeta", payment_type="Bank",
+					account="Bank Account" if name == "BANK-ACCOUNT" else "Shared Account")
+				self._payment("POS Invoice", name, 200, account="Shared Account", idx=2)
+				self.assertEqual(self._totals(warehouse=name), expected)
+
+	def test_change_uses_company_currency_and_keeps_refunds_signed(self):
+		self._invoice("POS Invoice", "USD", base_change_amount=366)
+		self._payment("POS Invoice", "USD", 20, "Cash USD", base_amount=732)
+		self._invoice("Sales Invoice", "REFUND")
+		self._payment("Sales Invoice", "REFUND", -2, "Cash USD", base_amount=-73.2)
+		self.assertEqual(self._totals(), {"Cash USD": 292.8})
 
 
 if __name__ == "__main__":
