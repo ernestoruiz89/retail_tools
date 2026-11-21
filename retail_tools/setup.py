@@ -234,6 +234,10 @@ ROLE_PERMISSIONS_MATRIX: dict[str, dict[str, dict[str, int]]] = {
 		"Warehouse": {"read": 1, "report": 1},
 		"File": {"read": 1, "write": 1, "create": 1},
 		"Company": {"read": 1, "report": 1},
+		"Asset": {
+			"read": 1, "write": 1, "create": 1, "delete": 1, "submit": 1, "cancel": 1, "amend": 1,
+			"import": 1, "export": 1, "print": 1, "email": 1, "report": 1,
+		},
 	},
 	# 4. Socio/ReportViewer:
 	# - Read only visualizar imprimir reportes de venta, catálogos, financieros
@@ -343,6 +347,7 @@ ROLE_PERMISSIONS_MATRIX: dict[str, dict[str, dict[str, int]]] = {
 			"Selling Settings",
 			"Buying Settings",
 			"Accounts Settings",
+			"Asset",
 		)
 	},
 }
