@@ -124,8 +124,29 @@ retail_tools.CargaCompras = class CargaCompras {
 					<div class="cc-card-header">
 						<h4 class="cc-section-title">${__("Vista Previa de Líneas")}</h4>
 						<span class="text-muted cc-table-hint">
-							${__("Puede ajustar Grupo y Unidad de Medida por fila; después de editar, revalide la vista previa.")}
+							${__("Puede ajustar Grupo y Unidad de Medida por fila o asignarlos masivamente; al aplicar en lote se revalida automáticamente.")}
 						</span>
+					</div>
+					<div class="cc-bulk-bar">
+						<div class="cc-bulk-group">
+							<div class="cc-bulk-field" id="cc-bulk-group-field"></div>
+							<div class="cc-bulk-actions">
+								<button type="button" class="btn btn-default btn-sm cc-bulk-group-errors-btn" title="${__("Aplica el grupo solo a filas con errores o sin grupo")}">
+									<i class="fa fa-filter"></i> ${__("Aplicar a vacías / con error")}
+								</button>
+								<button type="button" class="btn btn-default btn-sm cc-bulk-group-all-btn" title="${__("Aplica el grupo a todas las filas de la tabla")}">
+									<i class="fa fa-tags"></i> ${__("Aplicar a todas")}
+								</button>
+							</div>
+						</div>
+						<div class="cc-bulk-group">
+							<div class="cc-bulk-field" id="cc-bulk-uom-field"></div>
+							<div class="cc-bulk-actions">
+								<button type="button" class="btn btn-default btn-sm cc-bulk-uom-all-btn" title="${__("Aplica la unidad a todas las filas no bloqueadas")}">
+									<i class="fa fa-balance-scale"></i> ${__("Aplicar Unidad a todas")}
+								</button>
+							</div>
+						</div>
 					</div>
 					<div class="cc-table-responsive">
 						<table class="table table-bordered cc-preview-table">
@@ -314,6 +335,34 @@ retail_tools.CargaCompras = class CargaCompras {
 			render_input: true,
 		});
 		this.remarks_field.refresh();
+
+		this.bulk_group_field = frappe.ui.form.make_control({
+			df: {
+				fieldtype: "Link",
+				fieldname: "bulk_item_group",
+				label: __("Asignar Grupo de Producto"),
+				options: "Item Group",
+				placeholder: __("Seleccione un grupo..."),
+				get_query: () => ({ filters: { is_group: 0 } }),
+			},
+			parent: this.$body.find("#cc-bulk-group-field"),
+			render_input: true,
+		});
+		this.bulk_group_field.refresh();
+
+		this.bulk_uom_field = frappe.ui.form.make_control({
+			df: {
+				fieldtype: "Link",
+				fieldname: "bulk_stock_uom",
+				label: __("Asignar Unidad de Medida"),
+				options: "UOM",
+				placeholder: __("Seleccione una unidad..."),
+				get_query: () => ({ filters: { enabled: 1 } }),
+			},
+			parent: this.$body.find("#cc-bulk-uom-field"),
+			render_input: true,
+		});
+		this.bulk_uom_field.refresh();
 	}
 
 	bind_events() {
@@ -341,6 +390,103 @@ retail_tools.CargaCompras = class CargaCompras {
 
 		this.$body.find(".cc-preview-btn").on("click", () => this.run_preview());
 		this.$body.find(".cc-confirm-btn").on("click", () => this.confirm_upload());
+		this.$body
+			.find(".cc-bulk-group-errors-btn")
+			.on("click", () => this.apply_bulk_item_group(true));
+		this.$body
+			.find(".cc-bulk-group-all-btn")
+			.on("click", () => this.apply_bulk_item_group(false));
+		this.$body
+			.find(".cc-bulk-uom-all-btn")
+			.on("click", () => this.apply_bulk_uom());
+	}
+
+	apply_bulk_item_group(onlyMissingOrError) {
+		const rows = this.preview_data?.rows || [];
+		if (!rows.length) {
+			return;
+		}
+		const groupVal = (this.bulk_group_field && this.bulk_group_field.get_value() || "").trim();
+		if (!groupVal) {
+			frappe.show_alert({
+				message: __("Seleccione un Grupo de Producto primero."),
+				indicator: "orange",
+			});
+			return;
+		}
+
+		let updatedCount = 0;
+		for (const row of rows) {
+			const hasErrors = Boolean(row.errors && row.errors.length > 0);
+			const isMissingGroup = !String(row.item_group || "").trim();
+			if (onlyMissingOrError && !hasErrors && !isMissingGroup) {
+				continue;
+			}
+			const rowNum = String(row.row_num);
+			this.row_overrides[rowNum] = this.row_overrides[rowNum] || {};
+			this.row_overrides[rowNum].item_group = groupVal;
+			updatedCount += 1;
+		}
+
+		if (!updatedCount) {
+			frappe.show_alert({
+				message: __("No hay filas pendientes de asignar grupo."),
+				indicator: "blue",
+			});
+			return;
+		}
+
+		frappe.show_alert({
+			message: __("Se asignó el grupo «{0}» a {1} fila(s). Revalidando...", [
+				groupVal,
+				updatedCount,
+			]),
+			indicator: "green",
+		});
+		this.run_preview();
+	}
+
+	apply_bulk_uom() {
+		const rows = this.preview_data?.rows || [];
+		if (!rows.length) {
+			return;
+		}
+		const uomVal = (this.bulk_uom_field && this.bulk_uom_field.get_value() || "").trim();
+		if (!uomVal) {
+			frappe.show_alert({
+				message: __("Seleccione una Unidad de Medida primero."),
+				indicator: "orange",
+			});
+			return;
+		}
+
+		let updatedCount = 0;
+		for (const row of rows) {
+			if (row.uom_locked) {
+				continue;
+			}
+			const rowNum = String(row.row_num);
+			this.row_overrides[rowNum] = this.row_overrides[rowNum] || {};
+			this.row_overrides[rowNum].stock_uom = uomVal;
+			updatedCount += 1;
+		}
+
+		if (!updatedCount) {
+			frappe.show_alert({
+				message: __("No hay filas editables para actualizar la unidad de medida."),
+				indicator: "blue",
+			});
+			return;
+		}
+
+		frappe.show_alert({
+			message: __("Se asignó la unidad «{0}» a {1} fila(s). Revalidando...", [
+				uomVal,
+				updatedCount,
+			]),
+			indicator: "green",
+		});
+		this.run_preview();
 	}
 
 	load_initial_data() {
@@ -906,6 +1052,12 @@ retail_tools.CargaCompras = class CargaCompras {
 		this.$body.find(".cc-summary-container").hide().empty();
 		this.$body.find(".cc-table-card").hide();
 		this.$body.find(".cc-preview-tbody").empty();
+		if (this.bulk_group_field) {
+			this.bulk_group_field.set_value("");
+		}
+		if (this.bulk_uom_field) {
+			this.bulk_uom_field.set_value("");
+		}
 		this.update_confirm_button_state();
 	}
 };
