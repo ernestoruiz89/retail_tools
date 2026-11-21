@@ -29,7 +29,7 @@ class NavigationTest(unittest.TestCase):
 	@classmethod
 	def setUpClass(cls):
 		cls.metadata = {}
-		for kind in ("page", "workspace"):
+		for kind in ("page", "workspace", "doctype"):
 			cls.metadata[kind] = {
 				doc["name"]: doc
 				for path in (APP / "retail_tools" / kind).glob("*/*.json")

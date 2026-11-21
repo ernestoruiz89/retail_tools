@@ -1,0 +1,92 @@
+{
+ "actions": [],
+ "creation": "2026-11-20 22:45:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "pos_receipt_section",
+  "qr_url",
+  "qr_subtitle",
+  "column_break_pos_qr",
+  "qr_label",
+  "pos_footer_message"
+ ],
+ "fields": [
+  {
+   "fieldname": "pos_receipt_section",
+   "fieldtype": "Section Break",
+   "label": "Factura POS y Código QR"
+  },
+  {
+   "description": "URL completa (sitio web, Instagram, Facebook, WhatsApp, etc.) que se imprimirá como código QR en la Factura POS. Si se deja vacía, no se imprimirá el código QR.",
+   "fieldname": "qr_url",
+   "fieldtype": "Data",
+   "label": "URL",
+   "options": "URL"
+  },
+  {
+   "description": "Ej. @tu_tienda o www.tutienda.com (opcional, se muestra debajo del código QR).",
+   "fieldname": "qr_subtitle",
+   "fieldtype": "Data",
+   "label": "Subtítulo / Usuario"
+  },
+  {
+   "fieldname": "column_break_pos_qr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "¡Visítanos!",
+   "description": "Texto que aparece junto al código QR en el ticket POS.",
+   "fieldname": "qr_label",
+   "fieldtype": "Data",
+   "label": "Texto del código QR"
+  },
+  {
+   "default": "¡Gracias por su compra!",
+   "description": "Mensaje opcional al final del ticket POS.",
+   "fieldname": "pos_footer_message",
+   "fieldtype": "Small Text",
+   "label": "Mensaje pie de ticket"
+  }
+ ],
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-11-20 22:50:00.000000",
+ "modified_by": "Administrator",
+ "module": "Retail Tools",
+ "name": "Retail Tools Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "RT Administrador de Sistema",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "RT Responsable de Tienda",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "RT Cajero"
+  },
+  {
+   "read": 1,
+   "role": "RT Contador"
+  },
+  {
+   "read": 1,
+   "role": "RT Socio"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

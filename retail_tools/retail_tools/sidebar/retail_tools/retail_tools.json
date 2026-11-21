@@ -65,9 +65,18 @@
    "link_to": "customer-lookup",
    "link_type": "Page",
    "type": "Link"
+  },
+  {
+   "child": 0,
+   "icon": "settings",
+   "is_default_module": 1,
+   "label": "Retail Tools Settings",
+   "link_to": "Retail Tools Settings",
+   "link_type": "DocType",
+   "type": "Link"
   }
  ],
- "modified": "2026-11-12 15:00:00.000000",
+ "modified": "2026-11-20 22:45:00.000000",
  "module": "Retail Tools",
  "name": "Retail Tools",
  "standard": 1,

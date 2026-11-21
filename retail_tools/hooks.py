@@ -93,10 +93,12 @@ app_include_js = "/assets/retail_tools/js/retail_tools.min.js"
 # ----------
 
 # add methods and filters to jinja environment
-# jinja = {
-# 	"methods": "retail_tools.utils.jinja_methods",
-# 	"filters": "retail_tools.utils.jinja_filters"
-# }
+jinja = {
+    "methods": [
+        "retail_tools.utils.qr.get_pos_qr_context",
+        "retail_tools.utils.qr.get_qr_data_uri",
+    ]
+}
 
 # Installation
 # ------------

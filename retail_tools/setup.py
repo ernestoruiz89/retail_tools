@@ -395,6 +395,7 @@ PAGE_ROLES_MAP: dict[str, list[str]] = {
 def after_install():
 	setup_custom_fields()
 	sync_pages_and_workspace()
+	setup_pos_invoice_print_format()
 	setup_roles_and_permissions()
 	restore_standard_permissions_for_rt_doctypes()
 	frappe.clear_cache()
@@ -403,6 +404,7 @@ def after_install():
 def after_migrate():
 	setup_custom_fields()
 	sync_pages_and_workspace()
+	setup_pos_invoice_print_format()
 	setup_roles_and_permissions()
 	if getattr(frappe.flags, "retail_tools_restore_permissions_after_migrate", False):
 		frappe.flags.retail_tools_restore_permissions_after_migrate = False
@@ -411,6 +413,46 @@ def after_migrate():
 		if skipped:
 			print("Retail Tools: review customized permissions manually for: " + ", ".join(skipped))
 	frappe.clear_cache()
+
+
+def setup_pos_invoice_print_format():
+	"""Create an editable Print Format for POS Invoice with Instagram QR if it does not exist yet.
+
+	Created as a custom (standard='No') Print Format so store administrators can freely edit
+	HTML and CSS from ERPNext without future migrations overwriting their changes.
+	"""
+	from retail_tools.utils.pos_print_format import (
+		POS_INVOICE_PRINT_FORMAT_CSS,
+		POS_INVOICE_PRINT_FORMAT_HTML,
+		POS_INVOICE_PRINT_FORMAT_NAME,
+	)
+
+	if not frappe.db.exists("DocType", "POS Invoice"):
+		return
+	if frappe.db.exists("Print Format", POS_INVOICE_PRINT_FORMAT_NAME):
+		return
+
+	frappe.get_doc(
+		{
+			"doctype": "Print Format",
+			"name": POS_INVOICE_PRINT_FORMAT_NAME,
+			"doc_type": "POS Invoice",
+			"module": "Retail Tools",
+			"standard": "No",
+			"custom_format": 1,
+			"print_format_type": "Jinja",
+			"default_print_language": "es",
+			"font_size": 11,
+			"margin_top": 5.0,
+			"margin_bottom": 5.0,
+			"margin_left": 5.0,
+			"margin_right": 5.0,
+			"page_number": "Hide",
+			"html": POS_INVOICE_PRINT_FORMAT_HTML,
+			"css": POS_INVOICE_PRINT_FORMAT_CSS,
+			"disabled": 0,
+		}
+	).insert(ignore_permissions=True)
 
 
 def sync_pages_and_workspace():

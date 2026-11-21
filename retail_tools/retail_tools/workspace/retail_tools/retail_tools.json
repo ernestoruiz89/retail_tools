@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"_9o9pLe5W2\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Retail Tools</span>\",\"col\":12}},{\"id\":\"sD9kL3mP2x\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Store Dashboard\",\"col\":3}},{\"id\":\"14j_b1zio3\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Item Inspector\",\"col\":3}},{\"id\":\"jYKgl4Q1wp\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Catalog Generator\",\"col\":3}},{\"id\":\"pU8xK2mN9q\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Carga de Compras\",\"col\":3}},{\"id\":\"7fpSdgNSEy\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"QLrM1zyHgi\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Item Inspector (Light)\",\"col\":3}},{\"id\":\"dxZd0YKXv2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Label Generator\",\"col\":3}},{\"id\":\"UVn-z2UZrn\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Customer Lookup\",\"col\":3}}]",
+ "content": "[{\"id\":\"_9o9pLe5W2\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Retail Tools</span>\",\"col\":12}},{\"id\":\"sD9kL3mP2x\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Store Dashboard\",\"col\":3}},{\"id\":\"14j_b1zio3\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Item Inspector\",\"col\":3}},{\"id\":\"jYKgl4Q1wp\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Catalog Generator\",\"col\":3}},{\"id\":\"pU8xK2mN9q\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Carga de Compras\",\"col\":3}},{\"id\":\"7fpSdgNSEy\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"QLrM1zyHgi\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Item Inspector (Light)\",\"col\":3}},{\"id\":\"dxZd0YKXv2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Label Generator\",\"col\":3}},{\"id\":\"UVn-z2UZrn\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Customer Lookup\",\"col\":3}},{\"id\":\"rT7sEt9Qr1\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Retail Tools Settings\",\"col\":3}}]",
  "creation": "2025-12-24 08:19:06.939869",
  "custom_blocks": [],
  "docstatus": 0,
@@ -60,9 +60,17 @@
    "link_type": "Page",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "label": "Retail Tools Settings",
+   "link_to": "Retail Tools Settings",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
   }
  ],
- "modified": "2026-11-12 16:00:00.000000",
+ "modified": "2026-11-20 22:45:00.000000",
  "modified_by": "Administrator",
  "module": "Retail Tools",
  "name": "Retail Tools",
@@ -123,6 +131,13 @@
    "label": "Store Dashboard",
    "link_to": "store-dashboard",
    "type": "Page"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "",
+   "label": "Retail Tools Settings",
+   "link_to": "Retail Tools Settings",
+   "type": "DocType"
   }
  ],
  "title": "Retail Tools"

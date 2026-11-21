@@ -1,0 +1,256 @@
+# Copyright (c) 2026, Ernesto Ruiz and contributors
+# For license information, please see license.txt
+
+POS_INVOICE_PRINT_FORMAT_NAME = "Factura POS con QR"
+
+POS_INVOICE_PRINT_FORMAT_CSS = """.rt-pos-ticket {
+	font-family: 'Courier New', Courier, monospace;
+	font-size: 11px;
+	width: 100%;
+	max-width: 280px;
+	margin: 0 auto;
+	padding: 6px 4px;
+	color: #000;
+	background: #fff;
+}
+.rt-pos-ticket * {
+	box-sizing: border-box;
+}
+.rt-pos-header {
+	text-align: center;
+	border-bottom: 1px dashed #000;
+	padding-bottom: 8px;
+	margin-bottom: 8px;
+}
+.rt-pos-company {
+	font-size: 14px;
+	font-weight: bold;
+	text-transform: uppercase;
+	margin-bottom: 3px;
+}
+.rt-pos-company-info {
+	font-size: 10px;
+	line-height: 1.35;
+}
+.rt-pos-title {
+	font-size: 13px;
+	font-weight: bold;
+	letter-spacing: 1px;
+	margin: 6px 0 4px;
+}
+.rt-pos-meta {
+	font-size: 10px;
+	line-height: 1.4;
+	text-align: left;
+	margin-top: 6px;
+}
+.rt-pos-items {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 10px;
+	margin-bottom: 8px;
+}
+.rt-pos-items th {
+	text-align: left;
+	border-bottom: 1px solid #000;
+	padding: 3px 2px;
+	font-weight: bold;
+}
+.rt-pos-items td {
+	padding: 3px 2px;
+	vertical-align: top;
+	border-bottom: 1px dotted #ccc;
+}
+.rt-pos-items .num {
+	text-align: right;
+	white-space: nowrap;
+}
+.rt-pos-item-sub {
+	font-size: 9px;
+	color: #333;
+}
+.rt-pos-totals {
+	border-top: 1px dashed #000;
+	padding-top: 6px;
+	margin-top: 4px;
+}
+.rt-pos-row {
+	display: flex;
+	justify-content: space-between;
+	margin: 2px 0;
+	font-size: 11px;
+}
+.rt-pos-row.grand-total {
+	font-size: 13px;
+	font-weight: bold;
+	border-top: 1px solid #000;
+	margin-top: 5px;
+	padding-top: 4px;
+}
+.rt-pos-payments {
+	border-top: 1px dashed #000;
+	margin-top: 8px;
+	padding-top: 6px;
+}
+.rt-pos-section-title {
+	font-size: 10px;
+	font-weight: bold;
+	text-transform: uppercase;
+	text-align: center;
+	margin-bottom: 4px;
+}
+.rt-pos-qr-block {
+	border-top: 1px dashed #000;
+	margin-top: 10px;
+	padding-top: 8px;
+	text-align: center;
+}
+.rt-pos-qr-img {
+	width: 120px;
+	height: 120px;
+	display: block;
+	margin: 4px auto;
+	image-rendering: pixelated;
+}
+.rt-pos-qr-label {
+	font-size: 11px;
+	font-weight: bold;
+	margin-top: 4px;
+}
+.rt-pos-qr-handle {
+	font-size: 10px;
+	margin-top: 2px;
+}
+.rt-pos-footer {
+	text-align: center;
+	margin-top: 10px;
+	font-size: 10px;
+	line-height: 1.4;
+}
+@media print {
+	.rt-pos-ticket {
+		max-width: none;
+		width: 72mm;
+	}
+}
+"""
+
+POS_INVOICE_PRINT_FORMAT_HTML = """{% set rt = get_pos_qr_context() %}
+{% set company_tax_id = frappe.db.get_value("Company", doc.company, "tax_id") %}
+<div class="rt-pos-ticket">
+  <div class="rt-pos-header">
+    <div class="rt-pos-company">{{ doc.company }}</div>
+    {% if company_tax_id %}
+    <div class="rt-pos-company-info">RUC: {{ company_tax_id }}</div>
+    {% endif %}
+    {% if doc.company_address_display %}
+    <div class="rt-pos-company-info">{{ doc.company_address_display | striptags }}</div>
+    {% endif %}
+    <div class="rt-pos-title">
+      {% if doc.is_return %}DEVOLUCIÓN POS{% else %}FACTURA POS{% endif %}
+    </div>
+    <div class="rt-pos-meta">
+      <div><strong>No.:</strong> {{ doc.name }}</div>
+      <div><strong>Fecha:</strong> {{ doc.get_formatted("posting_date") }} {{ doc.get_formatted("posting_time") or "" }}</div>
+      <div><strong>Cliente:</strong> {{ doc.customer_name or doc.customer }}</div>
+      {% if doc.pos_profile %}
+      <div><strong>Caja:</strong> {{ doc.pos_profile }}</div>
+      {% endif %}
+      <div><strong>Cajero:</strong> {{ frappe.utils.get_fullname(doc.owner) }}</div>
+    </div>
+  </div>
+
+  <table class="rt-pos-items">
+    <thead>
+      <tr>
+        <th>Artículo</th>
+        <th class="num">Cant.</th>
+        <th class="num">Precio</th>
+        <th class="num">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in doc.items %}
+      <tr>
+        <td>
+          {{ item.item_name }}
+          {% if item.discount_percentage %}
+          <div class="rt-pos-item-sub">Desc: {{ "%.1f"|format(item.discount_percentage) }}%</div>
+          {% endif %}
+        </td>
+        <td class="num">
+          {% if item.qty == item.qty | int %}{{ item.qty | int }}{% else %}{{ item.qty }}{% endif %}
+        </td>
+        <td class="num">{{ item.get_formatted("rate") }}</td>
+        <td class="num">{{ item.get_formatted("amount") }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="rt-pos-totals">
+    <div class="rt-pos-row">
+      <span>Subtotal:</span>
+      <span>{{ doc.get_formatted("total") }}</span>
+    </div>
+    {% if doc.discount_amount %}
+    <div class="rt-pos-row">
+      <span>Descuento:</span>
+      <span>-{{ doc.get_formatted("discount_amount") }}</span>
+    </div>
+    {% endif %}
+    {% for tax in doc.taxes %}
+    {% if tax.tax_amount %}
+    <div class="rt-pos-row">
+      <span>{{ tax.description }}:</span>
+      <span>{{ tax.get_formatted("tax_amount") }}</span>
+    </div>
+    {% endif %}
+    {% endfor %}
+    <div class="rt-pos-row grand-total">
+      <span>TOTAL:</span>
+      <span>{{ doc.get_formatted("rounded_total") if doc.rounded_total else doc.get_formatted("grand_total") }}</span>
+    </div>
+  </div>
+
+  {% if doc.payments %}
+  <div class="rt-pos-payments">
+    <div class="rt-pos-section-title">Pagos</div>
+    {% for pay in doc.payments %}
+    {% if pay.amount %}
+    <div class="rt-pos-row">
+      <span>{{ pay.mode_of_payment }}:</span>
+      <span>{{ pay.get_formatted("amount") }}</span>
+    </div>
+    {% endif %}
+    {% endfor %}
+    {% if doc.change_amount %}
+    <div class="rt-pos-row">
+      <span><strong>Cambio:</strong></span>
+      <span><strong>{{ doc.get_formatted("change_amount") }}</strong></span>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if rt.qr_data_uri %}
+  <div class="rt-pos-qr-block">
+    {% if rt.qr_label %}
+    <div class="rt-pos-qr-label">{{ rt.qr_label }}</div>
+    {% endif %}
+    <img src="{{ rt.qr_data_uri }}" alt="Código QR" class="rt-pos-qr-img" />
+    {% if rt.qr_subtitle %}
+    <div class="rt-pos-qr-handle">{{ rt.qr_subtitle }}</div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <div class="rt-pos-footer">
+    {% if rt.pos_footer_message %}
+    <div>{{ rt.pos_footer_message }}</div>
+    {% else %}
+    <div>¡Gracias por su compra!</div>
+    {% endif %}
+  </div>
+</div>
+"""
