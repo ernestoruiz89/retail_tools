@@ -1801,3 +1801,701 @@ def confirm_purchase_upload(
 			"grand_total": tx_result["grand_total"],
 		},
 	}
+
+
+# ==============================================================================
+# Server-side Background Execution with Resumable Checkpoints & Live Progress
+# ==============================================================================
+
+JOB_CACHE_TTL_SECONDS = 60 * 60 * 72  # 72 hours for resuming failed uploads
+JOB_REALTIME_EVENT = "carga_compras_progress"
+
+
+def _job_state_key(upload_id: str) -> str:
+	return f"retail_tools:carga_compras:state:{upload_id}"
+
+
+def _job_payload_key(upload_id: str) -> str:
+	return f"retail_tools:carga_compras:payload:{upload_id}"
+
+
+def _clean_error_message(exc: Exception, fallback: str) -> str:
+	err_text = cstr(exc).strip() or fallback
+	clean_err = re.sub(r"<br\s*/?>", " ", err_text)
+	clean_err = re.sub(r"<[^>]+>", "", clean_err).strip()
+	return clean_err or fallback
+
+
+def _save_job_state(upload_id: str, state: dict, *, publish_user: str | None = None) -> dict:
+	frappe.cache().set_value(
+		_job_state_key(upload_id),
+		json.dumps(state, default=str),
+		expires_in_sec=JOB_CACHE_TTL_SECONDS,
+	)
+	if publish_user:
+		try:
+			frappe.publish_realtime(JOB_REALTIME_EVENT, state, user=publish_user)
+		except Exception:
+			pass
+	return state
+
+
+def _load_job_state(upload_id: str) -> dict | None:
+	raw = frappe.cache().get_value(_job_state_key(upload_id))
+	if not raw:
+		return None
+	if isinstance(raw, dict):
+		return raw
+	try:
+		return json.loads(raw)
+	except Exception:
+		return None
+
+
+def _save_job_payload(upload_id: str, payload: dict) -> None:
+	frappe.cache().set_value(
+		_job_payload_key(upload_id),
+		json.dumps(payload, default=str),
+		expires_in_sec=JOB_CACHE_TTL_SECONDS,
+	)
+
+
+def _load_job_payload(upload_id: str) -> dict | None:
+	raw = frappe.cache().get_value(_job_payload_key(upload_id))
+	if not raw:
+		return None
+	if isinstance(raw, dict):
+		return raw
+	try:
+		return json.loads(raw)
+	except Exception:
+		return None
+
+
+def _build_purchase_invoice_from_rows(
+	header_data: dict,
+	rows: list[dict],
+	*,
+	upload_id: str,
+	file_bytes: bytes | None = None,
+	filename: str | None = None,
+) -> dict:
+	"""Create, submit, and attach source file to a single Purchase Invoice."""
+	effective_due_date = cstr(header_data.get("due_date") or "").strip() or header_data["posting_date"]
+	user_remarks = cstr(header_data.get("remarks") or "").strip()
+
+	pi_doc = frappe.new_doc("Purchase Invoice")
+	pi_doc.company = header_data["company"]
+	pi_doc.supplier = header_data["supplier"]
+	pi_doc.posting_date = header_data["posting_date"]
+	pi_doc.bill_date = header_data["posting_date"]
+	pi_doc.due_date = effective_due_date
+	pi_doc.set_posting_time = 1
+	pi_doc.update_stock = 1
+	pi_doc.is_paid = 0
+	pi_doc.set_warehouse = header_data["warehouse"]
+
+	if header_data.get("bill_no"):
+		pi_doc.bill_no = header_data["bill_no"]
+
+	if user_remarks:
+		pi_doc.remarks = user_remarks
+	else:
+		pi_doc.remarks = None
+		pi_doc.create_remarks = lambda: None
+
+	has_upload_id_col = frappe.db.has_column("Purchase Invoice", "retail_tools_upload_id")
+	if upload_id and has_upload_id_col:
+		pi_doc.retail_tools_upload_id = upload_id
+
+	for r in rows:
+		pi_doc.append(
+			"items",
+			{
+				"item_code": r["item_code"],
+				"qty": flt(r["qty"]),
+				"rate": flt(r["rate"]),
+				"price_list_rate": flt(r["rate"]),
+				"warehouse": header_data["warehouse"],
+				"uom": r["stock_uom"],
+				"stock_uom": r["stock_uom"],
+				"conversion_factor": 1.0,
+			},
+		)
+
+	pi_doc.set_missing_values()
+	pi_doc.due_date = effective_due_date
+	pi_doc.payment_terms_template = None
+	pi_doc.payment_schedule = []
+
+	for idx, pi_item in enumerate(pi_doc.items):
+		row_data = rows[idx]
+		pi_item.warehouse = header_data["warehouse"]
+		pi_item.uom = row_data["stock_uom"]
+		pi_item.stock_uom = row_data["stock_uom"]
+		pi_item.conversion_factor = 1.0
+		pi_item.qty = flt(row_data["qty"])
+		pi_item.stock_qty = flt(row_data["qty"])
+		pi_item.discount_percentage = 0.0
+		pi_item.discount_amount = 0.0
+		pi_item.price_list_rate = flt(row_data["rate"])
+		pi_item.rate = flt(row_data["rate"])
+
+	pi_doc.calculate_taxes_and_totals()
+	pi_doc.insert()
+	if not user_remarks and pi_doc.remarks:
+		pi_doc.db_set("remarks", None, update_modified=False)
+		pi_doc.remarks = None
+
+	pi_doc.check_permission("submit")
+	pi_doc.submit()
+	if not user_remarks and pi_doc.remarks:
+		pi_doc.db_set("remarks", None, update_modified=False)
+		pi_doc.remarks = None
+
+	if upload_id and not has_upload_id_col:
+		frappe.get_doc(
+			{
+				"doctype": "Comment",
+				"comment_type": "Info",
+				"reference_doctype": "Purchase Invoice",
+				"reference_name": pi_doc.name,
+				"content": f"[RT-UPLOAD:{upload_id}]",
+			}
+		).insert(ignore_permissions=True)
+
+	if file_bytes:
+		file_doc = frappe.get_doc(
+			{
+				"doctype": "File",
+				"file_name": filename or "carga_compras.xlsx",
+				"attached_to_doctype": "Purchase Invoice",
+				"attached_to_name": pi_doc.name,
+				"content": file_bytes,
+				"is_private": 1,
+			}
+		)
+		file_doc.insert()
+
+	return {
+		"invoice_name": pi_doc.name,
+		"currency": pi_doc.currency,
+		"net_total": flt(pi_doc.net_total),
+		"total_taxes_and_charges": flt(pi_doc.total_taxes_and_charges),
+		"grand_total": flt(pi_doc.grand_total),
+	}
+
+
+def _process_single_item_row(r: dict) -> str:
+	"""Idempotently create or update one Item row. Returns 'created', 'updated', or 'unchanged'."""
+	item_code = r["item_code"]
+	existing = frappe.db.get_value(
+		"Item",
+		item_code,
+		["name", "item_group", "stock_uom"],
+		as_dict=True,
+	)
+
+	if not existing:
+		item_doc = frappe.get_doc(
+			{
+				"doctype": "Item",
+				"item_code": item_code,
+				"item_name": r["excel_item_name"],
+				"item_group": r["item_group"],
+				"stock_uom": r["stock_uom"],
+				"is_stock_item": 1,
+			}
+		)
+		if r.get("barcode"):
+			item_doc.append("barcodes", {"barcode": r["barcode"]})
+		item_doc.insert()
+		if cstr(item_doc.name) != cstr(item_code):
+			frappe.throw(
+				_(
+					"La configuración de series de artículos renombró el código '{0}' a '{1}'. Configure Stock Settings para nombrar productos por Código de Artículo."
+				).format(item_code, item_doc.name)
+			)
+		return "created"
+
+	group_changed = cstr(r["item_group"]) != cstr(existing.item_group)
+	uom_changed = cstr(r["stock_uom"]) != cstr(existing.stock_uom)
+	if group_changed or uom_changed:
+		if uom_changed and _has_stock_movement(item_code):
+			frappe.throw(
+				_(
+					"No se puede cambiar la unidad de medida del producto {0} porque ya tiene movimientos de inventario."
+				).format(item_code)
+			)
+		item_doc = frappe.get_doc("Item", item_code)
+		item_doc.check_permission("write")
+		if group_changed:
+			item_doc.item_group = r["item_group"]
+		if uom_changed:
+			item_doc.stock_uom = r["stock_uom"]
+		item_doc.save()
+		return "updated"
+
+	return "unchanged"
+
+
+def _process_single_price_row(
+	r: dict, price_list_1: str, price_list_2: str, upload_date: str
+) -> tuple[int, int, int]:
+	"""Idempotently create or update Item Prices for one row. Returns (created, updated, unchanged)."""
+	created = 0
+	updated = 0
+	unchanged = 0
+	item_code = r["item_code"]
+	uom = r["stock_uom"]
+
+	for pl_name, p_val in ((price_list_1, r.get("price_1")), (price_list_2, r.get("price_2"))):
+		if p_val is None or not pl_name:
+			continue
+
+		current_doc = _get_current_global_selling_price(item_code, pl_name, uom, upload_date)
+		if current_doc is not None and abs(flt(current_doc.price_list_rate) - flt(p_val)) < 1e-6:
+			unchanged += 1
+			continue
+
+		same_day_doc = _get_same_day_global_selling_price(item_code, pl_name, uom, upload_date)
+		if same_day_doc:
+			ip_doc = frappe.get_doc("Item Price", same_day_doc.name)
+			ip_doc.check_permission("write")
+			ip_doc.price_list_rate = flt(p_val)
+			ip_doc.save()
+			updated += 1
+		else:
+			ip_doc = frappe.get_doc(
+				{
+					"doctype": "Item Price",
+					"item_code": item_code,
+					"price_list": pl_name,
+					"uom": uom,
+					"selling": 1,
+					"price_list_rate": flt(p_val),
+					"valid_from": upload_date,
+				}
+			)
+			ip_doc.insert()
+			created += 1
+
+	return created, updated, unchanged
+
+
+def _run_purchase_upload_job(upload_id: str, user: str | None = None) -> dict:
+	"""Background worker executing Carga de Compras in resumable checkpointed phases."""
+	if user:
+		frappe.set_user(user)
+
+	payload = _load_job_payload(upload_id)
+	state = _load_job_state(upload_id)
+	if not payload or not state:
+		return {"ok": False, "error_code": "JOB_NOT_FOUND"}
+
+	publish_user = user or payload.get("user") or frappe.session.user
+	header_data = payload["header"]
+	rows = payload["rows"]
+	upload_date = payload["upload_date"]
+	filename = payload.get("filename") or "carga_compras.xlsx"
+	file_b64 = payload.get("file_b64") or ""
+	file_bytes = base64.b64decode(file_b64) if file_b64 else None
+
+	total_rows = len(rows)
+	done_item_rows = set(state.get("done_item_rows") or [])
+	done_price_rows = set(state.get("done_price_rows") or [])
+
+	state["status"] = "running"
+	state["error_message"] = ""
+	state["failed_phase"] = ""
+	state["failed_row_num"] = None
+	state["failed_item_code"] = ""
+	state["message"] = _("Iniciando procesamiento en servidor...")
+	_save_job_state(upload_id, state, publish_user=publish_user)
+
+	# Safety net: if Purchase Invoice was already created in a prior attempt, finalize immediately
+	existing_pi = _find_existing_invoice_by_upload_id(upload_id)
+	if existing_pi:
+		state["status"] = "completed"
+		state["phase"] = "completed"
+		state["percent"] = 100
+		state["invoice_name"] = existing_pi
+		state["invoice_url"] = f"/app/purchase-invoice/{urllib.parse.quote(cstr(existing_pi))}"
+		state["message"] = _("Factura de Compra {0} ya registrada.").format(existing_pi)
+		return _save_job_state(upload_id, state, publish_user=publish_user)
+
+	# Phase 1: Items (0% -> 45%)
+	state["phase"] = "items"
+	for idx, r in enumerate(rows, start=1):
+		row_num = r["row_num"]
+		if row_num in done_item_rows:
+			continue
+		try:
+			action = _process_single_item_row(r)
+			frappe.db.commit()
+			done_item_rows.add(row_num)
+			state["done_item_rows"] = sorted(done_item_rows)
+			if action == "created":
+				state["created_items"] = cint(state.get("created_items")) + 1
+			elif action == "updated":
+				state["updated_items"] = cint(state.get("updated_items")) + 1
+			state["items_done"] = len(done_item_rows)
+			state["percent"] = int((len(done_item_rows) / max(total_rows, 1)) * 45)
+			state["message"] = _("Procesando productos ({0}/{1}): {2}").format(
+				len(done_item_rows), total_rows, r["item_code"]
+			)
+			_save_job_state(upload_id, state, publish_user=publish_user)
+		except Exception as exc:
+			frappe.db.rollback()
+			err_msg = _clean_error_message(exc, _("Error al procesar producto."))
+			state["status"] = "failed"
+			state["failed_phase"] = "items"
+			state["failed_row_num"] = row_num
+			state["failed_item_code"] = r["item_code"]
+			state["error_message"] = _("Error en fila {0} ({1}): {2}").format(
+				row_num, r["item_code"], err_msg
+			)
+			state["message"] = _("Detenido en productos ({0}/{1}). Puede reanudar desde aquí.").format(
+				len(done_item_rows), total_rows
+			)
+			return _save_job_state(upload_id, state, publish_user=publish_user)
+
+	# Phase 2: Item Prices (45% -> 85%)
+	state["phase"] = "prices"
+	price_list_1 = header_data.get("price_list_1") or ""
+	price_list_2 = header_data.get("price_list_2") or ""
+	for r in rows:
+		row_num = r["row_num"]
+		if row_num in done_price_rows:
+			continue
+		try:
+			c_p, u_p, s_p = _process_single_price_row(r, price_list_1, price_list_2, upload_date)
+			frappe.db.commit()
+			done_price_rows.add(row_num)
+			state["done_price_rows"] = sorted(done_price_rows)
+			state["created_prices"] = cint(state.get("created_prices")) + c_p
+			state["updated_prices"] = cint(state.get("updated_prices")) + u_p
+			state["unchanged_prices"] = cint(state.get("unchanged_prices")) + s_p
+			state["prices_done"] = len(done_price_rows)
+			state["percent"] = 45 + int((len(done_price_rows) / max(total_rows, 1)) * 40)
+			state["message"] = _("Actualizando precios ({0}/{1}): {2}").format(
+				len(done_price_rows), total_rows, r["item_code"]
+			)
+			_save_job_state(upload_id, state, publish_user=publish_user)
+		except Exception as exc:
+			frappe.db.rollback()
+			err_msg = _clean_error_message(exc, _("Error al actualizar precios de producto."))
+			state["status"] = "failed"
+			state["failed_phase"] = "prices"
+			state["failed_row_num"] = row_num
+			state["failed_item_code"] = r["item_code"]
+			state["error_message"] = _("Error de precio en fila {0} ({1}): {2}").format(
+				row_num, r["item_code"], err_msg
+			)
+			state["message"] = _("Detenido en precios ({0}/{1}). Puede reanudar desde aquí.").format(
+				len(done_price_rows), total_rows
+			)
+			return _save_job_state(upload_id, state, publish_user=publish_user)
+
+	# Phase 3: Purchase Invoice creation & submission (85% -> 100%)
+	state["phase"] = "invoice"
+	state["percent"] = 90
+	state["message"] = _("Creando y enviando Factura de Compra...")
+	_save_job_state(upload_id, state, publish_user=publish_user)
+
+	try:
+		inv_result = _build_purchase_invoice_from_rows(
+			header_data=header_data,
+			rows=rows,
+			upload_id=upload_id,
+			file_bytes=file_bytes,
+			filename=filename,
+		)
+		frappe.db.commit()
+	except Exception as exc:
+		frappe.db.rollback()
+		err_msg = _clean_error_message(exc, _("Error al enviar la Factura de Compra."))
+		state["status"] = "failed"
+		state["failed_phase"] = "invoice"
+		state["error_message"] = _("Error al registrar la Factura de Compra: {0}").format(err_msg)
+		state["message"] = _(
+			"Productos y precios guardados. Falló el envío de la factura; puede reanudar para completar."
+		)
+		return _save_job_state(upload_id, state, publish_user=publish_user)
+
+	state["status"] = "completed"
+	state["phase"] = "completed"
+	state["percent"] = 100
+	state["invoice_name"] = inv_result["invoice_name"]
+	state["invoice_url"] = f"/app/purchase-invoice/{urllib.parse.quote(cstr(inv_result['invoice_name']))}"
+	state["message"] = _("Factura de Compra {0} registrada y enviada exitosamente.").format(
+		inv_result["invoice_name"]
+	)
+	state["summary"] = {
+		"total_rows": total_rows,
+		"created_items": cint(state.get("created_items")),
+		"updated_items": cint(state.get("updated_items")),
+		"existing_items": cint(payload.get("existing_items")),
+		"created_prices": cint(state.get("created_prices")),
+		"updated_prices": cint(state.get("updated_prices")),
+		"unchanged_prices": cint(state.get("unchanged_prices")),
+		"currency": inv_result["currency"],
+		"net_total": inv_result["net_total"],
+		"total_taxes_and_charges": inv_result["total_taxes_and_charges"],
+		"grand_total": inv_result["grand_total"],
+	}
+	return _save_job_state(upload_id, state, publish_user=publish_user)
+
+
+@frappe.whitelist()
+def start_purchase_upload_job(
+	file_content: str | bytes | None = None,
+	file_url: str | None = None,
+	filename: str | None = None,
+	header: str | dict | None = None,
+	row_overrides: str | dict | None = None,
+	preview_token: str | None = None,
+	upload_id: str | None = None,
+) -> dict:
+	"""Validate the upload and enqueue a resumable background job on the server."""
+	_ensure_page_access()
+
+	clean_upload_id = cstr(upload_id or "").strip()
+	if not clean_upload_id:
+		return {
+			"ok": False,
+			"error_code": "MISSING_UPLOAD_ID",
+			"message": _("Falta el identificador único de carga (upload_id)."),
+		}
+
+	existing_pi = _find_existing_invoice_by_upload_id(clean_upload_id)
+	if existing_pi:
+		return {
+			"ok": False,
+			"already_processed": True,
+			"error_code": "DUPLICATE_UPLOAD",
+			"invoice_name": existing_pi,
+			"invoice_url": f"/app/purchase-invoice/{urllib.parse.quote(cstr(existing_pi))}",
+			"message": _(
+				"Esta confirmación ya fue procesada anteriormente en la Factura de Compra {0}."
+			).format(existing_pi),
+		}
+
+	existing_state = _load_job_state(clean_upload_id)
+	if existing_state and existing_state.get("status") in ("queued", "running"):
+		return {
+			"ok": True,
+			"upload_id": clean_upload_id,
+			"job": existing_state,
+		}
+
+	header_dict = _parse_json_arg(header, {})
+	overrides_dict = _parse_json_arg(row_overrides, {})
+
+	file_bytes, resolved_name, file_err = _extract_file_bytes(
+		file_content=file_content, file_url=file_url, filename=filename
+	)
+
+	analysis = _analyze_upload(
+		file_bytes=file_bytes,
+		file_error=file_err,
+		header_raw=header_dict if isinstance(header_dict, dict) else {},
+		row_overrides_raw=overrides_dict if isinstance(overrides_dict, dict) else {},
+	)
+
+	if not analysis.get("can_confirm"):
+		all_errors = list(analysis.get("global_errors") or [])
+		for r in analysis.get("rows") or []:
+			for err in r.get("errors") or []:
+				all_errors.append(_("Fila {0} ({1}): {2}").format(r["row_num"], r["item_code"], err))
+		return {
+			"ok": False,
+			"error_code": "VALIDATION_ERROR",
+			"message": all_errors[0]
+			if all_errors
+			else _("Existen errores de validación que impiden registrar la compra."),
+			"errors": all_errors,
+			"analysis": analysis,
+		}
+
+	if not preview_token or cstr(preview_token).strip() != cstr(analysis.get("preview_token")):
+		return {
+			"ok": False,
+			"error_code": "STALE_PREVIEW",
+			"message": _(
+				"La vista previa está desactualizada porque el archivo o los datos del sistema cambiaron. Actualice la vista previa antes de confirmar."
+			),
+			"analysis": analysis,
+		}
+
+	current_user = frappe.session.user
+	payload = {
+		"upload_id": clean_upload_id,
+		"user": current_user,
+		"filename": resolved_name,
+		"file_b64": base64.b64encode(file_bytes).decode("ascii") if file_bytes else "",
+		"upload_date": analysis["upload_date"],
+		"header": analysis["header"],
+		"rows": analysis["rows"],
+		"existing_items": analysis["summary"].get("existing_items", 0),
+	}
+	_save_job_payload(clean_upload_id, payload)
+
+	initial_state = {
+		"upload_id": clean_upload_id,
+		"user": current_user,
+		"filename": resolved_name,
+		"status": "queued",
+		"phase": "queued",
+		"percent": 0,
+		"attempt": 1,
+		"total_rows": len(analysis["rows"]),
+		"items_done": 0,
+		"prices_done": 0,
+		"done_item_rows": [],
+		"done_price_rows": [],
+		"created_items": 0,
+		"updated_items": 0,
+		"created_prices": 0,
+		"updated_prices": 0,
+		"unchanged_prices": 0,
+		"message": _("Carga en cola. Esperando trabajador del servidor..."),
+		"error_message": "",
+		"failed_phase": "",
+		"failed_row_num": None,
+		"failed_item_code": "",
+		"invoice_name": None,
+		"invoice_url": None,
+		"summary": None,
+	}
+	_save_job_state(clean_upload_id, initial_state, publish_user=current_user)
+
+	frappe.enqueue(
+		"retail_tools.retail_tools.page.carga_compras.carga_compras._run_purchase_upload_job",
+		queue="long",
+		timeout=1800,
+		job_id=f"carga_compras:{clean_upload_id}:1",
+		upload_id=clean_upload_id,
+		user=current_user,
+		enqueue_after_commit=True,
+	)
+
+	return {
+		"ok": True,
+		"upload_id": clean_upload_id,
+		"job": initial_state,
+	}
+
+
+@frappe.whitelist()
+def get_purchase_upload_status(upload_id: str) -> dict:
+	"""Return the current progress/state of a server-side Carga de Compras job."""
+	_ensure_page_access()
+
+	clean_upload_id = cstr(upload_id or "").strip()
+	if not clean_upload_id:
+		return {"ok": False, "error_code": "MISSING_UPLOAD_ID"}
+
+	state = _load_job_state(clean_upload_id)
+	if state:
+		job_owner = state.get("user")
+		if (
+			job_owner
+			and job_owner != frappe.session.user
+			and "System Manager" not in frappe.get_roles(frappe.session.user)
+			and frappe.session.user != "Administrator"
+		):
+			frappe.throw(_("No tiene permiso para consultar esta carga."), frappe.PermissionError)
+		return {"ok": True, "job": state}
+
+	existing_pi = _find_existing_invoice_by_upload_id(clean_upload_id)
+	if existing_pi:
+		return {
+			"ok": True,
+			"job": {
+				"upload_id": clean_upload_id,
+				"status": "completed",
+				"phase": "completed",
+				"percent": 100,
+				"invoice_name": existing_pi,
+				"invoice_url": f"/app/purchase-invoice/{urllib.parse.quote(cstr(existing_pi))}",
+				"message": _("Factura de Compra {0} registrada exitosamente.").format(existing_pi),
+			},
+		}
+
+	return {"ok": False, "error_code": "JOB_NOT_FOUND"}
+
+
+@frappe.whitelist()
+def resume_purchase_upload_job(upload_id: str) -> dict:
+	"""Resume a failed Carga de Compras background job from its last committed checkpoint."""
+	_ensure_page_access()
+
+	clean_upload_id = cstr(upload_id or "").strip()
+	if not clean_upload_id:
+		return {
+			"ok": False,
+			"error_code": "MISSING_UPLOAD_ID",
+			"message": _("Falta el identificador de carga (upload_id)."),
+		}
+
+	state = _load_job_state(clean_upload_id)
+	payload = _load_job_payload(clean_upload_id)
+	if not state or not payload:
+		return {
+			"ok": False,
+			"error_code": "JOB_NOT_FOUND",
+			"message": _("No se encontró el estado de la carga para reanudar. Vuelva a analizar el archivo."),
+		}
+
+	job_owner = state.get("user")
+	if (
+		job_owner
+		and job_owner != frappe.session.user
+		and "System Manager" not in frappe.get_roles(frappe.session.user)
+		and frappe.session.user != "Administrator"
+	):
+		frappe.throw(_("No tiene permiso para reanudar esta carga."), frappe.PermissionError)
+
+	if state.get("status") in ("queued", "running"):
+		return {"ok": True, "upload_id": clean_upload_id, "job": state}
+
+	if state.get("status") == "completed":
+		return {"ok": True, "upload_id": clean_upload_id, "job": state}
+
+	existing_pi = _find_existing_invoice_by_upload_id(clean_upload_id)
+	if existing_pi:
+		state["status"] = "completed"
+		state["phase"] = "completed"
+		state["percent"] = 100
+		state["invoice_name"] = existing_pi
+		state["invoice_url"] = f"/app/purchase-invoice/{urllib.parse.quote(cstr(existing_pi))}"
+		state["message"] = _("Factura de Compra {0} ya registrada.").format(existing_pi)
+		_save_job_state(clean_upload_id, state, publish_user=frappe.session.user)
+		return {"ok": True, "upload_id": clean_upload_id, "job": state}
+
+	attempt = cint(state.get("attempt") or 1) + 1
+	state["status"] = "queued"
+	state["attempt"] = attempt
+	state["error_message"] = ""
+	state["failed_phase"] = ""
+	state["failed_row_num"] = None
+	state["failed_item_code"] = ""
+	state["message"] = _("Reanudando carga en servidor (intento #{0})...").format(attempt)
+	_save_job_state(clean_upload_id, state, publish_user=frappe.session.user)
+
+	frappe.enqueue(
+		"retail_tools.retail_tools.page.carga_compras.carga_compras._run_purchase_upload_job",
+		queue="long",
+		timeout=1800,
+		job_id=f"carga_compras:{clean_upload_id}:{attempt}",
+		upload_id=clean_upload_id,
+		user=frappe.session.user,
+		enqueue_after_commit=True,
+	)
+
+	return {
+		"ok": True,
+		"upload_id": clean_upload_id,
+		"job": state,
+	}

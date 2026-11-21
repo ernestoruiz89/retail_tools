@@ -34,13 +34,65 @@ retail_tools.CargaCompras = class CargaCompras {
 		this.preview_token = null;
 		this.preview_stale = false;
 		this.current_upload_id = null;
+		this.active_job_id = null;
+		this.active_job_state = null;
+		this.poll_timer = null;
 		this.is_submitting = false;
 		this.uom_list = [];
 		this.item_group_list = [];
 
 		this.make_actions();
 		this.make_layout();
+		this.bind_realtime();
 		this.load_initial_data();
+		this.restore_active_job();
+	}
+
+	get_job_storage_key() {
+		const user = (frappe.session && frappe.session.user) || "user";
+		return `rt_carga_compras_active_job:${user}`;
+	}
+
+	save_active_job_id(uploadId) {
+		this.active_job_id = uploadId || null;
+		try {
+			if (uploadId) {
+				window.localStorage.setItem(this.get_job_storage_key(), uploadId);
+			} else {
+				window.localStorage.removeItem(this.get_job_storage_key());
+			}
+		} catch (e) {
+			// Ignore storage quota / privacy mode errors
+		}
+	}
+
+	restore_active_job() {
+		let savedId = null;
+		try {
+			savedId = window.localStorage.getItem(this.get_job_storage_key());
+		} catch (e) {
+			savedId = null;
+		}
+		if (!savedId) {
+			return;
+		}
+		this.active_job_id = savedId;
+		this.fetch_job_status(savedId);
+	}
+
+	bind_realtime() {
+		if (!frappe.realtime || typeof frappe.realtime.on !== "function") {
+			return;
+		}
+		frappe.realtime.on("carga_compras_progress", (state) => {
+			if (!state || !state.upload_id) {
+				return;
+			}
+			if (this.active_job_id && state.upload_id !== this.active_job_id) {
+				return;
+			}
+			this.handle_job_state(state);
+		});
 	}
 
 	generate_upload_id() {
@@ -116,6 +168,7 @@ retail_tools.CargaCompras = class CargaCompras {
 					</div>
 				</div>
 
+				<div class="cc-progress-container" style="display: none;"></div>
 				<div class="cc-result-banner" style="display: none;"></div>
 				<div class="cc-alerts-container" style="display: none;"></div>
 				<div class="cc-summary-container" style="display: none;"></div>
@@ -946,10 +999,11 @@ retail_tools.CargaCompras = class CargaCompras {
 
 		this.is_submitting = true;
 		this.update_confirm_button_state();
+		this.$body.find(".cc-result-banner").hide().empty();
 
 		frappe.call({
 			method:
-				"retail_tools.retail_tools.page.carga_compras.carga_compras.confirm_purchase_upload",
+				"retail_tools.retail_tools.page.carga_compras.carga_compras.start_purchase_upload_job",
 			args: {
 				file_content: this.file_content,
 				filename: this.filename,
@@ -959,26 +1013,18 @@ retail_tools.CargaCompras = class CargaCompras {
 				upload_id: this.current_upload_id,
 			},
 			freeze: true,
-			freeze_message: __(
-				"Registrando productos, precios y enviando Factura de Compra..."
-			),
+			freeze_message: __("Enviando carga al servidor..."),
 			callback: (r) => {
-				this.is_submitting = false;
 				const res = r.message || {};
 
-				if (res.ok) {
+				if (res.ok && res.job) {
 					this.preview_token = null;
-					this.update_confirm_button_state();
-					this.render_confirmation_success(res);
-					frappe.show_alert({
-						message: __("Factura de Compra {0} enviada exitosamente.", [
-							res.invoice_name,
-						]),
-						indicator: "green",
-					});
+					this.save_active_job_id(res.upload_id);
+					this.handle_job_state(res.job);
 					return;
 				}
 
+				this.is_submitting = false;
 				if (res.analysis) {
 					this.preview_data = res.analysis;
 					this.preview_token = res.analysis.preview_token || null;
@@ -990,10 +1036,10 @@ retail_tools.CargaCompras = class CargaCompras {
 
 				this.update_confirm_button_state();
 				frappe.msgprint({
-					title: __("No se pudo registrar la compra"),
+					title: __("No se pudo iniciar la carga"),
 					indicator: "red",
 					message: frappe.utils.escape_html(
-						res.message || __("Ocurrió un error al procesar la confirmación.")
+						res.message || __("Ocurrió un error al enviar la carga al servidor.")
 					),
 				});
 			},
@@ -1002,6 +1048,211 @@ retail_tools.CargaCompras = class CargaCompras {
 				this.update_confirm_button_state();
 			},
 		});
+	}
+
+	stop_job_polling() {
+		if (this.poll_timer) {
+			clearTimeout(this.poll_timer);
+			this.poll_timer = null;
+		}
+	}
+
+	schedule_job_poll(uploadId) {
+		this.stop_job_polling();
+		if (!uploadId) {
+			return;
+		}
+		this.poll_timer = setTimeout(() => {
+			this.fetch_job_status(uploadId);
+		}, 1500);
+	}
+
+	fetch_job_status(uploadId) {
+		if (!uploadId) {
+			return;
+		}
+		frappe.call({
+			method:
+				"retail_tools.retail_tools.page.carga_compras.carga_compras.get_purchase_upload_status",
+			args: { upload_id: uploadId },
+			callback: (r) => {
+				const res = r.message || {};
+				if (res.ok && res.job) {
+					this.handle_job_state(res.job);
+				} else if (res.error_code === "JOB_NOT_FOUND") {
+					this.stop_job_polling();
+					this.save_active_job_id(null);
+					this.active_job_state = null;
+					this.is_submitting = false;
+					this.$body.find(".cc-progress-container").hide().empty();
+					this.update_confirm_button_state();
+				}
+			},
+			error: () => {
+				if (
+					this.active_job_state &&
+					["queued", "running"].includes(this.active_job_state.status)
+				) {
+					this.schedule_job_poll(uploadId);
+				}
+			},
+		});
+	}
+
+	resume_active_job() {
+		const uploadId = this.active_job_id;
+		if (!uploadId) {
+			return;
+		}
+		this.is_submitting = true;
+		this.update_confirm_button_state();
+
+		frappe.call({
+			method:
+				"retail_tools.retail_tools.page.carga_compras.carga_compras.resume_purchase_upload_job",
+			args: { upload_id: uploadId },
+			freeze: true,
+			freeze_message: __("Reanudando carga en servidor..."),
+			callback: (r) => {
+				const res = r.message || {};
+				if (res.ok && res.job) {
+					this.handle_job_state(res.job);
+				} else {
+					this.is_submitting = false;
+					this.update_confirm_button_state();
+					frappe.msgprint({
+						title: __("No se pudo reanudar la carga"),
+						indicator: "red",
+						message: frappe.utils.escape_html(
+							res.message || __("No se encontró el estado de la carga.")
+						),
+					});
+				}
+			},
+			error: () => {
+				this.is_submitting = false;
+				this.update_confirm_button_state();
+			},
+		});
+	}
+
+	discard_active_job() {
+		this.stop_job_polling();
+		this.save_active_job_id(null);
+		this.active_job_state = null;
+		this.is_submitting = false;
+		this.$body.find(".cc-progress-container").hide().empty();
+		this.update_confirm_button_state();
+	}
+
+	handle_job_state(state) {
+		this.active_job_state = state;
+		const status = state.status || "queued";
+
+		if (status === "queued" || status === "running") {
+			this.is_submitting = true;
+			this.render_job_progress(state);
+			this.update_confirm_button_state();
+			this.schedule_job_poll(state.upload_id);
+			return;
+		}
+
+		this.stop_job_polling();
+		this.is_submitting = false;
+		this.update_confirm_button_state();
+
+		if (status === "completed") {
+			this.render_job_progress(state);
+			this.save_active_job_id(null);
+			this.render_confirmation_success(state);
+			frappe.show_alert({
+				message: __("Factura de Compra {0} enviada exitosamente.", [
+					state.invoice_name,
+				]),
+				indicator: "green",
+			});
+			return;
+		}
+
+		if (status === "failed") {
+			this.render_job_progress(state);
+			frappe.show_alert({
+				message: __("La carga se detuvo por un error. Puede reanudarla desde el último punto guardado."),
+				indicator: "red",
+			});
+		}
+	}
+
+	render_job_progress(state) {
+		const $container = this.$body.find(".cc-progress-container");
+		if (!state) {
+			$container.hide().empty();
+			return;
+		}
+
+		const status = state.status || "queued";
+		const percent = Math.max(0, Math.min(100, cint(state.percent || 0)));
+		const totalRows = cint(state.total_rows || 0);
+		const itemsDone = cint(state.items_done || 0);
+		const pricesDone = cint(state.prices_done || 0);
+		const attempt = cint(state.attempt || 1);
+
+		let cardClass = "cc-progress-running";
+		let statusBadge = `<span class="cc-job-badge cc-job-badge-running"><i class="fa fa-spinner fa-spin"></i> ${__("Procesando en servidor")}</span>`;
+		if (status === "queued") {
+			statusBadge = `<span class="cc-job-badge cc-job-badge-queued"><i class="fa fa-clock-o"></i> ${__("En cola")}</span>`;
+		} else if (status === "completed") {
+			cardClass = "cc-progress-completed";
+			statusBadge = `<span class="cc-job-badge cc-job-badge-completed"><i class="fa fa-check-circle"></i> ${__("Completado")}</span>`;
+		} else if (status === "failed") {
+			cardClass = "cc-progress-failed";
+			statusBadge = `<span class="cc-job-badge cc-job-badge-failed"><i class="fa fa-exclamation-triangle"></i> ${__("Error — Reanudable")}</span>`;
+		}
+
+		const errorHtml =
+			status === "failed" && state.error_message
+				? `<div class="cc-progress-error">${frappe.utils.escape_html(state.error_message)}</div>`
+				: "";
+
+		const actionsHtml =
+			status === "failed"
+				? `<div class="cc-progress-actions">
+						<button type="button" class="btn btn-warning btn-sm cc-resume-job-btn">
+							<i class="fa fa-play"></i> ${__("Reanudar Carga")}
+						</button>
+						<button type="button" class="btn btn-default btn-sm cc-discard-job-btn">
+							<i class="fa fa-times"></i> ${__("Descartar")}
+						</button>
+				   </div>`
+				: "";
+
+		$container
+			.html(`
+				<div class="cc-progress-card ${cardClass}">
+					<div class="cc-progress-header">
+						<div class="cc-progress-title">
+							${statusBadge}
+							<span class="cc-progress-filename">${frappe.utils.escape_html(state.filename || "")}</span>
+						</div>
+						<div class="cc-progress-percent">${percent}%</div>
+					</div>
+					<div class="cc-progress-bar-track">
+						<div class="cc-progress-bar-fill" style="width: ${percent}%;"></div>
+					</div>
+					<div class="cc-progress-message">${frappe.utils.escape_html(state.message || "")}</div>
+					<div class="cc-progress-meta">
+						<span><strong>${__("Productos")}:</strong> ${itemsDone}/${totalRows} (${__("creados")}: ${cint(state.created_items || 0)}, ${__("actualizados")}: ${cint(state.updated_items || 0)})</span>
+						<span><strong>${__("Precios")}:</strong> ${pricesDone}/${totalRows} (${__("creados")}: ${cint(state.created_prices || 0)}, ${__("cambios")}: ${cint(state.updated_prices || 0)})</span>
+						<span><strong>${__("Intento")}:</strong> #${attempt}</span>
+					</div>
+					${errorHtml}
+					${actionsHtml}
+				</div>
+			`)
+			.show();
+
+		$container.find(".cc-resume-job-btn").on("click", () => this.resume_active_job());
+		$container.find(".cc-discard-job-btn").on("click", () => this.discard_active_job());
 	}
 
 	render_confirmation_success(res) {
@@ -1035,6 +1286,10 @@ retail_tools.CargaCompras = class CargaCompras {
 	}
 
 	reset_all() {
+		this.stop_job_polling();
+		this.save_active_job_id(null);
+		this.active_job_state = null;
+		this.is_submitting = false;
 		this.file_content = null;
 		this.filename = "";
 		this.row_overrides = {};
@@ -1047,6 +1302,7 @@ retail_tools.CargaCompras = class CargaCompras {
 		this.$body
 			.find(".cc-file-label-text")
 			.text(__("Seleccionar archivo Excel (.xlsx)..."));
+		this.$body.find(".cc-progress-container").hide().empty();
 		this.$body.find(".cc-result-banner").hide().empty();
 		this.$body.find(".cc-alerts-container").hide().empty();
 		this.$body.find(".cc-summary-container").hide().empty();

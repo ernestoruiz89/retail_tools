@@ -168,6 +168,142 @@
 }
 
 /* Confirmation Success Card */
+.cc-progress-card {
+	background: var(--card-bg, #ffffff);
+	border: 1px solid #bfdbfe;
+	border-radius: 8px;
+	padding: 16px 20px;
+	margin-bottom: 16px;
+}
+
+.cc-progress-running {
+	border-color: #93c5fd;
+	background: #f8fbff;
+}
+
+.cc-progress-completed {
+	border-color: #6ee7b7;
+	background: #f0fdf4;
+}
+
+.cc-progress-failed {
+	border-color: #fca5a5;
+	background: #fef2f2;
+}
+
+.cc-progress-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 10px;
+	flex-wrap: wrap;
+}
+
+.cc-progress-title {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	flex-wrap: wrap;
+}
+
+.cc-progress-filename {
+	font-weight: 600;
+	font-size: 13px;
+	color: var(--text-color, #111827);
+}
+
+.cc-progress-percent {
+	font-weight: 700;
+	font-size: 15px;
+	color: var(--text-color, #111827);
+}
+
+.cc-job-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 3px 10px;
+	border-radius: 999px;
+	font-size: 12px;
+	font-weight: 600;
+}
+
+.cc-job-badge-queued {
+	background: #e0e7ff;
+	color: #3730a3;
+}
+
+.cc-job-badge-running {
+	background: #dbeafe;
+	color: #1d4ed8;
+}
+
+.cc-job-badge-completed {
+	background: #dcfce7;
+	color: #15803d;
+}
+
+.cc-job-badge-failed {
+	background: #fee2e2;
+	color: #b91c1c;
+}
+
+.cc-progress-bar-track {
+	width: 100%;
+	height: 10px;
+	background: #e5e7eb;
+	border-radius: 999px;
+	overflow: hidden;
+	margin-bottom: 10px;
+}
+
+.cc-progress-bar-fill {
+	height: 100%;
+	background: #2563eb;
+	transition: width 0.25s ease;
+}
+
+.cc-progress-completed .cc-progress-bar-fill {
+	background: #16a34a;
+}
+
+.cc-progress-failed .cc-progress-bar-fill {
+	background: #dc2626;
+}
+
+.cc-progress-message {
+	font-size: 13px;
+	font-weight: 500;
+	margin-bottom: 8px;
+	color: var(--text-color, #1f2937);
+}
+
+.cc-progress-meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 14px;
+	font-size: 12px;
+	color: var(--text-muted, #4b5563);
+}
+
+.cc-progress-error {
+	margin-top: 10px;
+	padding: 10px 12px;
+	background: #fff;
+	border: 1px solid #fecaca;
+	border-radius: 6px;
+	color: #991b1b;
+	font-size: 12.5px;
+}
+
+.cc-progress-actions {
+	display: flex;
+	gap: 8px;
+	margin-top: 12px;
+	flex-wrap: wrap;
+}
+
 .cc-success-card {
 	background: #ecfdf5;
 	border: 1px solid #6ee7b7;
