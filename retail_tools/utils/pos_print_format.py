@@ -156,7 +156,7 @@ POS_INVOICE_PRINT_FORMAT_HTML = """{% set rt = get_pos_qr_context() %}
       {% if doc.pos_profile %}
       <div><strong>Caja:</strong> {{ doc.pos_profile }}</div>
       {% endif %}
-      <div><strong>Cajero:</strong> {{ frappe.utils.get_fullname(doc.owner) }}</div>
+      <div><strong>Cajero:</strong> {{ frappe.db.get_value("User", doc.owner, "full_name") or doc.owner }}</div>
     </div>
   </div>
 

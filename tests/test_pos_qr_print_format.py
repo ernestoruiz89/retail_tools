@@ -82,6 +82,7 @@ class PosQrPrintFormatTest(unittest.TestCase):
 		self.assertEqual(POS_INVOICE_PRINT_FORMAT_NAME, "Factura POS con QR")
 		self.assertIn("get_pos_qr_context()", POS_INVOICE_PRINT_FORMAT_HTML)
 		self.assertIn("rt.qr_data_uri", POS_INVOICE_PRINT_FORMAT_HTML)
+		self.assertNotIn("frappe.utils.get_fullname", POS_INVOICE_PRINT_FORMAT_HTML)
 		self.assertIn("rt-pos-qr-img", POS_INVOICE_PRINT_FORMAT_CSS)
 
 	def test_hooks_registers_jinja_methods(self):
