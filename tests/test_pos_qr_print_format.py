@@ -83,6 +83,8 @@ class PosQrPrintFormatTest(unittest.TestCase):
 		self.assertIn("get_pos_qr_context()", POS_INVOICE_PRINT_FORMAT_HTML)
 		self.assertIn("rt.qr_data_uri", POS_INVOICE_PRINT_FORMAT_HTML)
 		self.assertIn("Item Barcode", POS_INVOICE_PRINT_FORMAT_HTML)
+		self.assertIn("Loyalty Point Entry", POS_INVOICE_PRINT_FORMAT_HTML)
+		self.assertIn("Saldo disponible:", POS_INVOICE_PRINT_FORMAT_HTML)
 		self.assertNotIn("frappe.utils.get_fullname", POS_INVOICE_PRINT_FORMAT_HTML)
 		self.assertIn("rt-pos-qr-img", POS_INVOICE_PRINT_FORMAT_CSS)
 

@@ -105,6 +105,11 @@ POS_INVOICE_PRINT_FORMAT_CSS = """@page {
 	margin-top: 8px;
 	padding-top: 6px;
 }
+.rt-pos-loyalty {
+	border-top: 1px dashed #000;
+	margin-top: 8px;
+	padding-top: 6px;
+}
 .rt-pos-section-title {
 	font-size: 10px;
 	font-weight: bold;
@@ -264,6 +269,37 @@ POS_INVOICE_PRINT_FORMAT_HTML = """{% set rt = get_pos_qr_context() %}
       <span><strong>{{ doc.get_formatted("change_amount") }}</strong></span>
     </div>
     {% endif %}
+  </div>
+  {% endif %}
+
+  {% set lp_name = doc.loyalty_program or frappe.db.get_value("Customer", doc.customer, "loyalty_program") %}
+  {% if lp_name %}
+  {% set lp_entries = frappe.get_all(
+    "Loyalty Point Entry",
+    filters={"customer": doc.customer, "company": doc.company, "loyalty_program": lp_name},
+    fields=["loyalty_points", "expiry_date"],
+    limit_page_length=0
+  ) %}
+  {% set lp_ns = namespace(balance=0) %}
+  {% for lp_e in lp_entries %}
+    {% if not lp_e.expiry_date or (lp_e.expiry_date | string) >= (doc.posting_date | string) %}
+      {% set lp_ns.balance = lp_ns.balance + (lp_e.loyalty_points or 0) %}
+    {% endif %}
+  {% endfor %}
+  {% set lp_balance = (lp_ns.balance | int) if lp_ns.balance > 0 else 0 %}
+  {% set lp_conversion = frappe.db.get_value("Loyalty Program", lp_name, "conversion_factor") or 0 %}
+  <div class="rt-pos-loyalty">
+    <div class="rt-pos-section-title">Puntos de Fidelidad</div>
+    {% if doc.redeem_loyalty_points and doc.loyalty_points %}
+    <div class="rt-pos-row">
+      <span>Puntos canjeados:</span>
+      <span>-{{ doc.loyalty_points | int }} pts</span>
+    </div>
+    {% endif %}
+    <div class="rt-pos-row">
+      <span><strong>Saldo disponible:</strong></span>
+      <span><strong>{{ lp_balance }} pts{% if lp_conversion and lp_balance %} ({{ frappe.format(lp_balance * lp_conversion, {"fieldtype": "Currency", "currency": doc.currency}) }}){% endif %}</strong></span>
+    </div>
   </div>
   {% endif %}
 
