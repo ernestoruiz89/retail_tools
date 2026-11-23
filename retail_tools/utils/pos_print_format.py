@@ -204,6 +204,10 @@ POS_INVOICE_PRINT_FORMAT_HTML = """{% set rt = get_pos_qr_context() %}
       <tr>
         <td>
           {{ item.item_name }}
+          {% set item_barcode = item.barcode or frappe.db.get_value("Item Barcode", {"parent": item.item_code}, "barcode") %}
+          {% if item_barcode %}
+          <div class="rt-pos-item-sub">{{ item_barcode }}</div>
+          {% endif %}
           {% if item.discount_percentage %}
           <div class="rt-pos-item-sub">Desc: {{ "%.1f"|format(item.discount_percentage) }}%</div>
           {% endif %}
