@@ -3,13 +3,26 @@
 
 POS_INVOICE_PRINT_FORMAT_NAME = "Factura POS con QR"
 
-POS_INVOICE_PRINT_FORMAT_CSS = """.rt-pos-ticket {
+POS_INVOICE_PRINT_FORMAT_CSS = """@page {
+	size: 80mm auto;
+	margin: 0;
+}
+.print-format-gutter {
+	padding: 0 !important;
+}
+.print-format {
+	width: 80mm !important;
+	max-width: 80mm !important;
+	min-height: 0 !important;
+	padding: 3mm !important;
+	margin: 0 auto !important;
+}
+.rt-pos-ticket {
 	font-family: 'Courier New', Courier, monospace;
 	font-size: 11px;
 	width: 100%;
-	max-width: 280px;
-	margin: 0 auto;
-	padding: 6px 4px;
+	margin: 0;
+	padding: 0;
 	color: #000;
 	background: #fff;
 }
@@ -128,9 +141,26 @@ POS_INVOICE_PRINT_FORMAT_CSS = """.rt-pos-ticket {
 	line-height: 1.4;
 }
 @media print {
+	html, body {
+		width: 80mm !important;
+		margin: 0 !important;
+		padding: 0 !important;
+		background: #fff !important;
+	}
+	.print-format-gutter,
+	.print-format {
+		width: 80mm !important;
+		max-width: 80mm !important;
+		min-height: 0 !important;
+		padding: 2mm 3mm !important;
+		margin: 0 !important;
+		box-shadow: none !important;
+	}
 	.rt-pos-ticket {
-		max-width: none;
-		width: 72mm;
+		max-width: none !important;
+		width: 100% !important;
+		margin: 0 !important;
+		padding: 0 !important;
 	}
 }
 """
