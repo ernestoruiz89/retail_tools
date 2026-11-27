@@ -74,6 +74,9 @@ class PosQrPrintFormatTest(unittest.TestCase):
 
 	def test_print_format_template_uses_jinja_qr_helper(self):
 		from retail_tools.utils.pos_print_format import (
+			POS_INVOICE_50MM_PRINT_FORMAT_CSS,
+			POS_INVOICE_50MM_PRINT_FORMAT_HTML,
+			POS_INVOICE_50MM_PRINT_FORMAT_NAME,
 			POS_INVOICE_PRINT_FORMAT_CSS,
 			POS_INVOICE_PRINT_FORMAT_HTML,
 			POS_INVOICE_PRINT_FORMAT_NAME,
@@ -87,6 +90,15 @@ class PosQrPrintFormatTest(unittest.TestCase):
 		self.assertIn("Saldo disponible:", POS_INVOICE_PRINT_FORMAT_HTML)
 		self.assertNotIn("frappe.utils.get_fullname", POS_INVOICE_PRINT_FORMAT_HTML)
 		self.assertIn("rt-pos-qr-img", POS_INVOICE_PRINT_FORMAT_CSS)
+
+		self.assertEqual(POS_INVOICE_50MM_PRINT_FORMAT_NAME, "Factura POS con QR 50mm")
+		self.assertIn("get_pos_qr_context()", POS_INVOICE_50MM_PRINT_FORMAT_HTML)
+		self.assertIn("rt.qr_data_uri", POS_INVOICE_50MM_PRINT_FORMAT_HTML)
+		self.assertIn("Item Barcode", POS_INVOICE_50MM_PRINT_FORMAT_HTML)
+		self.assertIn("Loyalty Point Entry", POS_INVOICE_50MM_PRINT_FORMAT_HTML)
+		self.assertNotIn("frappe.utils.get_fullname", POS_INVOICE_50MM_PRINT_FORMAT_HTML)
+		self.assertIn("size: 50mm auto;", POS_INVOICE_50MM_PRINT_FORMAT_CSS)
+		self.assertIn("rt-pos50-qr-img", POS_INVOICE_50MM_PRINT_FORMAT_CSS)
 
 	def test_hooks_registers_jinja_methods(self):
 		from retail_tools import hooks
@@ -110,9 +122,9 @@ class PosQrPrintFormatTest(unittest.TestCase):
 		fake_utils = types.ModuleType("frappe.utils")
 		fake_utils.cint = int
 
-		exists_state = {"Print Format": False}
+		existing_formats = set()
 		fake_frappe.db = types.SimpleNamespace(
-			exists=lambda dt, name: True if dt == "DocType" else exists_state.get(dt, False)
+			exists=lambda dt, name: True if dt == "DocType" else (name in existing_formats)
 		)
 		fake_frappe.get_doc = lambda payload: FakeDoc(payload)
 
@@ -130,19 +142,21 @@ class PosQrPrintFormatTest(unittest.TestCase):
 			sys.modules.pop("retail_tools.setup", None)
 			from retail_tools import setup
 
-			# First run creates editable (standard='No') Print Format
+			# First run creates both editable (standard='No') Print Formats (80mm & 50mm)
 			setup.setup_pos_invoice_print_format()
-			self.assertEqual(len(inserted), 1)
-			payload, ignore_perm = inserted[0]
-			self.assertTrue(ignore_perm)
-			self.assertEqual(payload["doc_type"], "POS Invoice")
-			self.assertEqual(payload["standard"], "No")
-			self.assertEqual(payload["custom_format"], 1)
+			self.assertEqual(len(inserted), 2)
+			names = [p["name"] for p, _ in inserted]
+			self.assertEqual(names, ["Factura POS con QR", "Factura POS con QR 50mm"])
+			for payload, ignore_perm in inserted:
+				self.assertTrue(ignore_perm)
+				self.assertEqual(payload["doc_type"], "POS Invoice")
+				self.assertEqual(payload["standard"], "No")
+				self.assertEqual(payload["custom_format"], 1)
+				existing_formats.add(payload["name"])
 
 			# Second run does NOT overwrite user edits
-			exists_state["Print Format"] = True
 			setup.setup_pos_invoice_print_format()
-			self.assertEqual(len(inserted), 1)
+			self.assertEqual(len(inserted), 2)
 
 
 if __name__ == "__main__":

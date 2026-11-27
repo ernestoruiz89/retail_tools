@@ -421,43 +421,40 @@ def after_migrate():
 
 
 def setup_pos_invoice_print_format():
-	"""Create an editable Print Format for POS Invoice with Instagram QR if it does not exist yet.
+	"""Create editable POS Invoice Print Formats (80mm and 50mm) with QR if they do not exist yet.
 
-	Created as a custom (standard='No') Print Format so store administrators can freely edit
-	HTML and CSS from ERPNext without future migrations overwriting their changes.
+	Created as custom (standard='No') non-default Print Formats so store administrators can freely
+	edit HTML and CSS from ERPNext without affecting existing production sites or losing edits on migrate.
 	"""
-	from retail_tools.utils.pos_print_format import (
-		POS_INVOICE_PRINT_FORMAT_CSS,
-		POS_INVOICE_PRINT_FORMAT_HTML,
-		POS_INVOICE_PRINT_FORMAT_NAME,
-	)
+	from retail_tools.utils.pos_print_format import POS_INVOICE_PRINT_FORMATS
 
 	if not frappe.db.exists("DocType", "POS Invoice"):
 		return
-	if frappe.db.exists("Print Format", POS_INVOICE_PRINT_FORMAT_NAME):
-		return
 
-	frappe.get_doc(
-		{
-			"doctype": "Print Format",
-			"name": POS_INVOICE_PRINT_FORMAT_NAME,
-			"doc_type": "POS Invoice",
-			"module": "Retail Tools",
-			"standard": "No",
-			"custom_format": 1,
-			"print_format_type": "Jinja",
-			"default_print_language": "es",
-			"font_size": 11,
-			"margin_top": 0.0,
-			"margin_bottom": 0.0,
-			"margin_left": 0.0,
-			"margin_right": 0.0,
-			"page_number": "Hide",
-			"html": POS_INVOICE_PRINT_FORMAT_HTML,
-			"css": POS_INVOICE_PRINT_FORMAT_CSS,
-			"disabled": 0,
-		}
-	).insert(ignore_permissions=True)
+	for name, html, css, font_size in POS_INVOICE_PRINT_FORMATS:
+		if frappe.db.exists("Print Format", name):
+			continue
+		frappe.get_doc(
+			{
+				"doctype": "Print Format",
+				"name": name,
+				"doc_type": "POS Invoice",
+				"module": "Retail Tools",
+				"standard": "No",
+				"custom_format": 1,
+				"print_format_type": "Jinja",
+				"default_print_language": "es",
+				"font_size": font_size,
+				"margin_top": 0.0,
+				"margin_bottom": 0.0,
+				"margin_left": 0.0,
+				"margin_right": 0.0,
+				"page_number": "Hide",
+				"html": html,
+				"css": css,
+				"disabled": 0,
+			}
+		).insert(ignore_permissions=True)
 
 
 def sync_pages_and_workspace():
