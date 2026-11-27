@@ -74,6 +74,9 @@ class PosQrPrintFormatTest(unittest.TestCase):
 
 	def test_print_format_template_uses_jinja_qr_helper(self):
 		from retail_tools.utils.pos_print_format import (
+			POS_INVOICE_50MM_BOLD_PRINT_FORMAT_CSS,
+			POS_INVOICE_50MM_BOLD_PRINT_FORMAT_HTML,
+			POS_INVOICE_50MM_BOLD_PRINT_FORMAT_NAME,
 			POS_INVOICE_50MM_PRINT_FORMAT_CSS,
 			POS_INVOICE_50MM_PRINT_FORMAT_HTML,
 			POS_INVOICE_50MM_PRINT_FORMAT_NAME,
@@ -99,6 +102,15 @@ class PosQrPrintFormatTest(unittest.TestCase):
 		self.assertNotIn("frappe.utils.get_fullname", POS_INVOICE_50MM_PRINT_FORMAT_HTML)
 		self.assertIn("size: 50mm auto;", POS_INVOICE_50MM_PRINT_FORMAT_CSS)
 		self.assertIn("rt-pos50-qr-img", POS_INVOICE_50MM_PRINT_FORMAT_CSS)
+
+		self.assertEqual(POS_INVOICE_50MM_BOLD_PRINT_FORMAT_NAME, "Factura POS con QR 50mm Negrita")
+		self.assertIn("get_pos_qr_context()", POS_INVOICE_50MM_BOLD_PRINT_FORMAT_HTML)
+		self.assertIn("rt.qr_data_uri", POS_INVOICE_50MM_BOLD_PRINT_FORMAT_HTML)
+		self.assertIn("Item Barcode", POS_INVOICE_50MM_BOLD_PRINT_FORMAT_HTML)
+		self.assertIn("Loyalty Point Entry", POS_INVOICE_50MM_BOLD_PRINT_FORMAT_HTML)
+		self.assertNotIn("frappe.utils.get_fullname", POS_INVOICE_50MM_BOLD_PRINT_FORMAT_HTML)
+		self.assertIn("font-weight: 700;", POS_INVOICE_50MM_BOLD_PRINT_FORMAT_CSS)
+		self.assertIn("width: 46mm !important;", POS_INVOICE_50MM_BOLD_PRINT_FORMAT_CSS)
 
 	def test_hooks_registers_jinja_methods(self):
 		from retail_tools import hooks
@@ -142,11 +154,14 @@ class PosQrPrintFormatTest(unittest.TestCase):
 			sys.modules.pop("retail_tools.setup", None)
 			from retail_tools import setup
 
-			# First run creates both editable (standard='No') Print Formats (80mm & 50mm)
+			# First run creates all 3 editable (standard='No') Print Formats (80mm, 50mm, 50mm Negrita)
 			setup.setup_pos_invoice_print_format()
-			self.assertEqual(len(inserted), 2)
+			self.assertEqual(len(inserted), 3)
 			names = [p["name"] for p, _ in inserted]
-			self.assertEqual(names, ["Factura POS con QR", "Factura POS con QR 50mm"])
+			self.assertEqual(
+				names,
+				["Factura POS con QR", "Factura POS con QR 50mm", "Factura POS con QR 50mm Negrita"],
+			)
 			for payload, ignore_perm in inserted:
 				self.assertTrue(ignore_perm)
 				self.assertEqual(payload["doc_type"], "POS Invoice")
@@ -156,7 +171,7 @@ class PosQrPrintFormatTest(unittest.TestCase):
 
 			# Second run does NOT overwrite user edits
 			setup.setup_pos_invoice_print_format()
-			self.assertEqual(len(inserted), 2)
+			self.assertEqual(len(inserted), 3)
 
 
 if __name__ == "__main__":

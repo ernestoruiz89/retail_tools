@@ -646,8 +646,345 @@ POS_INVOICE_50MM_PRINT_FORMAT_HTML = """{% set rt = get_pos_qr_context() %}
 </div>
 """
 
+POS_INVOICE_50MM_BOLD_PRINT_FORMAT_NAME = "Factura POS con QR 50mm Negrita"
+
+POS_INVOICE_50MM_BOLD_PRINT_FORMAT_CSS = """@page {
+	size: 50mm auto;
+	margin: 0;
+}
+.print-format-gutter {
+	padding: 0 !important;
+}
+.print-format {
+	width: 48mm !important;
+	max-width: 48mm !important;
+	min-height: 0 !important;
+	padding: 1.5mm 3mm 1.5mm 1.5mm !important;
+	margin: 0 auto !important;
+}
+.rt-pos50b-ticket {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 11px;
+	font-weight: 700;
+	font-variant-numeric: tabular-nums;
+	width: 100%;
+	margin: 0;
+	padding: 0;
+	color: #000 !important;
+	background: #fff;
+	-webkit-print-color-adjust: exact;
+}
+.rt-pos50b-ticket * {
+	box-sizing: border-box;
+	color: #000 !important;
+	font-weight: 700;
+}
+.rt-pos50b-header {
+	text-align: center;
+	border-bottom: 1.5px dashed #000;
+	padding-bottom: 5px;
+	margin-bottom: 5px;
+}
+.rt-pos50b-company {
+	font-size: 13px;
+	font-weight: 800;
+	text-transform: uppercase;
+	margin-bottom: 2px;
+	word-break: break-word;
+}
+.rt-pos50b-company-info {
+	font-size: 10px;
+	line-height: 1.3;
+	word-break: break-word;
+}
+.rt-pos50b-title {
+	font-size: 12px;
+	font-weight: 800;
+	letter-spacing: 0.4px;
+	margin: 4px 0 3px;
+}
+.rt-pos50b-meta {
+	font-size: 10px;
+	line-height: 1.35;
+	text-align: left;
+	margin-top: 4px;
+	word-break: break-word;
+}
+.rt-pos50b-items {
+	margin-bottom: 5px;
+}
+.rt-pos50b-item {
+	padding: 4px 0;
+	border-bottom: 1px dashed #000;
+}
+.rt-pos50b-item:last-child {
+	border-bottom: none;
+}
+.rt-pos50b-item-name {
+	font-size: 11.5px;
+	font-weight: 800;
+	line-height: 1.25;
+	word-break: break-word;
+}
+.rt-pos50b-item-sub {
+	font-size: 10px;
+	line-height: 1.25;
+}
+.rt-pos50b-item-calc {
+	display: flex;
+	justify-content: space-between;
+	align-items: baseline;
+	font-size: 10.5px;
+	margin-top: 2px;
+	gap: 4px;
+}
+.rt-pos50b-totals {
+	border-top: 1.5px dashed #000;
+	padding-top: 5px;
+	margin-top: 3px;
+}
+.rt-pos50b-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: baseline;
+	gap: 4px;
+	margin: 2px 0;
+	font-size: 10.5px;
+}
+.rt-pos50b-row span:last-child {
+	text-align: right;
+	white-space: nowrap;
+}
+.rt-pos50b-row.grand-total {
+	font-size: 13px;
+	font-weight: 800;
+	border-top: 1.5px solid #000;
+	margin-top: 5px;
+	padding-top: 4px;
+}
+.rt-pos50b-payments,
+.rt-pos50b-loyalty {
+	border-top: 1.5px dashed #000;
+	margin-top: 6px;
+	padding-top: 5px;
+}
+.rt-pos50b-section-title {
+	font-size: 10.5px;
+	font-weight: 800;
+	text-transform: uppercase;
+	text-align: center;
+	margin-bottom: 3px;
+}
+.rt-pos50b-qr-block {
+	border-top: 1.5px dashed #000;
+	margin-top: 6px;
+	padding-top: 6px;
+	text-align: center;
+}
+.rt-pos50b-qr-img {
+	width: 100px;
+	height: 100px;
+	display: block;
+	margin: 4px auto;
+	image-rendering: pixelated;
+}
+.rt-pos50b-qr-label {
+	font-size: 11px;
+	font-weight: 800;
+	margin-top: 2px;
+}
+.rt-pos50b-qr-handle {
+	font-size: 10px;
+	margin-top: 2px;
+	word-break: break-all;
+}
+.rt-pos50b-footer {
+	text-align: center;
+	margin-top: 6px;
+	font-size: 10px;
+	line-height: 1.3;
+}
+@media print {
+	html, body {
+		width: 46mm !important;
+		margin: 0 !important;
+		padding: 0 !important;
+		background: #fff !important;
+	}
+	.print-format-gutter,
+	.print-format {
+		width: 46mm !important;
+		max-width: 46mm !important;
+		min-height: 0 !important;
+		padding: 1mm 2.5mm 1mm 1mm !important;
+		margin: 0 !important;
+		box-shadow: none !important;
+	}
+	.rt-pos50b-ticket {
+		max-width: none !important;
+		width: 100% !important;
+		margin: 0 !important;
+		padding: 0 !important;
+	}
+}
+"""
+
+POS_INVOICE_50MM_BOLD_PRINT_FORMAT_HTML = """{% set rt = get_pos_qr_context() %}
+{% set company_tax_id = frappe.db.get_value("Company", doc.company, "tax_id") %}
+<div class="rt-pos50b-ticket">
+  <div class="rt-pos50b-header">
+    <div class="rt-pos50b-company">{{ doc.company }}</div>
+    {% if company_tax_id %}
+    <div class="rt-pos50b-company-info">RUC: {{ company_tax_id }}</div>
+    {% endif %}
+    {% if doc.company_address_display %}
+    <div class="rt-pos50b-company-info">{{ doc.company_address_display | striptags }}</div>
+    {% endif %}
+    <div class="rt-pos50b-title">
+      {% if doc.is_return %}DEVOLUCIÓN POS{% else %}FACTURA POS{% endif %}
+    </div>
+    <div class="rt-pos50b-meta">
+      <div>No.: {{ doc.name }}</div>
+      <div>Fecha: {{ doc.get_formatted("posting_date") }} {{ doc.get_formatted("posting_time") or "" }}</div>
+      <div>Cliente: {{ doc.customer_name or doc.customer }}</div>
+      {% if doc.pos_profile %}
+      <div>Caja: {{ doc.pos_profile }}</div>
+      {% endif %}
+      <div>Cajero: {{ frappe.db.get_value("User", doc.owner, "full_name") or doc.owner }}</div>
+    </div>
+  </div>
+
+  <div class="rt-pos50b-items">
+    {% for item in doc.items %}
+    {% set item_barcode = item.barcode or frappe.db.get_value("Item Barcode", {"parent": item.item_code}, "barcode") %}
+    <div class="rt-pos50b-item">
+      <div class="rt-pos50b-item-name">{{ item.item_name }}</div>
+      {% if item_barcode %}
+      <div class="rt-pos50b-item-sub">{{ item_barcode }}</div>
+      {% endif %}
+      {% if item.discount_percentage %}
+      <div class="rt-pos50b-item-sub">Desc: {{ "%.1f"|format(item.discount_percentage) }}%</div>
+      {% endif %}
+      <div class="rt-pos50b-item-calc">
+        <span>{% if item.qty == item.qty | int %}{{ item.qty | int }}{% else %}{{ item.qty }}{% endif %} x {{ item.get_formatted("rate") }}</span>
+        <span>{{ item.get_formatted("amount") }}</span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="rt-pos50b-totals">
+    <div class="rt-pos50b-row">
+      <span>Subtotal:</span>
+      <span>{{ doc.get_formatted("total") }}</span>
+    </div>
+    {% if doc.discount_amount %}
+    <div class="rt-pos50b-row">
+      <span>Descuento:</span>
+      <span>-{{ doc.get_formatted("discount_amount") }}</span>
+    </div>
+    {% endif %}
+    {% for tax in doc.taxes %}
+    {% if tax.tax_amount %}
+    <div class="rt-pos50b-row">
+      <span>{{ tax.description }}:</span>
+      <span>{{ tax.get_formatted("tax_amount") }}</span>
+    </div>
+    {% endif %}
+    {% endfor %}
+    <div class="rt-pos50b-row grand-total">
+      <span>TOTAL:</span>
+      <span>{{ doc.get_formatted("rounded_total") if doc.rounded_total else doc.get_formatted("grand_total") }}</span>
+    </div>
+  </div>
+
+  {% if doc.payments or (doc.redeem_loyalty_points and doc.loyalty_amount) %}
+  <div class="rt-pos50b-payments">
+    <div class="rt-pos50b-section-title">Pagos</div>
+    {% for pay in doc.payments %}
+    {% if pay.amount %}
+    <div class="rt-pos50b-row">
+      <span>{{ pay.mode_of_payment }}:</span>
+      <span>{{ pay.get_formatted("amount") }}</span>
+    </div>
+    {% endif %}
+    {% endfor %}
+    {% if doc.redeem_loyalty_points and doc.loyalty_amount %}
+    <div class="rt-pos50b-row">
+      <span>Puntos:</span>
+      <span>{{ doc.get_formatted("loyalty_amount") }}</span>
+    </div>
+    {% endif %}
+    {% if doc.change_amount %}
+    <div class="rt-pos50b-row">
+      <span>Cambio:</span>
+      <span>{{ doc.get_formatted("change_amount") }}</span>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% set lp_name = doc.loyalty_program or frappe.db.get_value("Customer", doc.customer, "loyalty_program") %}
+  {% if lp_name %}
+  {% set lp_entries = frappe.get_all(
+    "Loyalty Point Entry",
+    filters={"customer": doc.customer, "company": doc.company, "loyalty_program": lp_name},
+    fields=["loyalty_points", "expiry_date"],
+    limit_page_length=0
+  ) %}
+  {% set lp_ns = namespace(balance=0) %}
+  {% for lp_e in lp_entries %}
+    {% if not lp_e.expiry_date or (lp_e.expiry_date | string) >= (doc.posting_date | string) %}
+      {% set lp_ns.balance = lp_ns.balance + (lp_e.loyalty_points or 0) %}
+    {% endif %}
+  {% endfor %}
+  {% set lp_balance = (lp_ns.balance | int) if lp_ns.balance > 0 else 0 %}
+  {% set lp_conversion = frappe.db.get_value("Loyalty Program", lp_name, "conversion_factor") or 0 %}
+  <div class="rt-pos50b-loyalty">
+    <div class="rt-pos50b-section-title">Puntos de Fidelidad</div>
+    {% if doc.redeem_loyalty_points and doc.loyalty_points %}
+    <div class="rt-pos50b-row">
+      <span>Canjeados:</span>
+      <span>-{{ doc.loyalty_points | int }} pts</span>
+    </div>
+    {% endif %}
+    <div class="rt-pos50b-row">
+      <span>Saldo:</span>
+      <span>{{ lp_balance }} pts{% if lp_conversion and lp_balance %} ({{ frappe.format(lp_balance * lp_conversion, {"fieldtype": "Currency", "currency": doc.currency}) }}){% endif %}</span>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if rt.qr_data_uri %}
+  <div class="rt-pos50b-qr-block">
+    {% if rt.qr_label %}
+    <div class="rt-pos50b-qr-label">{{ rt.qr_label }}</div>
+    {% endif %}
+    <img src="{{ rt.qr_data_uri }}" alt="Código QR" class="rt-pos50b-qr-img" />
+    {% if rt.qr_subtitle %}
+    <div class="rt-pos50b-qr-handle">{{ rt.qr_subtitle }}</div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <div class="rt-pos50b-footer">
+    {% if rt.pos_footer_message %}
+    <div>{{ rt.pos_footer_message }}</div>
+    {% else %}
+    <div>¡Gracias por su compra!</div>
+    {% endif %}
+  </div>
+</div>
+"""
+
 POS_INVOICE_PRINT_FORMATS = (
 	(POS_INVOICE_PRINT_FORMAT_NAME, POS_INVOICE_PRINT_FORMAT_HTML, POS_INVOICE_PRINT_FORMAT_CSS, 11),
 	(POS_INVOICE_50MM_PRINT_FORMAT_NAME, POS_INVOICE_50MM_PRINT_FORMAT_HTML, POS_INVOICE_50MM_PRINT_FORMAT_CSS, 9),
+	(
+		POS_INVOICE_50MM_BOLD_PRINT_FORMAT_NAME,
+		POS_INVOICE_50MM_BOLD_PRINT_FORMAT_HTML,
+		POS_INVOICE_50MM_BOLD_PRINT_FORMAT_CSS,
+		11,
+	),
 )
 
